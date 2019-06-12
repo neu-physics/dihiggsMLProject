@@ -776,6 +776,12 @@ class eventReconstruction:
         
         # Return if QCD --> no truth to assign
         if self.isDihiggsMC == False:
+
+            for iJet in self.jetIndices:           
+                # make vector for jets
+                _tlv_jet = TLorentzVector.PtEtaPhiMassLorentzVector( self.l_jetPt[_iEvent][iJet], self.l_jetEta[_iEvent][iJet], self.l_jetPhi[_iEvent][iJet], self.l_jetMass[_iEvent][iJet])
+                if iJet not in self.jetVectorDict.keys():
+                    self.jetVectorDict[iJet] = _tlv_jet
             return
 
         self.getDictOfQuarksMatchedToJets( _iEvent )
