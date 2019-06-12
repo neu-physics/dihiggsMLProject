@@ -1,4 +1,9 @@
 # Don't track contents of these folders
 14Tev_delphes_events/
+
 30k_data/
+
+*.root
+*.png
+
 
