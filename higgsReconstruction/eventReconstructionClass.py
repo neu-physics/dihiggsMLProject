@@ -95,7 +95,7 @@ class eventReconstruction:
         self.printAllOptions()
         self.initFileAndBranches()
 
-        for iEvt in range(0,self.delphesFile.fEntries):
+        for iEvt in range(0,self.delphesFile._fEntries):
             # *** 0. Kick-out condition for testing
             if iEvt > 40 and self.isTestRun is True:
                 continue
@@ -119,7 +119,7 @@ class eventReconstruction:
         # *** 5. Store output data in .csv for later usage
         self.writeDataForTraining()
 
-        print( "Finished processing {0} events...".format(self.delphesFile.fEntries) )
+        print( "Finished processing {0} events...".format(self.delphesFile._fEntries) )
 
         return
 
