@@ -66,7 +66,7 @@ Compares shape of histogram for all events and matchable events. If the shapes a
 | l_missingET_Phi 	| 'MissingET' 	| 'MissingET.Phi'   	|                              	|
 | l_scalarHT      	| 'ScalarHT'  	| 'ScalarHT.<span></span>HT'     	|                              	|
 
-\* PDG ID is 
+\* PDG ID is the ID assigned to any given particle by the Monte Carlo particle numbering scheme. The numbering scheme can be found on page 3 of this [paper](http://pdg.lbl.gov/2018/reviews/rpp2018-rev-monte-carlo-numbering.pdf).
 
 ### Particle
 
