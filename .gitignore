@@ -2,4 +2,6 @@
 14Tev_delphes_events/
 *.root
 *.png
-
+__pycache__/
+.ipynb_checkpoints/
+EventPlotting/.ipynb_checkpoints/
