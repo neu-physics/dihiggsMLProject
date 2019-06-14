@@ -755,7 +755,7 @@ class eventReconstruction:
                                    _tlv_h1_j0.z, _tlv_h1_j1.z, _tlv_h2_j2.z, _tlv_h2_j3.z, 
                                    _tlv_h1_j0.energy, _tlv_h1_j1.energy, _tlv_h2_j2.energy, _tlv_h2_j3.energy,
                                    self.l_jetBTag[_iEvent][_jetPair1[0]], self.l_jetBTag[_iEvent][_jetPair1[1]], self.l_jetBTag[_iEvent][_jetPair2[0]], self.l_jetBTag[_iEvent][_jetPair2[1]]
-                               ] )
+                               ,self.thisEventIsMatchable] )
             
         return _variableList
 
@@ -877,7 +877,7 @@ class eventReconstruction:
             # write line to .csv
             _writer.writerow( _csvLineDict )
         _csvFile.close()
-    
+       
         return
 
     

@@ -83,5 +83,16 @@ Takes in data, figure number, title, x label, min and max values, and number of
 bins and creaates histogram.
 ### compareManyHisograms
 
+# Cut History
+## First Cut
+'''
+testRun = False
+dR_cut_quarkToJet = 0.40
+mass_higgs = 125.0 #GeV
+width_higgs = 15.0 #GeV, reco width
+minJetPt = 20.0 #GeV
+maxJetAbsEta = 2.5
+'''
+
 
 
