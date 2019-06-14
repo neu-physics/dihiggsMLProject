@@ -8,4 +8,5 @@
 __pycache__/
 .ipynb_checkpoints/
 .ipynb_checkpoints/
+.DS_Store/
 EventPlotting/.ipynb_checkpoints/
