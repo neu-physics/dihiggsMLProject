@@ -701,7 +701,7 @@ class eventReconstruction:
     ##############################################################
 
     def createOutputVariableList( self ):
-        _variableNameList = ['hh_mass', 'h1_mass', 'h2_mass', 'hh_pt', 'h1_pt', 'h2_pt', 'deltaR(h1, h2)', 'deltaR(h1 jets)', 'deltaR(h2 jets)', 'deltaPhi(h1 jets)', 'deltaPhi(h2 jets)', 'met', 'met_phi', 'scalarHT', 'nJets', 'nBTags']
+        _variableNameList = ['hh_mass', 'h1_mass', 'h2_mass', 'hh_pt', 'h1_pt', 'h2_pt', 'deltaR(h1, h2)', 'deltaR(h1 jets)', 'deltaR(h2 jets)', 'deltaPhi(h1, h2)', 'deltaPhi(h1 jets)', 'deltaPhi(h2 jets)', 'met', 'met_phi', 'scalarHT', 'nJets', 'nBTags', 'isMatchable']
         _jetVariables = ['pt', 'eta', 'phi', 'mass', 'px', 'py', 'pz', 'energy', 'btag']
     
         for _variable in _jetVariables:
@@ -742,9 +742,11 @@ class eventReconstruction:
                           (_tlv_h1 + _tlv_h2).pt, _tlv_h1.pt, _tlv_h2.pt,
                           _tlv_h1.delta_r(_tlv_h2), 
                           _tlv_h1_j0.delta_r(_tlv_h1_j1), _tlv_h2_j2.delta_r(_tlv_h2_j3), 
+                          _tlv_h1.delta_phi(_tlv_h2), 
                           _tlv_h1_j0.delta_phi(_tlv_h1_j1), _tlv_h2_j2.delta_phi(_tlv_h2_j3), 
                           self.l_missingET_met[_iEvent][0], self.l_missingET_phi[_iEvent][0], self.l_scalarHT[_iEvent][0], 
-                          self.nJets, self.nBTags]
+                          self.nJets, self.nBTags,
+                          self.thisEventIsMatchable ]
         if self.saveLowLevelVariablesForTraining==True:
             _variableList.extend( [_tlv_h1_j0.pt, _tlv_h1_j1.pt, _tlv_h2_j2.pt, _tlv_h2_j3.pt, 
                                    _tlv_h1_j0.eta, _tlv_h1_j1.eta, _tlv_h2_j2.eta, _tlv_h2_j3.eta,
@@ -755,7 +757,7 @@ class eventReconstruction:
                                    _tlv_h1_j0.z, _tlv_h1_j1.z, _tlv_h2_j2.z, _tlv_h2_j3.z, 
                                    _tlv_h1_j0.energy, _tlv_h1_j1.energy, _tlv_h2_j2.energy, _tlv_h2_j3.energy,
                                    self.l_jetBTag[_iEvent][_jetPair1[0]], self.l_jetBTag[_iEvent][_jetPair1[1]], self.l_jetBTag[_iEvent][_jetPair2[0]], self.l_jetBTag[_iEvent][_jetPair2[1]]
-                               ,self.thisEventIsMatchable] )
+                               ] )
             
         return _variableList
 
