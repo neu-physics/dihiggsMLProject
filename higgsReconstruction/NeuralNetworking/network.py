@@ -20,6 +20,24 @@ train_accuracies = []
 test_accuracies = []
 test_num = []
 
+w00s = []
+w01s = []
+w02s = []
+w03s = []
+w04s = []
+
+w10s = []
+w11s = []
+w12s = []
+w13s = []
+w14s = []
+
+b0s = []
+b1s = []
+b2s = []
+b3s = []
+b4s = []
+
 # Now we define all our functions
 def softmax(z):
     #Calculate exponent term first
@@ -98,6 +116,7 @@ def backward_prop(model,cache,y):
     
     # Calculate loss derivative with respect to output
     dz3 = loss_derivative(y=y,y_hat=a3)
+#     dz3 = 1.02
 
     # Calculate loss derivative with respect to second layer weights
     dW3 = 1/m*(a2.T).dot(dz3) #dW2 = 1/m*(a1.T).dot(dz2) 
@@ -126,6 +145,30 @@ def backward_prop(model,cache,y):
 
 #TRAINING PHASE
 def initialize_parameters(nn_input_dim,nn_hdim,nn_output_dim):
+    
+    losses = []
+    train_accuracies = []
+    test_accuracies = []
+    test_num = []
+
+    w00s = []
+    w01s = []
+    w02s = []
+    w03s = []
+    w04s = []
+
+    w10s = []
+    w11s = []
+    w12s = []
+    w13s = []
+    w14s = []
+
+    b0s = []
+    b1s = []
+    b2s = []
+    b3s = []
+    b4s = []
+    
     # First layer weights
     W1 = 2 *np.random.randn(nn_input_dim, nn_hdim) - 1
     
@@ -157,24 +200,24 @@ def update_parameters(model,grads,learning_rate):
     W3 -= learning_rate * grads['dW3']
     b3 -= learning_rate * grads['db3']
     
-#     # load parameters into running lists
-#     w00s.append(W1[0][0]) # modifies global list
-#     w01s.append(W1[0][1]) # modifies global list
-#     w02s.append(W1[0][2]) # modifies global list
-#     w03s.append(W1[0][3]) # modifies global list
-#     w04s.append(W1[0][4]) # modifies global list
+    # load parameters into running lists
+    w00s.append(W1[0][0]) # modifies global list
+    w01s.append(W1[0][1]) # modifies global list
+    w02s.append(W1[0][2]) # modifies global list
+    w03s.append(W1[0][3]) # modifies global list
+    w04s.append(W1[0][4]) # modifies global list
     
-#     w10s.append(W1[1][0]) # modifies global list
-#     w11s.append(W1[1][1]) # modifies global list
-#     w12s.append(W1[1][2]) # modifies global list
-#     w13s.append(W1[1][3]) # modifies global list
-#     w14s.append(W1[1][4]) # modifies global list
+    w10s.append(W1[1][0]) # modifies global list
+    w11s.append(W1[1][1]) # modifies global list
+    w12s.append(W1[1][2]) # modifies global list
+    w13s.append(W1[1][3]) # modifies global list
+    w14s.append(W1[1][4]) # modifies global list
     
-#     b0s.append(b1[0][0]) # modifies global list
-#     b1s.append(b1[0][1]) # modifies global list
-#     b2s.append(b1[0][2]) # modifies global list
-#     b3s.append(b1[0][3]) # modifies global list
-#     b4s.append(b1[0][4]) # modifies global list
+    b0s.append(b1[0][0]) # modifies global list
+    b1s.append(b1[0][1]) # modifies global list
+    b2s.append(b1[0][2]) # modifies global list
+    b3s.append(b1[0][3]) # modifies global list
+    b4s.append(b1[0][4]) # modifies global list
 
     # Store and return parameters
     model = { 'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2, 'W3':W3,'b3':b3}
@@ -250,6 +293,9 @@ def accuracy_score(_outputNodes, _labels):
 
     
 def plotAccPerEpoch(title):
+    print("Loss length:", len(losses))
+    print("Train Accuracy length:", len(train_accuracies))
+    print("test num len", len(test_num))
     plt.plot(losses, label="Loss")
     plt.plot(train_accuracies, label="Train Accuracy")
     plt.scatter(test_num, test_accuracies, label="Test Accuracy", s=16, color="green")
@@ -260,3 +306,23 @@ def plotAccPerEpoch(title):
     plt.xlabel("Epoch")
     plt.ylabel("Score")
     plt.clf()
+    
+def plotSomeWeights():
+      
+    plt.plot((w00s), label="Weight 0.0")
+    plt.plot((w01s), label="Weight 0.1")
+    plt.plot((w02s), label="Weight 0.2")
+    plt.plot((w03s), label="Weight 0.3")
+    plt.plot((w04s), label="Weight 0.4")
+    # plt.plot((w00s-(w00s[0])), label="Weight 0.0")
+    # plt.plot((w01s-(w01s[0])), label="Weight 0.1")
+    # plt.plot((w02s-(w02s[0])), label="Weight 0.2")
+    # plt.plot((w03s-(w03s[0])), label="Weight 0.3")
+    # plt.plot((w04s-(w04s[0])), label="Weight 0.4")
+    plt.ylabel("Value")
+    plt.xlabel("Epoch")
+    plt.title("Weights From the First Input Node at Each Epoch")
+    plt.legend()
+    print(w01s[0])
+    print(w01s[len(w01s)-1])
+    plt.show()
