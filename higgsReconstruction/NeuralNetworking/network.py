@@ -113,6 +113,10 @@ def backward_prop(model,cache,y):
     
     # Get number of samples
     m = y.shape[0]
+#     print("y shape is:", y.shape)
+#     print(y[:4])
+#     print("y_hat shape is:", y_hat.shape)
+#     print(y_hat[:4])
     
     # Calculate loss derivative with respect to output
     dz3 = loss_derivative(y=y,y_hat=a3)
@@ -249,6 +253,8 @@ def trainThenTest(model,X_,y_, test_data, test_labels, learning_rate=0.01, epoch
         #a1, probs = cache['a1'],cache['a2']
         # Backpropagation
         
+#         print("in trainThenTest, y_ shape:", y_.shape)
+#         print(y_[:4])
         grads = backward_prop(model,cache,y_)
         # Gradient descent parameter update
         # Assign new parameters to the model
@@ -305,6 +311,7 @@ def plotAccPerEpoch(title):
     plt.title(title)
     plt.xlabel("Epoch")
     plt.ylabel("Score")
+    plt.show()
     plt.clf()
     
 def plotSomeWeights():
