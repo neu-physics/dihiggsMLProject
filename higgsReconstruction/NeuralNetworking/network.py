@@ -18,6 +18,7 @@ class Network:
     output = []	# initialized as empty array, updated through training
     loss = [] 	# current loss value, train_labels - output
     wasTested = False	# boolean which sais whether or not the network was tested while training, used for plotting
+    lr = 0.01 # learning rate
     
     
     # methods
@@ -30,6 +31,7 @@ class Network:
         
         # initialize biases
         
-    def train(self, _train_data, _train_labels, _n_epochs, _test=False, _test_data=[], _test_labels=[]):
+    def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, _test=False, _test_data=[], _test_labels=[]):
+        
     
     
