@@ -91,7 +91,7 @@ def conv_block(X, filters, kernel_size, strides=2):
 def resnet_50(input_shape = (244, 244, 3)):
 
     '''
-    input_shape - dimensions of the
+    input_shape - dimensions of the input tensor
     '''
 
     X_input = Input(input_shape)
