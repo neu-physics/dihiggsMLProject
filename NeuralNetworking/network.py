@@ -1,3 +1,9 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import copy
+
 class Network: 
     
     # instance variables
@@ -40,14 +46,14 @@ class Network:
         
         # initialize weights 
         self.weights = []
-        for i in range(len(_nodes)-1):
-            w = torch.randn(_nodes[i], _nodes[i+1])
-            weights.append(w)
+        for i in range(len(self.nodes)-1):
+            w = torch.randn(self.nodes[i], self.nodes[i+1])
+            self.weights.append(w)
         # initialize biases
         self.biases = []
-        for i in range(len(nodes)-1):
-            b = torch.randn(1, nodes[i+1])
-            biases.append(b)   
+        for i in range(len(self.nodes)-1):
+            b = torch.randn(1, self.nodes[i+1])
+            self.biases.append(b)   
             
     ## sigmoid activation function using pytorch
     def sigmoid_activation(z):
@@ -55,8 +61,12 @@ class Network:
     
     def pred(self, _data):
         layer_vals = []
-        a = _data
+        a = torch.from_numpy(_data)
+        a = a.double()
+        print("a is \n", a)
         for i in range(len(self.nodes)-2): # feed thru hidden layers
+            print(self.weights[i])
+#             wt = self.weights[i].clone()
             z = torch.mm(a, self.weights[i]) + self.biases[i]
             a = sigmoid_activation(z)
             layer_vals.append(a)
@@ -67,7 +77,7 @@ class Network:
         return layer_vals 
         
     def forward_prop(self, _data):
-        self.layers = forward_prop(self, data)
+        self.layers = self.pred(_data)
     
     # loss computation
     # loss = y - output
@@ -108,15 +118,15 @@ class Network:
         
 
     def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, _test=False, _test_data=[], _test_labels=[]):
-    self.lr = _lr
-    for i in range(_n_epochs):
-        self.forward_prop(_train_data)
-        # test here 
-        if (i%50 == 0):
-            print("train accuracy is:", get_accuracy(_train_data, _train_labels))
-            if(_test=True):
-                print("train accuracy is:", get_accuracy(_test_data, _test_labels))
-        self.backprop_and_update(_train_data, _train_labels)
+        self.lr = _lr
+        for i in range(_n_epochs):
+            self.forward_prop(_train_data)
+            # test here 
+            if (i%50 == 0):
+                print("train accuracy is:", get_accuracy(_train_data, _train_labels))
+                if(_test==True):
+                    print("train accuracy is:", get_accuracy(_test_data, _test_labels))
+            self.backprop_and_update(_train_data, _train_labels)
 
         
 
