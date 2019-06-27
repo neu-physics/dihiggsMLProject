@@ -91,7 +91,12 @@ class Network:
     # loss computation
     # loss = y - output
     def calculate_loss(self, _labels):
-        return _labels.float() - self.layers[-1].float()
+        m = _labels.shape[0]
+#         if(_labels.all() == 1):
+#             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
+#         else: 
+        return -1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
+#         return _labels.float() - self.layers[-1].float()
     
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
@@ -99,6 +104,7 @@ class Network:
 
     def backprop_and_update(self, _data, _labels):
         loss = self.calculate_loss(_labels)
+        self.losses.append(loss)
         deltas = [] # from first hidden to output
         ds = [] # from output to first hidden
         # compute derivative of error terms
@@ -146,13 +152,14 @@ class Network:
             self.train_accuracies.append(train_acc)
             
             if (j % 50 == 0):
-                print("train accuracy at epoch", j, "is:", train_acc)
-#                 print("weight shapes", self.weights[0].shape)
-
                 if(_test==True):
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
                     self.test_accuracies.append(test_acc)
+            if (j % 300 ==0):
+                print("train accuracy at epoch", j, "is:", train_acc)
+#                 print("weight shapes", self.weights[0].shape)
+                if(_test==True):
                     print("test accuracy is:", test_acc)
             self.backprop_and_update(_train_data, _train_labels)
 #             print("weight shapes after backprop", self.weights[0].shape)
