@@ -35,9 +35,9 @@ class Network:
     def get_accuracy(self, _data, _labels):
         m = _labels.shape[0]
         pred = (self.pred(_data))[-1] # last index of layer vals
-        print("pred shape", pred.shape)
-        print("data shape:", _data.shape)
-        print("label shape:", _labels.shape)
+#         print("pred shape", pred.shape)
+#         print("data shape:", _data.shape)
+#         print("label shape:", _labels.shape)
         pred = pred.reshape(_labels.shape)
         error = torch.sum(torch.abs(pred.float()-_labels.float()))
         return ((m-error)/m) * 100
@@ -72,10 +72,10 @@ class Network:
         a = a.float()
 #         print("a is \n", a)
         for i in range(len(self.nodes)-2): # feed thru hidden layers
-            print(self.weights[i])
+#             print(self.weights[i])
 #             wt = self.weights[i].clone()
-            print("a shape:", a.shape)
-            print("weights", i, "shape:", self.weights[i].shape)
+#             print("a shape:", a.shape)
+#             print("weights", i, "shape:", self.weights[i].shape)
             z = torch.mm(a, self.weights[i]) + self.biases[i]
             a = self.sigmoid_activation(z)
             layer_vals.append(a)
@@ -106,6 +106,7 @@ class Network:
             deltas.append(self.sigmoid_delta(a))
         loss_d = loss
         for d, w in zip(reversed(deltas), reversed(self.weights)):
+#             print("in backprop:", w.shape)
             dd = loss * d
             loss_d = torch.mm(d, w.t())
             ds.append(dd)
@@ -116,27 +117,46 @@ class Network:
         # Update parameters
         new_weights = []
         new_biases = []
-        print("lengths", len(ds), len(self.weights), len(_as))
-        for d, w, a, b in zip(ds, reversed(self.weights), _as, reversed(self.biases)):
-            wt = torch.mm(a.t().float(),d.float()) * self.lr
+#         for e in ds:
+#             print("DS SHAPE:", e.shape)
+#         for e in self.weights:
+#             print("WEIGHT SHAPE:", e.shape)
+#         print("lengths", len(ds), len(self.weights), len(_as))
+        for d, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
+#             print("OLD WEIGHT SHAPE:", w.shape)
+#             print("in zippy thing:", a.t().shape)
+#             print("d shape:", d.shape)
+            wt = torch.mm(a.t().float(),d.float()) * self.lr # new weight
+#             print("NEW WEIGHT SHAPE:", wt.shape)
             new_weights.insert(0, wt)
 
             bi = b + d.sum()*self.lr
             new_biases.insert(0,bi)
+#         print("new weights",new_weights)
         self.weights = new_weights
         self.biases = new_biases
         
 
     def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, _test=False, _test_data=[], _test_labels=[]):
         self.lr = _lr
-        for i in range(_n_epochs):
+        for j in range(_n_epochs):
             self.forward_prop(_train_data)
             # test here 
-            if (i%50 == 0):
-                print("train accuracy is:", self.get_accuracy(_train_data, _train_labels))
+            train_acc = self.get_accuracy(_train_data, _train_labels)
+            self.train_accuracies.append(train_acc)
+            
+            if (j % 50 == 0):
+                print("train accuracy at epoch", j, "is:", train_acc)
+#                 print("weight shapes", self.weights[0].shape)
+
                 if(_test==True):
-                    print("train accuracy is:", self.get_accuracy(_test_data, _test_labels))
+                    test_acc = self.get_accuracy(_test_data, _test_labels)
+                    self.test_num.append(j)
+                    self.test_accuracies.append(test_acc)
+                    print("test accuracy is:", test_acc)
             self.backprop_and_update(_train_data, _train_labels)
+#             print("weight shapes after backprop", self.weights[0].shape)
+
 
         
 
