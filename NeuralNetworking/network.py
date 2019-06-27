@@ -33,13 +33,15 @@ class Network:
         return self.layers[-1]
     
     def get_accuracy(self, _data, _labels):
-        m = _labels.shape[0]
-        pred = (self.pred(_data))[-1] # last index of layer vals
+        m = _labels.shape[0] # number of labels
+        pred = (self.pred(_data))[-1].numpy() # last index of layer vals
 #         print("pred shape", pred.shape)
 #         print("data shape:", _data.shape)
 #         print("label shape:", _labels.shape)
         pred = pred.reshape(_labels.shape)
-        error = torch.sum(torch.abs(pred.float()-_labels.float()))
+        pred[pred>.5] = 1
+        pred[pred<=.5] = 0 
+        error = np.sum(np.abs(pred-_labels.numpy()))
         return ((m-error)/m) * 100
     
     # methods
@@ -104,7 +106,7 @@ class Network:
 
     def backprop_and_update(self, _data, _labels):
         loss = self.calculate_loss(_labels)
-        self.losses.append(loss)
+        self.losses.append(loss*100)
         deltas = [] # from first hidden to output
         ds = [] # from output to first hidden
         # compute derivative of error terms
