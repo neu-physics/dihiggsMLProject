@@ -91,12 +91,12 @@ class Network:
     # loss computation
     # loss = y - output
     def calculate_loss(self, _labels):
-        m = _labels.shape[0]
-#         if(_labels.all() == 1):
-#             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
-#         else: 
-        return -1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
-#         return _labels.float() - self.layers[-1].float()
+#         m = _labels.shape[0]
+# #         if(_labels.all() == 1):
+# #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
+# #         else: 
+#         return -1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
+        return 1/(len(_labels)) * torch.sum(_labels.float() - self.layers[-1].float())
     
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
@@ -151,12 +151,12 @@ class Network:
             train_acc = self.get_accuracy(_train_data, _train_labels)
             self.train_accuracies.append(train_acc)
             
-            if (j % 50 == 0):
+            if (j % 10 == 0):
                 if(_test==True):
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
                     self.test_accuracies.append(test_acc)
-            if (j % 300 ==0):
+            if (j % 50 ==0):
                 print("train accuracy at epoch", j, "is:", train_acc)
 #                 print("weight shapes", self.weights[0].shape)
                 if(_test==True):
