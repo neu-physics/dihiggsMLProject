@@ -33,16 +33,23 @@ class Network:
         return self.layers[-1]
     
     def get_accuracy(self, _data, _labels):
+#         print("before",_data[:4],"\n", _labels[:4])
         m = _labels.shape[0] # number of labels
         pred = (self.pred(_data))[-1].numpy() # last index of layer vals
+#         print("PREDICTED BEFORE", pred[:4])
 #         print("pred shape", pred.shape)
 #         print("data shape:", _data.shape)
 #         print("label shape:", _labels.shape)
-        pred = pred.reshape(_labels.shape)
+#         pred = pred.reshape(_labels.shape)
         pred[pred>.5] = 1
         pred[pred<=.5] = 0 
-        error = np.sum(np.abs(pred-_labels.numpy()))
-        return ((m-error)/m) * 100
+#         print("PREDICTED AFTER", pred[:4])
+        error = np.sum(np.abs(_labels.numpy()-pred))/len(_labels.numpy())
+#         if(error>m):
+#             print("pred:", np.shape(pred), "labels:", np.shape(_labels))
+#             print("ERROR IS GREATER THAN M. FUCK.")
+#         print("after",_data[:4], "\n", _labels[:4])
+        return ((1 - error)) *100
     
     # methods
     def __init__(self, _nodes):
@@ -93,12 +100,12 @@ class Network:
     # loss computation
     # loss = y - output
     def calculate_loss(self, _labels):
-#         m = _labels.shape[0]
+        m = _labels.shape[0]
 # #         if(_labels.all() == 1):
 # #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
 # #         else: 
-#         return -1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
-        return 1/(len(_labels)) * torch.sum(_labels.float() - self.layers[-1].float())
+#         return 1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
+        return 1/(len(_labels)) * torch.sum(torch.abs(_labels.float() - self.layers[-1].float()))
     
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
@@ -153,18 +160,19 @@ class Network:
             train_acc = self.get_accuracy(_train_data, _train_labels)
             self.train_accuracies.append(train_acc)
             
-            if (j % 10 == 0):
+            if (j % 1 == 0):
                 if(_test==True):
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
                     self.test_accuracies.append(test_acc)
-            if (j % 50 ==0):
+            if (j % 1 ==0):
                 print("train accuracy at epoch", j, "is:", train_acc)
 #                 print("weight shapes", self.weights[0].shape)
                 if(_test==True):
                     print("test accuracy is:", test_acc)
             self.backprop_and_update(_train_data, _train_labels)
 #             print("weight shapes after backprop", self.weights[0].shape)
+        
 
 
         
