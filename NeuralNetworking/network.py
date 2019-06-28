@@ -100,13 +100,18 @@ class Network:
     # loss computation
     # loss = y - output
     def calculate_loss(self, _labels):
-        m = _labels.shape[0]
-# #         if(_labels.all() == 1):
-# #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
-# #         else: 
-#         return 1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
-        return 1/(len(_labels)) * torch.sum(torch.abs(_labels.float() - self.layers[-1].float()))
-    
+#         m = _labels.shape[0]
+# # #         if(_labels.all() == 1):
+# # #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
+# # #         else: 
+# #         return 1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
+#         return 1/(len(_labels)) * torch.sum(torch.abs(_labels.float() - self.layers[-1].float()))
+        n_obs = len(_labels)
+        pred = self.layers[-1].numpy()
+        
+        return np.sum(-np.log(np.abs(_labels.numpy()-pred))) / n_obs
+        
+
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
         return x * (1 - x)
@@ -151,26 +156,34 @@ class Network:
         self.weights = new_weights
         self.biases = new_biases
         
+    def batch(self, _batch_size, _data, _labels):
+        # should be made more elegant, i'm aware this solution is trash
+        d_all = np.append(_data.numpy(), _labels.numpy(), axis=1)
+        np.random.shuffle(d_all)
+        batch = torch.from_numpy(d_all[:_batch_size])
+        
+        return batch[:,:_data.shape[1]], batch[:,_data.shape[1]:]
 
-    def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, _test=False, _test_data=[], _test_labels=[]):
+    def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, batch_size=50, _test=False, _test_data=[], _test_labels=[]):
         self.lr = _lr
         for j in range(_n_epochs):
-            self.forward_prop(_train_data)
+            batch_data, batch_labels = self.batch(batch_size, _train_data, _test_data)
+            self.forward_prop(batch_data)
             # test here 
-            train_acc = self.get_accuracy(_train_data, _train_labels)
+            train_acc = self.get_accuracy(batch_data, batch_labels)
             self.train_accuracies.append(train_acc)
             
-            if (j % 1 == 0):
+            if (j % 50 == 0):
                 if(_test==True):
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
                     self.test_accuracies.append(test_acc)
-            if (j % 1 ==0):
+            if (j % 50 ==0):
                 print("train accuracy at epoch", j, "is:", train_acc)
 #                 print("weight shapes", self.weights[0].shape)
                 if(_test==True):
                     print("test accuracy is:", test_acc)
-            self.backprop_and_update(_train_data, _train_labels)
+            self.backprop_and_update(batch_data, batch_labels)
 #             print("weight shapes after backprop", self.weights[0].shape)
         
 
