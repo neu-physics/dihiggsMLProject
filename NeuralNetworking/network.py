@@ -106,7 +106,10 @@ class Network:
 #             wt = self.weights[i].clone()
 #             print("a shape:", a.shape)
 #             print("weights", i, "shape:", self.weights[i].shape)
+            print("a shape:", a.shape)
+#             print("weights shape", self.weights[i].shape)
             z = torch.mm(a, self.weights[i]) + self.biases[i]
+            print("z shape:", z.shape)
             a = self.sigmoid_activation(z)
             layer_vals.append(a)
         z_out = torch.mm(a, self.weights[-1]) + self.biases[-1]
@@ -117,6 +120,9 @@ class Network:
         
     def forward_prop(self, _data):
         self.layers = self.pred(_data)
+        
+    def loss_derivative(self, _labels):
+        return 2*(self.layers[-1].float() - _labels.float())
     
     # loss computation
     # loss = y - output
@@ -126,7 +132,7 @@ class Network:
 # # #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
 # # #         else: 
 # #         return 1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
-        return 1/(len(_labels)) * torch.sum(torch.abs(_labels.float() - self.layers[-1].float()))
+        return 1/(len(_labels)) * torch.sum((_labels.float() - self.layers[-1].float())**2)
 #         n_obs = len(_labels)
 #         pred = self.layers[-1].numpy()
         
@@ -141,18 +147,19 @@ class Network:
         self.weight_change.append(self.weights[0][0][0].item())
         loss = self.calculate_loss(_labels)
         self.losses.append(loss*100)
-        deltas = [] # from first hidden to output
-        ds = [] # from output to first hidden
+#         deltas = [] # from first hidden to output
+#         ds = [] # from output to first hidden
         # compute derivative of error terms
-        for a in self.layers:
-            deltas.append(self.sigmoid_delta(a))
-        loss_d = loss
-#         print(loss)
-        for d, w in zip(reversed(deltas), reversed(self.weights)):
-#             print("in backprop:", w.shape)
-            dd = loss_d * -d
-            loss_d = torch.mm(dd, w.t())
-            ds.append(dd)
+#         for a in self.layers:
+#             deltas.append(self.sigmoid_delta(a))
+#         loss_d = self.loss_derivative(_labels)
+# #         print(loss)
+#         for d, w in zip(reversed(deltas), reversed(self.weights)):
+# #             print("in backprop:", w.shape)
+#             dd = loss_d * -d
+#             dd = torch.mm(dd, w.t())
+#             loss_d = self.loss_derivative(loss)
+#             ds.append(dd)
         _as = copy.deepcopy(self.layers)
         _as.insert(0,_data) # insert input into the layer vals
         del _as[-1]
@@ -165,17 +172,30 @@ class Network:
 #         for e in self.weights:
 #             print("WEIGHT SHAPE:", e.shape)
 #         print("lengths", len(ds), len(self.weights), len(_as))
-        for dd, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
-#             print("OLD WEIGHT SHAPE:", w.shape)
-#             print("in zippy thing:", a.t().shape)
-#             print("d shape:", d.shape)
-            wt = torch.mm(a.t().float(),dd.float()) * self.lr # new weight
-#             print("NEW WEIGHT SHAPE:", wt.shape)
-            new_weights.insert(0, wt)
+#         for dd, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
+# #             print("OLD WEIGHT SHAPE:", w.shape)
+# #             print("in zippy thing:", a.t().shape)
+# #             print("d shape:", d.shape)
+#             wt = torch.mm(a.t().float(),dd.float()) * self.lr # new weight
+# #             print("NEW WEIGHT SHAPE:", wt.shape)
+#             new_weights.insert(0, wt)
 
-            bi = b + dd.sum()*self.lr/100
-            new_biases.insert(0,bi)
-#         print("new weights",new_weights)
+#             bi = b + dd.sum()*self.lr/100
+#             new_biases.insert(0,bi)
+# #         print("new weights",new_weights)
+        dz = self.loss_derivative(_labels)
+        m = _labels.shape[0]
+        for a, w, b in zip(reversed(_as), reversed(self.weights), reversed(self.biases)):
+            print("shapes:", a.t().shape, dz.shape)
+            dw = (1/m)*torch.mm(a.t().float(), dz.float())
+            db = (1/m)*torch.sum(dz)
+            dz = torch.mm(torch.mm(dz.float(), w.t()), self.sigmoid_delta(a))
+            
+            new_w = w - self.lr*dw
+            new_b = b - self.lr*db
+            
+            new_weights.append(new_w)
+            new_biases.append(new_b)
         self.weights = new_weights
         self.biases = new_biases
         
