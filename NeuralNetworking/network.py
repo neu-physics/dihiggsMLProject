@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import copy
 import numpy as np
+import pandas as pd
 
 class Network: 
     
@@ -12,6 +13,7 @@ class Network:
     n_layers = 0	# determined by lentgh of nodes array
 #     n_hidden = 0 # n_layers - 2
     weights = []	# array of each weight matrix, len(weights) = num_layers -1
+    weight_change = []
     biases = []	# array of each bias vector, len(biases) = num_layers -1
     losses = []	# initialized as empty array, updated through training
     train_accuracies = []	# initialized as empty array, updated through training
@@ -36,7 +38,11 @@ class Network:
 #         print("before",_data[:4],"\n", _labels[:4])
         m = _labels.shape[0] # number of labels
         pred = (self.pred(_data))[-1].numpy() # last index of layer vals
+#         print("\n")
 #         print("PREDICTED BEFORE", pred[:4])
+#         print("PRED SIZE", len(pred))
+#         print("SUM", np.sum(pred))
+#         print("MAX", np.amax(pred))
 #         print("pred shape", pred.shape)
 #         print("data shape:", _data.shape)
 #         print("label shape:", _labels.shape)
@@ -44,8 +50,18 @@ class Network:
         pred[pred>.5] = 1
         pred[pred<=.5] = 0 
 #         print("PREDICTED AFTER", pred[:4])
-        error = np.sum(np.abs(_labels.numpy()-pred))/len(_labels.numpy())
-#         if(error>m):
+#         print("SUM AFTER", np.sum(pred))
+#         print("MAX AFTER", np.amax(pred))
+#         diff = _labels.numpy() - pred
+#         print("LABELS", _labels.numpy())
+#         print("SUM DIFF", np.sum(diff))
+#         print("MAX DIFF", np.amax(diff))
+#         abs_diff = np.abs(diff)
+#         print("SUM ABS", np.sum(abs_diff))
+#         print("MAX ABS", np.amax(abs_diff))
+        error = np.sum(np.abs(_labels.numpy()-pred)) / len(_labels.numpy())
+        if(error>1):
+            print("ERROR GREATER THAN 1", len(_labels.numpy()), np.sum(pred), np.sum(np.abs(_labels.numpy()-pred)))
 #             print("pred:", np.shape(pred), "labels:", np.shape(_labels))
 #             print("ERROR IS GREATER THAN M. FUCK.")
 #         print("after",_data[:4], "\n", _labels[:4])
@@ -59,16 +75,21 @@ class Network:
             
         for w in self.weights:
             print("weight shape:", w.shape)
-    
+        
+        weight_change = pd.DataFrame()
         # initialize weights 
         self.weights = []
         for i in range(len(self.nodes)-1):
             w = torch.randn(self.nodes[i], self.nodes[i+1])
             self.weights.append(w)
+#             strg = 'W' + str(i)
+#             val = w
+#             weight_change[strg] = val
+            
         # initialize biases
         self.biases = []
         for i in range(len(self.nodes)-1):
-            b = torch.randn(1, self.nodes[i+1])
+            b = torch.zeros(1, self.nodes[i+1])
             self.biases.append(b)   
             
     ## sigmoid activation function using pytorch
@@ -105,18 +126,19 @@ class Network:
 # # #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
 # # #         else: 
 # #         return 1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
-#         return 1/(len(_labels)) * torch.sum(torch.abs(_labels.float() - self.layers[-1].float()))
-        n_obs = len(_labels)
-        pred = self.layers[-1].numpy()
+        return 1/(len(_labels)) * torch.sum(torch.abs(_labels.float() - self.layers[-1].float()))
+#         n_obs = len(_labels)
+#         pred = self.layers[-1].numpy()
         
-        return np.sum(-np.log(np.abs(_labels.numpy()-pred))) / n_obs
+#         return np.sum(-np.log(np.abs(_labels.numpy()-pred))) / n_obs
         
 
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
-        return x * (1 - x)
+        return self.sigmoid_activation(x) * (1 - self.sigmoid_activation(x))
 
     def backprop_and_update(self, _data, _labels):
+        self.weight_change.append(self.weights[0][0][0].item())
         loss = self.calculate_loss(_labels)
         self.losses.append(loss*100)
         deltas = [] # from first hidden to output
@@ -125,10 +147,11 @@ class Network:
         for a in self.layers:
             deltas.append(self.sigmoid_delta(a))
         loss_d = loss
+#         print(loss)
         for d, w in zip(reversed(deltas), reversed(self.weights)):
 #             print("in backprop:", w.shape)
-            dd = loss * d
-            loss_d = torch.mm(d, w.t())
+            dd = loss_d * -d
+            loss_d = torch.mm(dd, w.t())
             ds.append(dd)
         _as = copy.deepcopy(self.layers)
         _as.insert(0,_data) # insert input into the layer vals
@@ -142,15 +165,15 @@ class Network:
 #         for e in self.weights:
 #             print("WEIGHT SHAPE:", e.shape)
 #         print("lengths", len(ds), len(self.weights), len(_as))
-        for d, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
+        for dd, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
 #             print("OLD WEIGHT SHAPE:", w.shape)
 #             print("in zippy thing:", a.t().shape)
 #             print("d shape:", d.shape)
-            wt = torch.mm(a.t().float(),d.float()) * self.lr # new weight
+            wt = torch.mm(a.t().float(),dd.float()) * self.lr # new weight
 #             print("NEW WEIGHT SHAPE:", wt.shape)
             new_weights.insert(0, wt)
 
-            bi = b + d.sum()*self.lr
+            bi = b + dd.sum()*self.lr/100
             new_biases.insert(0,bi)
 #         print("new weights",new_weights)
         self.weights = new_weights
@@ -167,7 +190,10 @@ class Network:
     def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, batch_size=50, _test=False, _test_data=[], _test_labels=[]):
         self.lr = _lr
         for j in range(_n_epochs):
-            batch_data, batch_labels = self.batch(batch_size, _train_data, _test_data)
+            if(batch_size==0):
+                batch_data, batch_labels = _train_data, _train_labels
+            else:
+                batch_data, batch_labels = self.batch(batch_size, _train_data, _train_labels)
             self.forward_prop(batch_data)
             # test here 
             train_acc = self.get_accuracy(batch_data, batch_labels)
