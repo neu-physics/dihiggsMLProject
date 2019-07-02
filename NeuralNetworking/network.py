@@ -106,14 +106,19 @@ class Network:
 #             wt = self.weights[i].clone()
 #             print("a shape:", a.shape)
 #             print("weights", i, "shape:", self.weights[i].shape)
-            print("a shape:", a.shape)
+#             print("a shape:", a.shape)
 #             print("weights shape", self.weights[i].shape)
+#             print("WEIGHT SHAPE FORWARD: \n", self.weights[i].shape)
+#             print("ACTIVATION SHAPE FOR: \n", a.shape)
             z = torch.mm(a, self.weights[i]) + self.biases[i]
-            print("z shape:", z.shape)
+#             print("z shape:", z.shape)
             a = self.sigmoid_activation(z)
             layer_vals.append(a)
+#         print("WEIGHT SHAPE OUT: \n", self.weights[-1].shape)
+#         print("ACTIVATION SHAPE 2: \n", a.shape)
         z_out = torch.mm(a, self.weights[-1]) + self.biases[-1]
         output = self.sigmoid_activation(z_out)
+#         print("OUTPUT SHAPE: \n", output.shape)
         layer_vals.append(output)
     #     print(output)
         return layer_vals 
@@ -144,6 +149,8 @@ class Network:
         return self.sigmoid_activation(x) * (1 - self.sigmoid_activation(x))
 
     def backprop_and_update(self, _data, _labels):
+#         print("\n")
+#         print("BACK PROP \n")
         self.weight_change.append(self.weights[0][0][0].item())
         loss = self.calculate_loss(_labels)
         self.losses.append(loss*100)
@@ -186,18 +193,50 @@ class Network:
         dz = self.loss_derivative(_labels)
         m = _labels.shape[0]
         for a, w, b in zip(reversed(_as), reversed(self.weights), reversed(self.biases)):
-            print("shapes:", a.t().shape, dz.shape)
+#             print("shapes:", a.t().shape, dz.shape)
             dw = (1/m)*torch.mm(a.t().float(), dz.float())
             db = (1/m)*torch.sum(dz)
-            dz = torch.mm(torch.mm(dz.float(), w.t()), self.sigmoid_delta(a))
+#             print("DZ: \n", dz.shape)
+#             print("W: \n", w.t().shape)
+#             print("DW: \n", dw.shape)
+#             print("DB: \n", db.shape)
+#             print("delta: \n", self.sigmoid_delta(a).shape)
+            prod = torch.mm(dz.float(), w.t())
+#             print("product: \n",  prod.shape)
+#             dz = torch.dot(prod, self.sigmoid_delta(a).t())
+            dz = prod
             
             new_w = w - self.lr*dw
             new_b = b - self.lr*db
             
+            
+            
             new_weights.append(new_w)
             new_biases.append(new_b)
+            
+#         print("\n WEIGHT COMPARISON")
+        
+#         for w in reversed(new_weights):
+#             print("NEW WT SHAPE: \n", w.shape)
+                
+#         for w in self.weights:
+#             print("OLD WEIGHT SHAPE: \n", w.shape)
+        
+    
+        new_weights.reverse()
+        new_biases.reverse()
+        
+#         print("BEFORE ASSIGNMENT")
+#         for w in new_weights:
+#             print("NEW WT SHAPE: \n", w.shape)
+                        
+        
         self.weights = new_weights
         self.biases = new_biases
+        
+#         print("AFTER ASSIGNMENT")
+#         for w in self.weights:
+#             print("NEW WEIGHT SHAPE: \n", w.shape)
         
     def batch(self, _batch_size, _data, _labels):
         # should be made more elegant, i'm aware this solution is trash
@@ -224,7 +263,7 @@ class Network:
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
                     self.test_accuracies.append(test_acc)
-            if (j % 50 ==0):
+            if (j % 300 ==0):
                 print("train accuracy at epoch", j, "is:", train_acc)
 #                 print("weight shapes", self.weights[0].shape)
                 if(_test==True):
