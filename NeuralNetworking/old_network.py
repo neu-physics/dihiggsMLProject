@@ -352,7 +352,6 @@ def plotAccPerEpoch(title):
     plt.clf()
     
 def plotSomeWeights():
-      
     plt.plot((w00s), label="Weight 0.0")
     plt.plot((w01s), label="Weight 0.1")
 #     plt.plot((w02s), label="Weight 0.2")

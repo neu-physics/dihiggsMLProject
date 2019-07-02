@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import copy
 import numpy as np
+import pandas as pd
 
 class Network: 
     
@@ -12,6 +13,7 @@ class Network:
     n_layers = 0	# determined by lentgh of nodes array
 #     n_hidden = 0 # n_layers - 2
     weights = []	# array of each weight matrix, len(weights) = num_layers -1
+    weight_change = []
     biases = []	# array of each bias vector, len(biases) = num_layers -1
     losses = []	# initialized as empty array, updated through training
     train_accuracies = []	# initialized as empty array, updated through training
@@ -33,14 +35,37 @@ class Network:
         return self.layers[-1]
     
     def get_accuracy(self, _data, _labels):
-        m = _labels.shape[0]
-        pred = (self.pred(_data))[-1] # last index of layer vals
+#         print("before",_data[:4],"\n", _labels[:4])
+        m = _labels.shape[0] # number of labels
+        pred = (self.pred(_data))[-1].numpy() # last index of layer vals
+#         print("\n")
+#         print("PREDICTED BEFORE", pred[:4])
+#         print("PRED SIZE", len(pred))
+#         print("SUM", np.sum(pred))
+#         print("MAX", np.amax(pred))
 #         print("pred shape", pred.shape)
 #         print("data shape:", _data.shape)
 #         print("label shape:", _labels.shape)
-        pred = pred.reshape(_labels.shape)
-        error = torch.sum(torch.abs(pred.float()-_labels.float()))
-        return ((m-error)/m) * 100
+#         pred = pred.reshape(_labels.shape)
+        pred[pred>.5] = 1
+        pred[pred<=.5] = 0 
+#         print("PREDICTED AFTER", pred[:4])
+#         print("SUM AFTER", np.sum(pred))
+#         print("MAX AFTER", np.amax(pred))
+#         diff = _labels.numpy() - pred
+#         print("LABELS", _labels.numpy())
+#         print("SUM DIFF", np.sum(diff))
+#         print("MAX DIFF", np.amax(diff))
+#         abs_diff = np.abs(diff)
+#         print("SUM ABS", np.sum(abs_diff))
+#         print("MAX ABS", np.amax(abs_diff))
+        error = np.sum(np.abs(_labels.numpy()-pred)) / len(_labels.numpy())
+        if(error>1):
+            print("ERROR GREATER THAN 1", len(_labels.numpy()), np.sum(pred), np.sum(np.abs(_labels.numpy()-pred)))
+#             print("pred:", np.shape(pred), "labels:", np.shape(_labels))
+#             print("ERROR IS GREATER THAN M. FUCK.")
+#         print("after",_data[:4], "\n", _labels[:4])
+        return ((1 - error)) *100
     
     # methods
     def __init__(self, _nodes):
@@ -50,16 +75,21 @@ class Network:
             
         for w in self.weights:
             print("weight shape:", w.shape)
-    
+        
+        weight_change = pd.DataFrame()
         # initialize weights 
         self.weights = []
         for i in range(len(self.nodes)-1):
             w = torch.randn(self.nodes[i], self.nodes[i+1])
             self.weights.append(w)
+#             strg = 'W' + str(i)
+#             val = w
+#             weight_change[strg] = val
+            
         # initialize biases
         self.biases = []
         for i in range(len(self.nodes)-1):
-            b = torch.randn(1, self.nodes[i+1])
+            b = torch.zeros(1, self.nodes[i+1])
             self.biases.append(b)   
             
     ## sigmoid activation function using pytorch
@@ -76,40 +106,67 @@ class Network:
 #             wt = self.weights[i].clone()
 #             print("a shape:", a.shape)
 #             print("weights", i, "shape:", self.weights[i].shape)
+#             print("a shape:", a.shape)
+#             print("weights shape", self.weights[i].shape)
+#             print("WEIGHT SHAPE FORWARD: \n", self.weights[i].shape)
+#             print("ACTIVATION SHAPE FOR: \n", a.shape)
             z = torch.mm(a, self.weights[i]) + self.biases[i]
+#             print("z shape:", z.shape)
             a = self.sigmoid_activation(z)
             layer_vals.append(a)
+#         print("WEIGHT SHAPE OUT: \n", self.weights[-1].shape)
+#         print("ACTIVATION SHAPE 2: \n", a.shape)
         z_out = torch.mm(a, self.weights[-1]) + self.biases[-1]
         output = self.sigmoid_activation(z_out)
+#         print("OUTPUT SHAPE: \n", output.shape)
         layer_vals.append(output)
     #     print(output)
         return layer_vals 
         
     def forward_prop(self, _data):
         self.layers = self.pred(_data)
+        
+    def loss_derivative(self, _labels):
+        return 2*(self.layers[-1].float() - _labels.float())
     
     # loss computation
     # loss = y - output
     def calculate_loss(self, _labels):
-        return _labels.float() - self.layers[-1].float()
-    
+#         m = _labels.shape[0]
+# # #         if(_labels.all() == 1):
+# # #             return -1/m * torch.sum(torch.log(self.layers[-1].float()))
+# # #         else: 
+# #         return 1/m * torch.sum(torch.log(1 - self.layers[-1].float()))
+        return 1/(len(_labels)) * torch.sum((_labels.float() - self.layers[-1].float())**2)
+#         n_obs = len(_labels)
+#         pred = self.layers[-1].numpy()
+        
+#         return np.sum(-np.log(np.abs(_labels.numpy()-pred))) / n_obs
+        
+
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
-        return x * (1 - x)
+        return self.sigmoid_activation(x) * (1 - self.sigmoid_activation(x))
 
     def backprop_and_update(self, _data, _labels):
+#         print("\n")
+#         print("BACK PROP \n")
+        self.weight_change.append(self.weights[0][0][0].item())
         loss = self.calculate_loss(_labels)
-        deltas = [] # from first hidden to output
-        ds = [] # from output to first hidden
+        self.losses.append(loss*100)
+#         deltas = [] # from first hidden to output
+#         ds = [] # from output to first hidden
         # compute derivative of error terms
-        for a in self.layers:
-            deltas.append(self.sigmoid_delta(a))
-        loss_d = loss
-        for d, w in zip(reversed(deltas), reversed(self.weights)):
-#             print("in backprop:", w.shape)
-            dd = loss * d
-            loss_d = torch.mm(d, w.t())
-            ds.append(dd)
+#         for a in self.layers:
+#             deltas.append(self.sigmoid_delta(a))
+#         loss_d = self.loss_derivative(_labels)
+# #         print(loss)
+#         for d, w in zip(reversed(deltas), reversed(self.weights)):
+# #             print("in backprop:", w.shape)
+#             dd = loss_d * -d
+#             dd = torch.mm(dd, w.t())
+#             loss_d = self.loss_derivative(loss)
+#             ds.append(dd)
         _as = copy.deepcopy(self.layers)
         _as.insert(0,_data) # insert input into the layer vals
         del _as[-1]
@@ -122,40 +179,98 @@ class Network:
 #         for e in self.weights:
 #             print("WEIGHT SHAPE:", e.shape)
 #         print("lengths", len(ds), len(self.weights), len(_as))
-        for d, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
-#             print("OLD WEIGHT SHAPE:", w.shape)
-#             print("in zippy thing:", a.t().shape)
-#             print("d shape:", d.shape)
-            wt = torch.mm(a.t().float(),d.float()) * self.lr # new weight
-#             print("NEW WEIGHT SHAPE:", wt.shape)
-            new_weights.insert(0, wt)
+#         for dd, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
+# #             print("OLD WEIGHT SHAPE:", w.shape)
+# #             print("in zippy thing:", a.t().shape)
+# #             print("d shape:", d.shape)
+#             wt = torch.mm(a.t().float(),dd.float()) * self.lr # new weight
+# #             print("NEW WEIGHT SHAPE:", wt.shape)
+#             new_weights.insert(0, wt)
 
-            bi = b + d.sum()*self.lr
-            new_biases.insert(0,bi)
-#         print("new weights",new_weights)
+#             bi = b + dd.sum()*self.lr/100
+#             new_biases.insert(0,bi)
+# #         print("new weights",new_weights)
+        dz = self.loss_derivative(_labels)
+        m = _labels.shape[0]
+        for a, w, b in zip(reversed(_as), reversed(self.weights), reversed(self.biases)):
+#             print("shapes:", a.t().shape, dz.shape)
+            dw = (1/m)*torch.mm(a.t().float(), dz.float())
+            db = (1/m)*torch.sum(dz)
+#             print("DZ: \n", dz.shape)
+#             print("W: \n", w.t().shape)
+#             print("DW: \n", dw.shape)
+#             print("DB: \n", db.shape)
+#             print("delta: \n", self.sigmoid_delta(a).shape)
+            prod = torch.mm(dz.float(), w.t())
+#             print("product: \n",  prod.shape)
+#             dz = torch.dot(prod, self.sigmoid_delta(a).t())
+            dz = prod
+            
+            new_w = w - self.lr*dw
+            new_b = b - self.lr*db
+            
+            
+            
+            new_weights.append(new_w)
+            new_biases.append(new_b)
+            
+#         print("\n WEIGHT COMPARISON")
+        
+#         for w in reversed(new_weights):
+#             print("NEW WT SHAPE: \n", w.shape)
+                
+#         for w in self.weights:
+#             print("OLD WEIGHT SHAPE: \n", w.shape)
+        
+    
+        new_weights.reverse()
+        new_biases.reverse()
+        
+#         print("BEFORE ASSIGNMENT")
+#         for w in new_weights:
+#             print("NEW WT SHAPE: \n", w.shape)
+                        
+        
         self.weights = new_weights
         self.biases = new_biases
         
+#         print("AFTER ASSIGNMENT")
+#         for w in self.weights:
+#             print("NEW WEIGHT SHAPE: \n", w.shape)
+        
+    def batch(self, _batch_size, _data, _labels):
+        # should be made more elegant, i'm aware this solution is trash
+        d_all = np.append(_data.numpy(), _labels.numpy(), axis=1)
+        np.random.shuffle(d_all)
+        batch = torch.from_numpy(d_all[:_batch_size])
+        
+        return batch[:,:_data.shape[1]], batch[:,_data.shape[1]:]
 
-    def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, _test=False, _test_data=[], _test_labels=[]):
+    def train(self, _train_data, _train_labels, _n_epochs, _lr=0.01, batch_size=50, _test=False, _test_data=[], _test_labels=[]):
         self.lr = _lr
         for j in range(_n_epochs):
-            self.forward_prop(_train_data)
+            if(batch_size==0):
+                batch_data, batch_labels = _train_data, _train_labels
+            else:
+                batch_data, batch_labels = self.batch(batch_size, _train_data, _train_labels)
+            self.forward_prop(batch_data)
             # test here 
-            train_acc = self.get_accuracy(_train_data, _train_labels)
+            train_acc = self.get_accuracy(batch_data, batch_labels)
             self.train_accuracies.append(train_acc)
             
             if (j % 50 == 0):
-                print("train accuracy at epoch", j, "is:", train_acc)
-#                 print("weight shapes", self.weights[0].shape)
-
                 if(_test==True):
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
                     self.test_accuracies.append(test_acc)
+            if (j % 300 ==0):
+                print("train accuracy at epoch", j, "is:", train_acc)
+#                 print("weight shapes", self.weights[0].shape)
+                if(_test==True):
                     print("test accuracy is:", test_acc)
-            self.backprop_and_update(_train_data, _train_labels)
+            self.backprop_and_update(batch_data, batch_labels)
 #             print("weight shapes after backprop", self.weights[0].shape)
+        
 
 
         
