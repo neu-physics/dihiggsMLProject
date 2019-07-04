@@ -13,8 +13,10 @@ class Network:
     n_layers = 0	# determined by lentgh of nodes array
 #     n_hidden = 0 # n_layers - 2
     weights = []	# array of each weight matrix, len(weights) = num_layers -1
+    w_initial = []
     weight_change = []
     biases = []	# array of each bias vector, len(biases) = num_layers -1
+    b_initial = []
     losses = []	# initialized as empty array, updated through training
     train_accuracies = []	# initialized as empty array, updated through training
     test_accuracies = []	# initialized as empty array, updated through training
@@ -37,7 +39,8 @@ class Network:
     def get_accuracy(self, _data, _labels):
 #         print("before",_data[:4],"\n", _labels[:4])
         m = _labels.shape[0] # number of labels
-        pred = (self.pred(_data))[-1].numpy() # last index of layer vals
+        pred = (self.pred(_data))[-1] # last index of layer vals
+        pred = pred.numpy()
 #         print("\n")
 #         print("PREDICTED BEFORE", pred[:4])
 #         print("PRED SIZE", len(pred))
@@ -68,33 +71,54 @@ class Network:
         return ((1 - error)) *100
     
     # methods
-    def __init__(self, _nodes):
+    def __init__(self, _nodes, _init_weights=0, _init_biases=0):
+#         np.random.seed(0) # doesn't work for some reason :(
         self.nodes = _nodes # set array of nodes
         self.num_layers = len(_nodes)
 #         n_hidden = len(_nodes)-2
-            
-        for w in self.weights:
-            print("weight shape:", w.shape)
+        if (_init_weights==0):   
+            for w in self.weights:
+                print("weight shape:", w.shape)
+
+            weight_change = pd.DataFrame()
+            # initialize weights 
+            self.weights = []
+            self.w_initial = []
+            for i in range(len(self.nodes)-1):
+                w = torch.randn(self.nodes[i], self.nodes[i+1])
+                self.weights.append(w)
+                self.w_initial.append(w)
+    #             strg = 'W' + str(i)
+    #             val = w
+    #             weight_change[strg] = val
+        else:
+            self.weights = _init_weights
+            self.w_initial = _init_weights
+
+        if (_init_biases==0):
+            # initialize biases
+            self.biases = []
+            self.b_initial = []
+            for i in range(len(self.nodes)-1):
+                b = torch.zeros(1, self.nodes[i+1])
+                self.biases.append(b)   
+                self.b_initial.append(b)
+        else:
+            self.biases = _init_biases
+            self.b_initial = _init_biases
         
-        weight_change = pd.DataFrame()
-        # initialize weights 
-        self.weights = []
-        for i in range(len(self.nodes)-1):
-            w = torch.randn(self.nodes[i], self.nodes[i+1])
-            self.weights.append(w)
-#             strg = 'W' + str(i)
-#             val = w
-#             weight_change[strg] = val
-            
-        # initialize biases
-        self.biases = []
-        for i in range(len(self.nodes)-1):
-            b = torch.zeros(1, self.nodes[i+1])
-            self.biases.append(b)   
             
     ## sigmoid activation function using pytorch
     def sigmoid_activation(self, z):
         return 1 / (1 + torch.exp(-z))    
+    
+    
+    def softmax_activation(self, z):
+        exps = torch.exp(z-torch.max(z))
+        return exps/torch.sum(exps)
+    
+    def softmax_delta(self, _labels):
+        print("softmax delta haha")
     
     def pred(self, _data):
         layer_vals = []
@@ -117,7 +141,9 @@ class Network:
 #         print("WEIGHT SHAPE OUT: \n", self.weights[-1].shape)
 #         print("ACTIVATION SHAPE 2: \n", a.shape)
         z_out = torch.mm(a, self.weights[-1]) + self.biases[-1]
+        activation_out = torch.nn.Softmax(dim=0)
         output = self.sigmoid_activation(z_out)
+#         print(output)
 #         print("OUTPUT SHAPE: \n", output.shape)
         layer_vals.append(output)
     #     print(output)
@@ -144,6 +170,22 @@ class Network:
 #         return np.sum(-np.log(np.abs(_labels.numpy()-pred))) / n_obs
         
 
+    def cross_entropy(self, _x, _labels):
+        m = _labels.shape[0]
+        print("M IS:", m)
+        p = self.softmax_activation(_x)
+        print("p shape:", p.shape)
+        log_likelihood = -torch.log(_labels)
+        loss = torch.sum(log_likelihood) / m
+        return loss 
+    
+    def cross_entropy_delta(self, _x , _labels):
+        m = _labels.shape[0]
+        grad = self.softmax_activation(_x)
+        grad[:, :] -= 1
+        grad = grad/m
+        return grad
+    
     ## function to calculate the derivative of activation
     def sigmoid_delta(self, x):
         return self.sigmoid_activation(x) * (1 - self.sigmoid_activation(x))
@@ -153,20 +195,8 @@ class Network:
 #         print("BACK PROP \n")
         self.weight_change.append(self.weights[0][0][0].item())
         loss = self.calculate_loss(_labels)
+#         loss = self.cross_entropy(self.get_output(), _labels)
         self.losses.append(loss*100)
-#         deltas = [] # from first hidden to output
-#         ds = [] # from output to first hidden
-        # compute derivative of error terms
-#         for a in self.layers:
-#             deltas.append(self.sigmoid_delta(a))
-#         loss_d = self.loss_derivative(_labels)
-# #         print(loss)
-#         for d, w in zip(reversed(deltas), reversed(self.weights)):
-# #             print("in backprop:", w.shape)
-#             dd = loss_d * -d
-#             dd = torch.mm(dd, w.t())
-#             loss_d = self.loss_derivative(loss)
-#             ds.append(dd)
         _as = copy.deepcopy(self.layers)
         _as.insert(0,_data) # insert input into the layer vals
         del _as[-1]
@@ -174,23 +204,9 @@ class Network:
         # Update parameters
         new_weights = []
         new_biases = []
-#         for e in ds:
-#             print("DS SHAPE:", e.shape)
-#         for e in self.weights:
-#             print("WEIGHT SHAPE:", e.shape)
-#         print("lengths", len(ds), len(self.weights), len(_as))
-#         for dd, w, a, b in zip(ds, reversed(self.weights), reversed(_as), reversed(self.biases)):
-# #             print("OLD WEIGHT SHAPE:", w.shape)
-# #             print("in zippy thing:", a.t().shape)
-# #             print("d shape:", d.shape)
-#             wt = torch.mm(a.t().float(),dd.float()) * self.lr # new weight
-# #             print("NEW WEIGHT SHAPE:", wt.shape)
-#             new_weights.insert(0, wt)
 
-#             bi = b + dd.sum()*self.lr/100
-#             new_biases.insert(0,bi)
-# #         print("new weights",new_weights)
         dz = self.loss_derivative(_labels)
+#         dz = self.cross_entropy_delta(self.get_output(), _labels)
         m = _labels.shape[0]
         for a, w, b in zip(reversed(_as), reversed(self.weights), reversed(self.biases)):
 #             print("shapes:", a.t().shape, dz.shape)
@@ -207,21 +223,23 @@ class Network:
             dz = prod
             
             new_w = w - self.lr*dw
+            
+            #weight dropout
+            new_w = new_w.numpy()
+            new_w[np.abs(new_w)<0.05]=0
+            new_w = torch.from_numpy(new_w)
+            
+            
             new_b = b - self.lr*db
-            
-            
             
             new_weights.append(new_w)
             new_biases.append(new_b)
             
 #         print("\n WEIGHT COMPARISON")
-        
 #         for w in reversed(new_weights):
 #             print("NEW WT SHAPE: \n", w.shape)
-                
 #         for w in self.weights:
 #             print("OLD WEIGHT SHAPE: \n", w.shape)
-        
     
         new_weights.reverse()
         new_biases.reverse()
@@ -230,7 +248,6 @@ class Network:
 #         for w in new_weights:
 #             print("NEW WT SHAPE: \n", w.shape)
                         
-        
         self.weights = new_weights
         self.biases = new_biases
         
@@ -258,7 +275,7 @@ class Network:
             train_acc = self.get_accuracy(batch_data, batch_labels)
             self.train_accuracies.append(train_acc)
             
-            if (j % 50 == 0):
+            if (j % 150 == 0):
                 if(_test==True):
                     test_acc = self.get_accuracy(_test_data, _test_labels)
                     self.test_num.append(j)
