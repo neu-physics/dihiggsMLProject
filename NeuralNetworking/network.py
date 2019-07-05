@@ -225,9 +225,9 @@ class Network:
             new_w = w - self.lr*dw
             
             #weight dropout
-            new_w = new_w.numpy()
-            new_w[np.abs(new_w)<0.05]=0
-            new_w = torch.from_numpy(new_w)
+#             new_w = new_w.numpy()
+#             new_w[np.abs(new_w)<.25]=0
+#             new_w = torch.from_numpy(new_w)
             
             
             new_b = b - self.lr*db
