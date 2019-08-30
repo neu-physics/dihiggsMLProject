@@ -34,9 +34,11 @@ C) Activate the environment, e.g. $> source <name of virtualenv>/bin/activate
 
 6) Install Delphes (this will take time but not as much as pythia) from mg command prompt, e.g. $> install Delphes
 
-7) Now you need to install a bunch of other packages to generate the right stuff (this will take time) from mg command prompt, e.g. $> install collier ninja fastjet lhapdf5 ExRootAnalysis
+7) Now you need to install a bunch of other packages to generate the right stuff (this will take time) from mg command prompt, e.g. $> install collier ninja fastjet lhapdf5 iregi ExRootAnalysis
 
 8) If you want to use the CMS_PhaseII detector in Delphes, you need to copy over a few .tcl files. First exit the MG5 interface and do the following
    $> cp Delphes/cards/CMS_PhaseII/muonMomentumResolution.tcl Templates/Common/Cards/
    $> cp Delphes/cards/CMS_PhaseII/muonTightId.tcl Templates/Common/Cards/
    $> cp Delphes/cards/CMS_PhaseII/muonLooseId.tcl Templates/Common/Cards/
+
+9) You may need to edit the line in CMS_PhaseII_[0,200]PU_v02.tcl that specifies the location of the MinBias file. This is necessary even for 0PU for reasons
