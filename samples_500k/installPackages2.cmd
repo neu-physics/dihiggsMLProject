@@ -1,4 +1,4 @@
-install lhapdf6
+install lhapdf5
 install pythia8
 install Delphes
 install ExRootAnalysis
