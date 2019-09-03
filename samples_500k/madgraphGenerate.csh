@@ -4,7 +4,8 @@ echo "Starting job on " `date` #Date/time of start of job
 echo "Running on: `uname -a`" #Condor job is running on this node
 echo "System software: `cat /etc/redhat-release`" #Operating System on that node
 
-source /cvmfs/sft.cern.ch/lcg/views/LCG_92/x86_64-centos7-gcc62-opt/setup.csh
+#source /cvmfs/sft.cern.ch/lcg/views/LCG_92/x86_64-centos7-gcc62-opt/setup.csh # CentOS7
+source /cvmfs/sft.cern.ch/lcg/views/LCG_89/x86_64-slc6-gcc62-opt/setup.csh # SLC6
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/MG5_aMC_v2.6.6.tar.gz .
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/delphes/PhaseII/MinBias_100k.pileup .
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages1.cmd .
