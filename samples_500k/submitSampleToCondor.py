@@ -14,7 +14,7 @@ parser.add_argument("--nTotalEvents", help="total number of events to generate",
 parser.add_argument("--nEventsPerJob", help="number of events to run per job... use if you want to split a large generation into several sub-runs", default='1000')
 args = parser.parse_args()
 
-if ( not (len(vars(args)) != 2 or len(vars(args)) != 3) or len(vars(args)) != 4) ): # 2 OR 3 --> three for options
+if ( len(vars(args)) != 4 ): # 2 OR 3 --> three for options
     os.system('python submitSampleToCondor.py -h')
     quit()
 
@@ -49,14 +49,14 @@ else:
 
 # ** C. Test nEventsPerJob flag and exit if not sensible
 if (args.nEventsPerJob).isdigit() is True:
-    print "-- Running with {0} events per job ####\n".format(args.nEventsPerJob)
+    print "-- Running with {0} events per job\n".format(args.nEventsPerJob)
 else:
     print "#### WARNING: Passed option of {0} files per job makes no sense. DNE ####\nEXITING\n".format(args.nEventsPerJob)
     quit()
 
 # ** C. Test nTotalEvents flag and exit if not sensible
 if (args.nTotalEvents).isdigit() is True:
-    print "-- Running with {0} events total ####\n".format(args.nTotalEvents)
+    print "-- Running with {0} events total\n".format(args.nTotalEvents)
 else:
     print "#### WARNING: Passed option of {0} total events makes no sense. DNE ####\nEXITING\n".format(args.nTotalEvents)
     quit()
@@ -75,10 +75,10 @@ if ( not os.path.exists("/eos/uscms/store/user/benjtann/upgrade/samples/{0}/".fo
 # *** 2. Create temporary .jdl file for condor submission
 print "\n##########     Submitting Condor jobs     ##########\n"
 
-nEventsSubmittted = 0
-nEventsPerJob = int(args.nTotalEvents / args.nEventsPerJob )
+nEventsSubmitted = 0
+nEventsPerJob = int(args.nEventsPerJob)
 
-while( nEventsSubmitted < args.nTotalEvents):
+while( nEventsSubmitted < int(args.nTotalEvents)):
 
     # ** A. Make CMD file for subjob and copy to correct EOS folder
     subjobRange = '{0}-{1}'.format(nEventsSubmitted, (nEventsSubmitted + nEventsPerJob) )
@@ -90,7 +90,7 @@ while( nEventsSubmitted < args.nTotalEvents):
     if ( not os.path.exists("/eos/uscms/store/user/benjtann/upgrade/samples/{0}/{1}".format(args.outputDir, subjobRange)) ):
         os.system("mkdir /eos/uscms/store/user/benjtann/upgrade/samples/{0}/{1}".format(args.outputDir, subjobRange))
 
-    os.system("xrdcp {0} root://cmseos.fnal.gov//store/user/benjtann/upgrade/samples/{1}/{2}/".format( subjobCMDFIle, args.outputDir, subjobRange))
+    os.system("xrdcp {0} root://cmseos.fnal.gov//store/user/benjtann/upgrade/samples/{1}/{2}/".format( subjobCMDFile, args.outputDir, subjobRange))
 
     
     # ** B. Submit a job
@@ -112,9 +112,10 @@ while( nEventsSubmitted < args.nTotalEvents):
     os.system("condor_submit {0}".format(jdl_filename))
 
     # ** C. Iterate number of events submitted
-    nEventsSubmitted += eventsPerJob
+    nEventsSubmitted += nEventsPerJob
 
 
 # *** 3. Cleanup submission directory
 print "\n##########     Cleanup submission directory     ##########\n"
 os.system("rm *.jdl")
+os.system("rm *_*-*.cmd")
