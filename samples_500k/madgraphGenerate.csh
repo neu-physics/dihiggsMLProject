@@ -44,6 +44,7 @@ sed -i 's/\/eos\/cms\/store\/group\/upgrade\/delphes\/PhaseII/../g' Delphes/card
 
 echo "----> Try generating some events?"
 echo $PWD
+cp ../$2 .
 ./bin/mg5_aMC $2
 
 
