@@ -1,3 +1,3 @@
 install collier 
 install ninja 
-exit
+quit

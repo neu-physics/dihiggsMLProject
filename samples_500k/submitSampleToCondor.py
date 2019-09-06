@@ -84,8 +84,8 @@ while( nEventsSubmitted < int(args.nTotalEvents)):
     subjobRange = '{0}-{1}'.format(nEventsSubmitted, (nEventsSubmitted + nEventsPerJob) )
     subjobCMDFile = '{0}_{1}.cmd'.format( str(args.inputCMDFile)[:-4], subjobRange) 
     os.system("cp {0} {1}".format( args.inputCMDFile, subjobCMDFile ))
-    os.system("sed -i 's/set nevents 100/set nevents {0}/g' {1}".format( nEventsPerJob, subjobCMDFile ))
-    os.system("sed -i 's/set iseed 1/set iseed {0}/g' {1}".format( int(nEventsSubmitted / nEventsPerJob) , subjobCMDFile ))
+    os.system("sed -i 's/set nevents /set nevents {0}/g' {1}".format( nEventsPerJob, subjobCMDFile ))
+    os.system("sed -i 's/set iseed /set iseed {0}/g' {1}".format( int(nEventsSubmitted / nEventsPerJob) , subjobCMDFile ))
 
     if ( not os.path.exists("/eos/uscms/store/user/benjtann/upgrade/samples/{0}/{1}".format(args.outputDir, subjobRange)) ):
         os.system("mkdir /eos/uscms/store/user/benjtann/upgrade/samples/{0}/{1}".format(args.outputDir, subjobRange))
@@ -102,7 +102,7 @@ while( nEventsSubmitted < int(args.nTotalEvents)):
     os.system("echo Should_Transfer_Files = YES >> {0}".format(jdl_filename))
     os.system("echo WhenToTransferOutput = ON_EXIT >> {0}".format(jdl_filename))
     os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
-    os.system("echo Transfer_Input_Files = madgraphGenerate.csh >> {0}".format(jdl_filename))
+    os.system("echo Transfer_Input_Files = installPackages1.cmd installPackages2.cmd installPackages3.cmd pythia8_install.sh madgraphGenerate.csh >> {0}".format(jdl_filename))
     os.system("echo Output = {0}/condor_out/outfile_{1}.out  >> {2}".format(args.outputDir, subjobRange, jdl_filename))
     os.system("echo Error = {0}/condor_err/outfile_{1}.err >> {2}".format(args.outputDir, subjobRange, jdl_filename))
     os.system("echo Log = {0}/condor_logs/outfile_{1}.log >> {2}".format(args.outputDir, subjobRange, jdl_filename))

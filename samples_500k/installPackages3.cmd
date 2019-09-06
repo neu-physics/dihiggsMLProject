@@ -1,0 +1,4 @@
+install mg5amc_py8_interface
+install Delphes
+install ExRootAnalysis
+quit
