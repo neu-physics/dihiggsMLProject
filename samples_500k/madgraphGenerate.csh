@@ -9,10 +9,10 @@ source /cvmfs/sft.cern.ch/lcg/views/LCG_89/x86_64-slc6-gcc62-opt/setup.sh # SLC6
 
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/MG5_aMC_v2.6.6.tar.gz .
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/delphes/PhaseII/MinBias_100k.pileup .
-#xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages1.cmd .
-#xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages2.cmd .
-#xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages3.cmd .
-#xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/finishPythiaInstall.sh .
+xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages1.cmd .
+xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages2.cmd .
+xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/installPackages3.cmd .
+xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/pythia8_install.sh .
 
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/samples/$1/$2 .
 
