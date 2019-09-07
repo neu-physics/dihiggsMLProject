@@ -39,8 +39,8 @@ cp Delphes/cards/CMS_PhaseII/trackMomentumResolution.tcl Template/Common/Cards/
 cp Delphes/cards/CMS_PhaseII/muonTightId.tcl Template/Common/Cards/
 cp Delphes/cards/CMS_PhaseII/muonLooseId.tcl Template/Common/Cards/
 echo "----> sed Delphes card for pileup location"
-sed -i 's/\/eos\/cms\/store\/group\/upgrade\/delphes\/PhaseII/../g' Delphes/cards/CMS_PhaseII/CMS_PhaseII_0PU_v02.tcl
-
+sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_0PU_v02.tcl
+sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v02.tcl
 
 echo "----> Try generating some events?"
 echo $PWD
@@ -55,9 +55,8 @@ echo "List all run files"
 ls ./*/Events/run_01*/*
 echo "*******************************************"
 OUTDIR=root://cmseos.fnal.gov//store/user/benjtann/upgrade/samples/$1/
-echo "xrdcp output for condor"
-#cat input/mg5_configuration.txt
 
+echo ">> xrdcp config files"
 for FILE in ./input/*.txt
 do
   echo "xrdcp -f ${FILE} ${OUTDIR}/${FILE}"
@@ -71,6 +70,23 @@ do
   rm ${FILE}
 done
 
+
+echo " >> xrdcp .log files"
+for FILE in ./*/Events/run_01*/*.log
+do
+  echo "xrdcp -f ${FILE} ${OUTDIR}/${FILE}"
+  xrdcp -f ${FILE} ${OUTDIR}/${FILE} 2>&1
+  XRDEXIT=$?
+  if [[ $XRDEXIT -ne 0 ]]; then
+    rm *.root
+    echo "exit code $XRDEXIT, failure in xrdcp"
+    exit $XRDEXIT
+  fi
+  rm ${FILE}
+done
+
+
+echo " >> xrdcp .root files"
 for FILE in ./*/Events/run_01*/*.root
 do
   echo "xrdcp -f ${FILE} ${OUTDIR}/${FILE}"
