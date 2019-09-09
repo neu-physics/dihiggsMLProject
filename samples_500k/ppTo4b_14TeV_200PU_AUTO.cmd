@@ -19,7 +19,6 @@ output ppTo4b_14TeV_200PU_AUTO-v2
 launch ppTo4b_14TeV_200PU_AUTO-v2
        shower=Pythia8
        detector=Delphes
-       madspin=ON
        set iseed  # rnd seed 
        set ebeam1 7000.0 # beam 1 total energy in GeV
        set ebeam2 7000.0 # beam 2 total energy in GeV
