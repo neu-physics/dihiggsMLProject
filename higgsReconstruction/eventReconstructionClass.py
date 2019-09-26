@@ -382,8 +382,8 @@ class eventReconstruction:
                 
                 if self.l_jetBTag[_iEvent][iJet] == 1:
                     self.nBTags += 1
-                    if self.requireTags:# and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
-                    #if self.requireTags and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
+                    #if self.requireTags:# and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
+                    if self.requireTags and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
                         if self.ptOrdered:
                             _added = False
                             for index in range(0, len(self.jetIndices)):
