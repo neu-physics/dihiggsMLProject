@@ -65,6 +65,9 @@ class eventReconstruction:
         self.matchedQuarksToJets = {}
         self.jetVectorDict = {}
         self.quarkVectorDict = {}
+        self.jetCutflow = {'all':0, 'pt+eta':0, 'tagged':0, 'added':0}
+        self.jetCounter = {'0':0, '1':0, '2':0, '3':0, '4':0, '5':0, '6':0, '7':0}
+        self.matchedCounter = {'0':0, '1':0, '2':0, '3':0, '4':0, '5':0, '6':0, '7':0}
 
         # Branch Definitions
         self.delphesFile      = uproot.rootio.TObject
@@ -120,6 +123,10 @@ class eventReconstruction:
         self.writeDataForTraining()
 
         print( "Finished processing {0} events...".format(self.delphesFile._fEntries) )
+
+        print('jetCounter', self.jetCounter)
+        print('matchedCounter', self.matchedCounter)
+        print('jetCutflow', self.jetCutflow)
 
         return
 
@@ -374,25 +381,31 @@ class eventReconstruction:
         self.jetIndices = []
 
         for iJet in range(0, len(self.l_jetPt[_iEvent])): 
+            self.jetCutflow['all'] += 1
+
             if self.l_jetPt[_iEvent][iJet] > self.minJetPt and abs(self.l_jetEta[_iEvent][iJet]) < self.maxJetAbsEta and self.l_jetMass[_iEvent][iJet]>0: 
                 # surpringly some jets (<1%) have negative mass. filter these out
+                self.jetCutflow['pt+eta'] += 1
                 self.nJets += 1
                 if not self.requireTags:
                     self.jetIndices.append(iJet)
                 
                 if self.l_jetBTag[_iEvent][iJet] == 1:
+                    self.jetCutflow['tagged'] += 1
                     self.nBTags += 1
-                    if self.requireTags:# and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
-                    #if self.requireTags and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
+                    #if self.requireTags:# and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
+                    if self.requireTags and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
                         if self.ptOrdered:
                             _added = False
                             for index in range(0, len(self.jetIndices)):
                                 if self.l_jetPt[_iEvent][iJet] > self.l_jetPt[_iEvent][index] and _added==False:
                                     self.jetIndices.insert(index, iJet)
                                     _added = True
+                                    self.jetCutflow['added'] += 1
                             
                             if _added == False:
                                 self.jetIndices.append(iJet)
+                                self.jetCutflow['added'] += 1
                         else:
                             self.jetIndices.append(iJet)
         
@@ -775,7 +788,7 @@ class eventReconstruction:
         self.matchedQuarksToJets = {}
         self.jetVectorDict = {}
         self.quarkVectorDict = {}
-        
+
         # Return if QCD --> no truth to assign
         if self.isDihiggsMC == False:
 
@@ -786,12 +799,16 @@ class eventReconstruction:
                     self.jetVectorDict[iJet] = _tlv_jet
             return
 
+        self.jetCounter[str(len(self.jetVectorDict))] += 1
         self.getDictOfQuarksMatchedToJets( _iEvent )
+        self.matchedCounter[str(len(self.jetVectorDict))] += 1
+
         # Check if a) all matches have one and only match between quark and jet, b) four jets are matched, c) 4 unique reconstructed jets are selected
         _jetIndexList = [recoIndex[0] for recoIndex in self.matchedQuarksToJets.values()]
         if all(len(matchedJets) == 1 for matchedJets in self.matchedQuarksToJets.values()) and len(self.matchedQuarksToJets)==4  and (len(set(_jetIndexList)) == len(_jetIndexList)):     
             self.thisEventIsMatchable = True
             self.countEvents( 'Matchable' )
+
 
         return 
 
