@@ -6,30 +6,30 @@ import pandas as pd
 import numpy as np
 import itertools, csv
 
-massWidth = 30 #GeV
+
 
 class sequentialOneDimAnalyzer:
     
-    def __init__ (self, _inputSignalFile, _inputBackgroundFile, _variables, _isTestRun = False, _metrics=['S/B', 'S/sqrt(B)', 'S/sqrt(S+B)']):
-        self.inputSignalData   = pd.read_csv(_inputSignalFile)
-        self.inputBkgData      = pd.read_csv(_inputBackgroundFile)
+    def __init__ (self, _inputSignalData, _inputBackgroundData, _variables, _isTestRun = False, _metrics=['S/B', 'S/sqrt(B)', 'S/sqrt(S+B)']):
+        self.inputSignalData   = _inputSignalData
+        self.inputBkgData      = _inputBackgroundData
         self.variables         = _variables
         self.isTestRun         = _isTestRun
         self.metrics           = _metrics
-        
+
         # Class Defaults
         self.reducedSignalData = self.inputSignalData[self.variables]
         self.reducedBkgData    = self.inputBkgData[self.variables]
         self.orderedCuts_byMetric   = {}
         self.dictOfCutsByEfficiency = {}
-
+        self.massWidth = 30 # GeV
 
         
     ##############################################################
     ##                           MAIN                           ##
     ##############################################################
 
-    def runAnalysis(self, _dumpPlots=False):
+    def analyze(self, _dumpPlots=False):
 
         # *** 0. Tell user what variables under consideration and make two simple plots
         print("Analying variables: ", self.reducedSignalData.columns)
@@ -55,8 +55,11 @@ class sequentialOneDimAnalyzer:
         print("*** 4. Yields using constant {0}% efficiency cuts".format(efficiencyToCalculate*100))
         self.calculateYieldsAfterCuts(efficiencyToCalculate)
 
+        # *** 5. Let User calculate some stuff if they want
+        print("*** Free Form!! ***\n Call previous cuts using <analyzer>.dictOfCutsByEfficiency, set new datasets using <analyzer.setReducedData(_signal, _background), get yields using <analyzer>.calculateYieldsAfterCuts(_eff) \n*******************************\n")
         
         return
+
 
     
     ##############################################################
@@ -109,6 +112,16 @@ class sequentialOneDimAnalyzer:
 
     
     ##############################################################
+    ##                 FUNCTIONS TO SET MEMBERS                 ##
+    ##############################################################
+    def setReducedData(self, _reducedSignal, _reducedBackground):
+
+        self.reducedSignalData = _reducedSignal
+        self.reducedBkgData    = _reducedBackground
+
+        
+
+    ##############################################################
     ##              FUNCTIONS TO HANDLE ANALYSIS                ##
     ##############################################################
     def returnCutValueByConstantEfficiency(self, _variable, _signal, _background, _eff, _inequality = '>'):
@@ -121,31 +134,39 @@ class sequentialOneDimAnalyzer:
         
         _minVal = int(min(min(_background), min(_signal))) if 'mass' not in _variable else int(min(min(_background), min(_signal))) - int(min(min(_background), min(_signal)))%5
         _maxVal = int(max(max(_background), max(_signal))) if 'mass' not in _variable else int(max(max(_background), max(_signal))) - int(max(max(_background), max(_signal)))%5
+        _counts, _bins = np.histogram(_signal, bins=100, range=[_minVal,_maxVal])       
+        _peakBin = _counts.argmax()
+        _peakVal = int( (_bins[_peakBin]+_bins[_peakBin+1])/2 )
+        
         if 'mass' in _variable:
-            #_cuts = list(range(_minVal, _maxVal, _stepSize))
-            _cuts = list(range(0, _maxVal, 5))
-            #print(_maxVal, max(_background), max(_signal))
+            _cuts = [ [max(0,_peakVal-_width), min(_maxVal, _peakVal+_width)] for _width in list(range(0, int(_maxVal), 2)) ]
+            print('peakVal for {0} at {1}'.format( _variable, _peakVal ))
         elif 'deltaR' in _variable:
-            #_cuts = np.linspace(_minVal, _maxVal, 100)
             _cuts = np.linspace(0, 5, 101)
+        else:
+            _cuts = np.linspace(0, _maxVal, 101)
             
             
         for iCutValue in _cuts:
-            if _inequality == '<':
-                _nSignal = sum( value < iCutValue for value in _signal)
-                _nBackground = sum( value < iCutValue for value in _background)
-            elif _inequality == '>':
-                _nSignal = sum( value > iCutValue for value in _signal)
-                _nBackground = sum( value > iCutValue for value in _background)
+            if 'mass' in _variable:
+                _nSignal = sum( (value > iCutValue[0] and value < iCutValue[1]) for value in _signal)
+                _nBackground = sum( (value > iCutValue[0] and value < iCutValue[1]) for value in _background)                
             else:
-                print("Unknown inequality operator {0}. EXITING".format(_inequality))
-                return _bestCutValue, _nTotalSignal, _nTotalBackground
-            
+                if _inequality == '<':
+                    _nSignal = sum( value < iCutValue for value in _signal)
+                    _nBackground = sum( value < iCutValue for value in _background)
+                elif _inequality == '>':
+                    _nSignal = sum( value > iCutValue for value in _signal)
+                    _nBackground = sum( value > iCutValue for value in _background)
+                else:
+                    print("Unknown inequality operator {0}. EXITING".format(_inequality))
+                    return _bestCutValue, _nTotalSignal, _nTotalBackground
+
             # safety check to avoid division by 0
             if _nBackground == 0:
                 continue
-        
-            if _inequality == '<':
+
+            if _inequality == '<' or 'mass' in _variable:
                 if _nSignal / _nTotalSignal >= _eff:
                     _bestCutValue = iCutValue
                     return _bestCutValue, _nSignal, _nBackground
@@ -165,7 +186,7 @@ class sequentialOneDimAnalyzer:
     
         _bestSignificance = -1
         _bestCutValue = -1
-        _massWidth = massWidth #GeV
+        _massWidth = self.massWidth #GeV
         _nTotalSignal =len(_signal) 
         _nTotalBackground =len(_background) 
         _cuts = []
@@ -248,8 +269,8 @@ class sequentialOneDimAnalyzer:
             _unprocessedVariables.remove(_iBestVariable)
             _orderedVariableAndCutDict[_iBestVariable] = [_iBestCut, _iBestSignificance]
             if 'mass' in _iBestVariable:
-                _signalAfterCuts = _signalAfterCuts[ (_signalAfterCuts[_iBestVariable] > _iBestCut) & (_signalAfterCuts[_iBestVariable]< (_iBestCut + massWidth))]
-                _backgroundAfterCuts = _backgroundAfterCuts[ (_backgroundAfterCuts[_iBestVariable] > _iBestCut) & (_backgroundAfterCuts[_iBestVariable]< (_iBestCut + massWidth))]
+                _signalAfterCuts = _signalAfterCuts[ (_signalAfterCuts[_iBestVariable] > _iBestCut) & (_signalAfterCuts[_iBestVariable]< (_iBestCut + self.massWidth))]
+                _backgroundAfterCuts = _backgroundAfterCuts[ (_backgroundAfterCuts[_iBestVariable] > _iBestCut) & (_backgroundAfterCuts[_iBestVariable]< (_iBestCut + self.massWidth))]
             else:
                 _signalAfterCuts = _signalAfterCuts[ _signalAfterCuts[_iBestVariable] < _iBestCut ]
                 _backgroundAfterCuts = _backgroundAfterCuts[ _backgroundAfterCuts[_iBestVariable] < _iBestCut ]
@@ -268,8 +289,13 @@ class sequentialOneDimAnalyzer:
             sortedBackground = np.sort(_background[varName].values)
             
             cutVal, nSig, nBkg = self.returnCutValueByConstantEfficiency( varName, sortedSignal, sortedBackground, _eff, _inequality)
-            print('Cut of {4} {0} on {1} yields nSig = {2} and nBkg = {3}'.format(round(cutVal,2), varName, nSig, nBkg, _inequality))    
-            variablesAndCuts_[varName] = round(cutVal,2)
+            if isinstance(cutVal, list): # mass variables return window
+                print('Cut of {0} < {1} < {2} yields nSig = {3} and nBkg = {4}'.format(round(cutVal[0],2), varName, round(cutVal[1],2), nSig, nBkg))
+                variablesAndCuts_[varName] = [round(cutVal[0],2), round(cutVal[1],2)]
+            else:
+                print('Cut of {4} {0} on {1} yields nSig = {2} and nBkg = {3}'.format(round(cutVal,2), varName, nSig, nBkg, _inequality))    
+                variablesAndCuts_[varName] = round(cutVal,2)
+
     
         return variablesAndCuts_
 
@@ -292,8 +318,16 @@ class sequentialOneDimAnalyzer:
                 _sortedSignal = np.sort(_signalAfterCuts[iVariable].values)
                 _sortedBackground = np.sort(_backgroundAfterCuts[iVariable].values)
                 
-                _signalAfterCuts = _signalAfterCuts[ (_signalAfterCuts[iVariable] > _cutValue)]
-                _backgroundAfterCuts = _backgroundAfterCuts[ (_backgroundAfterCuts[iVariable] > _cutValue)]
+                if 'mass' in iVariable:
+                    _signalAfterCuts = _signalAfterCuts[ np.logical_and(_signalAfterCuts[iVariable] > _cutValue[0], _signalAfterCuts[iVariable] < _cutValue[1]) ]
+                    _backgroundAfterCuts = _backgroundAfterCuts[ np.logical_and(_backgroundAfterCuts[iVariable] > _cutValue[0], _backgroundAfterCuts[iVariable] < _cutValue[1]) ]
+                else:
+                    if _inequality == '>':
+                        _signalAfterCuts = _signalAfterCuts[ (_signalAfterCuts[iVariable] > _cutValue)]
+                        _backgroundAfterCuts = _backgroundAfterCuts[ (_backgroundAfterCuts[iVariable] > _cutValue)]
+                    elif _inequality == '<':
+                        _signalAfterCuts = _signalAfterCuts[ (_signalAfterCuts[iVariable] < _cutValue)]
+                        _backgroundAfterCuts = _backgroundAfterCuts[ (_backgroundAfterCuts[iVariable] < _cutValue)]
                 
                 _nSignal = len(_signalAfterCuts) * (_nTotalBackground / _nTotalSignal )
                 _nBackground = len(_backgroundAfterCuts) 
