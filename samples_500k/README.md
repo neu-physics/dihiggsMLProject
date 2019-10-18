@@ -42,3 +42,15 @@ C) Activate the environment, e.g. $> source <name of virtualenv>/bin/activate
    $> cp Delphes/cards/CMS_PhaseII/muonLooseId.tcl Templates/Common/Cards/
 
 9) You may need to edit the line in CMS_PhaseII_[0,200]PU_v02.tcl that specifies the location of the MinBias file. This is necessary even for 0PU for reasons
+
+
+# Cross-sections for 500k samples from Madgraph
+No analysis-level cuts. Errors are quadrature sums of all smaller production files, i.e. it's a very conservative over-estimation
+
+## Dihiggs
+Cross-section = 12.356281407 +/- 0.91194881995 fb 
+Total Effective Lumi = 33034.1752419 pb
+
+## QCD
+Cross-section = 441866.0 +/- 30507.3550476 fb 
+Total Effective Lumi = 1.35792436483 pb
