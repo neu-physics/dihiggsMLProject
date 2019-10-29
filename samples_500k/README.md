@@ -49,8 +49,10 @@ No analysis-level cuts. Errors are quadrature sums of all smaller production fil
 
 ## Dihiggs
 Cross-section = 12.356281407 +/- 0.91194881995 fb 
-Total Effective Lumi = 33034.1752419 pb
+
+Total Effective Lumi = 33034.1752419 fb-1
 
 ## QCD
 Cross-section = 441866.0 +/- 30507.3550476 fb 
-Total Effective Lumi = 1.35792436483 pb
+
+Total Effective Lumi = 1.35792436483 fb-1

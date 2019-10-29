@@ -884,7 +884,7 @@ class eventReconstruction:
 
     def writeDataForTraining(self):
 
-        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning.csv'
+        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning_{0}.csv'.format(self.datasetName)
         _csvFile = open(_csvName, mode='w')
         _writer = csv.DictWriter(_csvFile, fieldnames=self.outputVariableNames)
         _writer.writeheader()
