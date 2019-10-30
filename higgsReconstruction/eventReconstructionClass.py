@@ -28,6 +28,7 @@ class eventReconstruction:
         self.maxJetAbsEta = 2.5
         self.nJetsToStore = 4
         self.requireTags = True
+        self.requireNTags = 4
         self.ptOrdered = True
         self.considerFirstNjetsInPT = -1
         self.saveAlgorithm = 'equalDijetMass'
@@ -111,7 +112,8 @@ class eventReconstruction:
 
             # *** 2. Get jet reco information
             self.getRecoInformation( iEvt )
-            if (self.requireTags==True and self.nBTags < 4) or (self.requireTags==False and self.nJets < 4): continue 
+            #if (self.requireTags==True and self.nBTags < self.requireNTags) or (self.requireTags==False and self.nJets < 4): continue 
+            if (self.requireTags==True and ( (self.nBTags < self.requireNTags) or len(self.jetIndices) < 4 )) or (self.requireTags==False and self.nJets < 4): continue 
 
             # *** 3. Do some quark-to-jet truth matching
             self.truthToRecoMatching( iEvt )
@@ -231,6 +233,11 @@ class eventReconstruction:
         self.requireTags = bool(_requireTags)
     def getRequireTags(self):
         print ("Require only b-tagged jets: ", self.requireTags)
+
+    def setRequireNTags(self, _requireNTags):
+        self.requireNTags = int(_requireNTags)
+    def getRequireNTags(self):
+        print ("Require at least N b-tagged jets: N = ", self.requireNTags)
 
     def setPtOrdered(self, _ptOrdered):
         self.ptOrdered = bool(_ptOrdered)
@@ -375,10 +382,33 @@ class eventReconstruction:
 
         return 
 
+
+    def addJetToList(self, _orderedJetIndices, _iEvent, _iJet):
+        """ add jet to list of indices according to pt ordering (or not) depending on user specifications """
+
+        if self.ptOrdered:
+            _added = False
+            for index in range(0, len(_orderedJetIndices)):
+                if self.l_jetPt[_iEvent][_iJet] > self.l_jetPt[_iEvent][index] and _added==False:
+                    _orderedJetIndices.insert(index, _iJet)
+                    _added = True
+                    self.jetCutflow['added'] += 1
+                    
+            if _added == False:
+                _orderedJetIndices.append(_iJet)
+                self.jetCutflow['added'] += 1
+        else:
+            _orderedJetIndices.append(_iJet)
+        
+        return _orderedJetIndices
+
+    
     def returnNumberAndListOfJetIndicesPassingCuts(self, _iEvent):
         self.nJets = 0
         self.nBTags = 0
         self.jetIndices = []
+        untaggedJetIndices = []
+        taggedJetIndices   = []
 
         for iJet in range(0, len(self.l_jetPt[_iEvent])): 
             self.jetCutflow['all'] += 1
@@ -387,34 +417,48 @@ class eventReconstruction:
                 # surpringly some jets (<1%) have negative mass. filter these out
                 self.jetCutflow['pt+eta'] += 1
                 self.nJets += 1
-                if not self.requireTags:
-                    self.jetIndices.append(iJet)
-                
-                if self.l_jetBTag[_iEvent][iJet] == 1:
+         
+
+                if self.l_jetBTag[_iEvent][iJet] == 0: # un-tagged jets
+                    untaggedJetIndices = self.addJetToList( untaggedJetIndices, _iEvent, iJet)
+               
+                elif self.l_jetBTag[_iEvent][iJet] == 1: # b-tagged jets
                     self.jetCutflow['tagged'] += 1
                     self.nBTags += 1
-                    #if self.requireTags:# and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
-                    if self.requireTags and (self.considerFirstNjetsInPT==-1 or (self.considerFirstNjetsInPT!=-1 and len(self.jetIndices)<self.considerFirstNjetsInPT)):
-                        if self.ptOrdered:
-                            _added = False
-                            for index in range(0, len(self.jetIndices)):
-                                if self.l_jetPt[_iEvent][iJet] > self.l_jetPt[_iEvent][index] and _added==False:
-                                    self.jetIndices.insert(index, iJet)
-                                    _added = True
-                                    self.jetCutflow['added'] += 1
-                            
-                            if _added == False:
-                                self.jetIndices.append(iJet)
-                                self.jetCutflow['added'] += 1
-                        else:
-                            self.jetIndices.append(iJet)
-        
-            #if len(_jetIndices)==4:
-            #    break
-            
-        #print (_jetIndices)
-        #print (self.nJets, self.nBTags, len(_jetIndices), [_jetPt[g] for g in _jetIndices])
-    
+                    taggedJetIndices = self.addJetToList( taggedJetIndices, _iEvent, iJet)
+
+        # ** set indices for consideration depending on user specificiations
+        if self.requireTags:
+             if self.considerFirstNjetsInPT==-1:
+                 self.jetIndices.extend(taggedJetIndices)
+                 self.jetIndices.extend(untaggedJetIndices)
+             else: # need to take a particular number of jets
+                 if len(taggedJetIndices) >= self.considerFirstNjetsInPT:
+                     self.jetIndices.extend( taggedJetIndices[:self.considerFirstNjetsInPT] )
+                 else:
+                     self.jetIndices.extend( taggedJetIndices ) # add all b-tagged jets when N_tags < N_to-consider
+                     addNUntaggedJets = self.considerFirstNjetsInPT - len(self.jetIndices)
+                     self.jetIndices.extend( untaggedJetIndices[:addNUntaggedJets] ) # then add enough un-tagged jets to make up the difference
+        else: # no b-tagging requirements, so only by ordering of jetIndex lists
+            if self.considerFirstNjetsInPT==-1:
+                self.jetIndices.extend(taggedJetIndices)
+                self.jetIndices.extend(untaggedJetIndices)
+            else: # take via pt orderding. WARNING [FIXME maybe] that this logic will break down if not picking jets by pt-ordering.. it's kind of hard-coded into the algorithm here
+                i_taggedJet = 0
+                i_untaggedJet = 0
+                while len(self.jetIndices) < self.considerFirstNjetsInPT:
+                    i_taggedPt = self.l_jetPt[ taggedJetIndices[ i_taggedJet ] ]
+                    i_untaggedPt = self.l_jetPt[ untaggedJetIndices[ i_untaggedJet ] ]
+                    
+                    if i_taggedPt > i_untaggedPt:
+                        self.jetIndices.append(i_taggedJet)
+                        i_taggedJet += 1
+                    elif i_untaggedPt > i_taggedPt:
+                        self.jetIndices.append(i_untaggedJet)
+                        i_untaggedJet += 1
+
+
+        #print (self.nJets, self.nBTags, len(self.jetIndices), self.jetIndices, [self.l_jetPt[_iEvent][g] for g in self.jetIndices])
         return 
 
 
@@ -884,7 +928,7 @@ class eventReconstruction:
 
     def writeDataForTraining(self):
 
-        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning.csv'
+        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning_{0}.csv'.format(self.datasetName)
         _csvFile = open(_csvName, mode='w')
         _writer = csv.DictWriter(_csvFile, fieldnames=self.outputVariableNames)
         _writer.writeheader()
