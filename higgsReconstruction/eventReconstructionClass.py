@@ -63,6 +63,7 @@ class eventReconstruction:
         self.nBTags = 0
         self.quarkIndices  = []
         self.jetIndices    = []
+        self.allJetIndices = []
         self.matchedQuarksToJets = {}
         self.jetVectorDict = {}
         self.quarkVectorDict = {}
@@ -248,7 +249,6 @@ class eventReconstruction:
     def printAllOptions(self):
         print("=========   Options for {0}  =========".format(self.datasetName))
         self.getTransparency()
-        self.getNJetsToStore()
         self.getQuarkToJetCutDR()
         self.getHiggsMass()
         self.getHiggsWidth()
@@ -258,6 +258,7 @@ class eventReconstruction:
         self.getRequireTags()
         self.getPtOrdered()
         self.getConsiderFirstNjetsInPT()
+        self.getNJetsToStore()
         print("======================================".format(self.datasetName))
 
 
@@ -407,6 +408,7 @@ class eventReconstruction:
         self.nJets = 0
         self.nBTags = 0
         self.jetIndices = []
+        self.allJetIndices = []
         untaggedJetIndices = []
         taggedJetIndices   = []
 
@@ -458,6 +460,24 @@ class eventReconstruction:
                         i_untaggedJet += 1
 
 
+        # add block to make list of jet indices up to nJetsToStore which can be greater than considerFirstNjetsInPT. these are jets for low-level analysis and not for use in higgs reconstruction algorithm
+        self.allJetIndices = self.jetIndices.copy()
+        i_jetParser = 0
+        while (len(self.allJetIndices) < self.nJetsToStore):
+            # run loop until either a) allJetIndices is length of nJetsToStore or break if exhausted event jetPt vector 
+            if i_jetParser > len(self.l_jetPt[_iEvent]):
+                break
+
+            # append jet index if not already in list of indices
+            if i_jetParser not in self.allJetIndices:
+                self.allJetIndices.append(i_jetParser)
+
+            # bump up iterator
+            i_jetParse += 1
+
+        # trim allJetIndices if necessary but this should never happen unless user has specified some weird shit
+        self.allJetIndices = self.allJetIndices[:self.nJetsToStore]
+        
         #print (self.nJets, self.nBTags, len(self.jetIndices), self.jetIndices, [self.l_jetPt[_iEvent][g] for g in self.jetIndices])
         return 
 
@@ -465,7 +485,7 @@ class eventReconstruction:
     def getDictOfQuarksMatchedToJets(self, _iEvent ): 
     
         for iQuark in self.quarkIndices:
-            _tlv_quark = TLorentzVector.PtEtaPhiMassLorentzVector( self.l_genPt[_iEvent][iQuark], self.l_genEta[_iEvent][iQuark], self.l_genPhi[_iEvent][iQuark], self.l_genMass[_iEvent][iQuark])
+            _tlv_quark = TLorentzVector.PtEtaPhiMassLorentzVector( self.l_genPt[_iEvent][iQuark], self.l_genEta[_iEvent][iQuark], self.l_genPhi[_iEvent][iQuark], self.l_genMass[_iEvent][iQuark]) 
             if iQuark not in self.quarkVectorDict.keys():
                 self.quarkVectorDict[iQuark] = _tlv_quark
             
@@ -762,7 +782,8 @@ class eventReconstruction:
         _jetVariables = ['pt', 'eta', 'phi', 'mass', 'px', 'py', 'pz', 'energy', 'btag']
     
         for _variable in _jetVariables:
-            _variableNameList.extend( ['jet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,self.nJetsToStore+1)])
+            _variableNameList.extend( ['recoJet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,5)]) # jets used in selected dihiggs reconstruction (should always be 4)
+            _variableNameList.extend( ['jet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,self.nJetsToStore+1)]) # for all jets by pT ... or tagging? idk maybe b-tagged first and then pt ordered
     
         return _variableNameList
 
@@ -805,6 +826,7 @@ class eventReconstruction:
                           self.nJets, self.nBTags,
                           self.thisEventIsMatchable ]
         if self.saveLowLevelVariablesForTraining==True:
+            # jets used in dihiggs reconstruction
             _variableList.extend( [_tlv_h1_j0.pt, _tlv_h1_j1.pt, _tlv_h2_j2.pt, _tlv_h2_j3.pt, 
                                    _tlv_h1_j0.eta, _tlv_h1_j1.eta, _tlv_h2_j2.eta, _tlv_h2_j3.eta,
                                    _tlv_h1_j0.phi, _tlv_h1_j1.phi, _tlv_h2_j2.phi, _tlv_h2_j3.phi,
@@ -815,6 +837,34 @@ class eventReconstruction:
                                    _tlv_h1_j0.energy, _tlv_h1_j1.energy, _tlv_h2_j2.energy, _tlv_h2_j3.energy,
                                    self.l_jetBTag[_iEvent][_jetPair1[0]], self.l_jetBTag[_iEvent][_jetPair1[1]], self.l_jetBTag[_iEvent][_jetPair2[0]], self.l_jetBTag[_iEvent][_jetPair2[1]]
                                ] )
+
+            # save info on all jets up to self.nJetsToStore
+            allJetVectors = [ TLorentzVector.PtEtaPhiMassLorentzVector( self.l_jetPt[_iEvent][iJet], self.l_jetEta[_iEvent][iJet], self.l_jetPhi[_iEvent][iJet], self.l_jetMass[_iEvent][iJet]) for iJet in self.allJetIndices ]
+            allJetBTags   = [ self.l_jetBTag[_iEvent][iJet] for iJet in self.allJetIndices ]
+            allJetVectors = allJetVectors[:self.nJetsToStore] if len(allJetVectors) > self.nJetsToStore else allJetVectors
+            allJetBTags   = allJetBTags[:self.nJetsToStore] if len(allJetBTags) > self.nJetsToStore else allJetBTags
+            while len(allJetVectors) < self.nJetsToStore:
+                allJetVectors.append( TLorentzVector.PtEtaPhiMassLorentzVector(0, 0, 0, 0) ) # zero-padding
+                allJetBTags.append( -1 ) # zero-padding
+
+            allJetPt     = [ i_tlv.pt for i_tlv in allJetVectors]
+            allJetEta    = [ i_tlv.eta for i_tlv in allJetVectors]
+            allJetPhi    = [ i_tlv.phi for i_tlv in allJetVectors]
+            allJetMass   = [ i_tlv.mass for i_tlv in allJetVectors]
+            allJetPx     = [ i_tlv.x for i_tlv in allJetVectors]
+            allJetPy     = [ i_tlv.y for i_tlv in allJetVectors]
+            allJetPz     = [ i_tlv.z for i_tlv in allJetVectors]
+            allJetEnergy = [ i_tlv.energy for i_tlv in allJetVectors]
+
+            _variableList.extend( allJetPt )
+            _variableList.extend( allJetEta )
+            _variableList.extend( allJetPhi )
+            _variableList.extend( allJetMass )
+            _variableList.extend( allJetPx )
+            _variableList.extend( allJetPy )
+            _variableList.extend( allJetPz )
+            _variableList.extend( allJetEnergy )
+            _variableList.extend( allJetBTag )
             
         return _variableList
 
