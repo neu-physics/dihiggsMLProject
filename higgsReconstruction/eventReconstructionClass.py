@@ -36,7 +36,6 @@ class eventReconstruction:
 
         # Global Variables 
         self.outputDataForLearning = []
-        self.outputVariableNames = self.createOutputVariableList()
         self.pairingAlgorithms = ['minHarmonicMeanDeltaR', 'closestDijetMassesToHiggs', 'equalDijetMass', 'equalDeltaR', 'dijetMasses']
         self.variableCategoryDict = {'All':[], 'Matchable':[], 'Best':[], 'Best+Matchable':[], 'Correct':[]}
 
@@ -99,6 +98,8 @@ class eventReconstruction:
 
         self.printAllOptions()
         self.initFileAndBranches()
+        self.outputVariableNames = self.createOutputVariableList()
+
 
         for iEvt in range(0,self.delphesFile._fEntries):
             # *** 0. Kick-out condition for testing
@@ -465,7 +466,7 @@ class eventReconstruction:
         i_jetParser = 0
         while (len(self.allJetIndices) < self.nJetsToStore):
             # run loop until either a) allJetIndices is length of nJetsToStore or break if exhausted event jetPt vector 
-            if i_jetParser > len(self.l_jetPt[_iEvent]):
+            if i_jetParser > len(self.l_jetPt[_iEvent])-1:
                 break
 
             # append jet index if not already in list of indices
@@ -473,7 +474,7 @@ class eventReconstruction:
                 self.allJetIndices.append(i_jetParser)
 
             # bump up iterator
-            i_jetParse += 1
+            i_jetParser += 1
 
         # trim allJetIndices if necessary but this should never happen unless user has specified some weird shit
         self.allJetIndices = self.allJetIndices[:self.nJetsToStore]
@@ -783,8 +784,10 @@ class eventReconstruction:
     
         for _variable in _jetVariables:
             _variableNameList.extend( ['recoJet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,5)]) # jets used in selected dihiggs reconstruction (should always be 4)
-            _variableNameList.extend( ['jet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,self.nJetsToStore+1)]) # for all jets by pT ... or tagging? idk maybe b-tagged first and then pt ordered
-    
+
+        for _variable in _jetVariables:
+            _variableNameList.extend( ['jet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,self.nJetsToStore+1)]) # for all jets by pT ... b-tagged first and then pt ordered
+
         return _variableNameList
 
 
@@ -864,7 +867,7 @@ class eventReconstruction:
             _variableList.extend( allJetPy )
             _variableList.extend( allJetPz )
             _variableList.extend( allJetEnergy )
-            _variableList.extend( allJetBTag )
+            _variableList.extend( allJetBTags )
             
         return _variableList
 
