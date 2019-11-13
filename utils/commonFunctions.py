@@ -3,6 +3,7 @@
 ##  Purpose: Class to hold common functions for dihiggs work, e.g. lumi-scaling
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
@@ -13,8 +14,10 @@ def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True ):
 
     # *** 0. Set number of events and total HL-LHC lumi
     lumi_HLLHC = 3000 #fb-1
-    nEventsGen = 500e3
-
+    hh_nEventsGen = 500e3
+    qcd_nEventsGen = 2e6
+    nEventsGen = hh_nEventsGen if _isDihiggs else qcd_nEventsGen
+    
     # *** 1. Set appropriate cross-section for sample
     hh_xsec = 12.36 # fb
     qcd_xsec = 441866.0 # fb
@@ -42,11 +45,12 @@ def makeEqualSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, nEvent
     signal_labels   = signal_raw[ ['isSignal'] ]
     bkg_labels      = bkg_raw[ ['isSignal'] ]
 
-    # *** 1. Take first nEventsForXGB events for passing to XGB 
+    # *** 1A. Take first nEventsForXGB events for passing 1:1 signal-to-background to XGB 
     signal_reducedForXGB  = signal_reduced[:nEventsForXGB]
     bkg_reducedForXGB     = bkg_reduced[:nEventsForXGB]
     signal_labelsForXGB   = signal_labels[:nEventsForXGB]
     bkg_labelsForXGB      = bkg_labels[:nEventsForXGB]
+
 
     # *** 2. Combine bkg+signal for passing to XGB 
     all_reducedForXGB  = signal_reducedForXGB.append(bkg_reducedForXGB)
@@ -76,19 +80,25 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
     signal_labels   = signal_raw[ ['isSignal'] ]
     bkg_labels      = bkg_raw[ ['isSignal'] ]
 
-    # *** 1. Make equal-sized samples
-    nTotalEvents = min( len(signal_reduced), len(bkg_reduced))
-    print(nTotalEvents, len(signal_reduced), len(bkg_reduced))
+    ## *** 1A. Make equal-sized samples
+    #nTotalEvents = min( len(signal_reduced), len(bkg_reduced))
+    #print("N_sig = {0} , N_bkg = {1}".format(len(signal_reduced), len(bkg_reduced)))
     
-    signal_reducedForSplit  = signal_reduced[:nTotalEvents]
-    bkg_reducedForSplit     = bkg_reduced[:nTotalEvents]
-    signal_labelsForSplit   = signal_labels[:nTotalEvents]
-    bkg_labelsForSplit       = bkg_labels[:nTotalEvents]
+    #signal_reducedForSplit  = signal_reduced[:nTotalEvents]
+    #bkg_reducedForSplit     = bkg_reduced[:nTotalEvents]
+    #signal_labelsForSplit   = signal_labels[:nTotalEvents]
+    #bkg_labelsForSplit       = bkg_labels[:nTotalEvents]
 
-    # *** 2. Combine bkg+signal for passing to XGB 
+    # *** 1B. Take all 
+    print("N_sig = {0} , N_bkg = {1}".format(len(signal_reduced), len(bkg_reduced)))
+    signal_reducedForSplit  = signal_reduced
+    bkg_reducedForSplit     = bkg_reduced
+    signal_labelsForSplit   = signal_labels
+    bkg_labelsForSplit      = bkg_labels
+
+    # *** 2. Combine bkg+signal for passing to Split 
     all_dataForSplit  = signal_reducedForSplit.append(bkg_reducedForSplit)
     all_labelsForSplit   = signal_labelsForSplit.append(bkg_labelsForSplit)
-
 
     # *** 3. Make test/train split
     data_train, data_test, labels_train, labels_test = train_test_split(all_dataForSplit, all_labelsForSplit, test_size=_fractionEventsForTesting, shuffle= True)
@@ -114,23 +124,25 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     else:
         plt.title(_title)
     plt.xlabel(_xtitle)
-    plt.ylabel('N_events')
+    plt.ylabel('Events/Bin [A.U.]')
     _bins = np.linspace(_xMin, _xMax, _nBins)
-   
-    y_max = 0
-    for iLabel in _labels:
-        plt.hist(_dict[iLabel], _bins, alpha=0.5, density=_normed, label= iLabel+' Events')
-        
-        # get values of histgoram to find greatest y
-        #_y, _x, _ = plt.hist(_dict[iLabel])
-        #if (_y.max() > y_max):
-        #    y_max = _y.max()
+
     
+    for iLabel in _labels:
+        if _normed:
+            _weights = np.ones_like(_dict[iLabel]) / len(_dict[iLabel])
+            _counts_final, _bins_final, _patches_final = plt.hist(_dict[iLabel], bins=_bins, weights=_weights, alpha=0.5, label= iLabel+' Events')
+            #print(sum(_dict[iLabel]*_weights), sum(_counts_final))
+            
+        else:
+            plt.hist(_dict[iLabel], bins=_bins, alpha=0.5, label= iLabel+' Events')
+                    
+
     # set max y-value of histogram so there's room for legend
+    _yMax = 0.25 if _normed else _yMax
     axes = plt.gca()
     axes.set_ylim([0,_yMax])
-    #plt.ylim([0,1.2*y_max])
-    
+        
     #draw legend
     plt.legend(loc='upper left')
     #plt.text(.1, .1, s1)
@@ -211,3 +223,29 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
     print('nSig = {0} , nBkg = {1} with significance = {2} for {3} score > {4}'.format(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _variable, _bestCutValue) )
           
     return _bestSignificance, _bestCutValue
+
+
+def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
+    """ function to import datasets from .csv files"""
+
+    _qcd_csv_files = ['../data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
+                     '../data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
+                     '../data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
+                     '../data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
+                     '../data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
+    ]
+
+    _qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
+    #_qcd_raw = pd.read_csv('../samples_500k/qcd_outputDataForLearning.csv')
+    _qcd_raw['isSignal'] = 0
+
+    
+    _hh_raw = pd.read_csv('../data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv')
+    #_hh_raw = pd.read_csv('../samples_500k/dihiggs_outputDataForLearning.csv')
+    _hh_raw['isSignal'] = 1
+    _hh_raw = _hh_raw.drop('isMatchable', 1)
+
+
+    #_qcd_raw.drop("jet*)
+
+    return _hh_raw, _qcd_raw
