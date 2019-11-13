@@ -249,3 +249,18 @@ def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
     #_qcd_raw.drop("jet*)
 
     return _hh_raw, _qcd_raw
+
+def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
+    
+    _test_data['isSignal'] = _test_labels
+    
+    _test_signal_data = _test_data[ _test_data.isSignal==1 ]
+    _test_bkg_data    = _test_data[ _test_data.isSignal==0 ]
+
+    _test_signal_labels = _test_signal_data.isSignal
+    _test_bkg_labels    = _test_bkg_data.isSignal
+
+    _test_signal_data = _test_signal_data.drop('isSignal', axis=1)
+    _test_bkg_data = _test_bkg_data.drop('isSignal', axis=1)
+
+    return _test_signal_data.copy(), _test_signal_labels.copy(), _test_bkg_data.copy(), _test_bkg_labels.copy()
