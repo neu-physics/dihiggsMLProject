@@ -16,6 +16,8 @@ def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True ):
     lumi_HLLHC = 3000 #fb-1
     hh_nEventsGen = 500e3
     qcd_nEventsGen = 2e6
+    #qcd_nEventsGen = 500e3
+
     nEventsGen = hh_nEventsGen if _isDihiggs else qcd_nEventsGen
     
     # *** 1. Set appropriate cross-section for sample
@@ -247,6 +249,8 @@ def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
 
 
     #_qcd_raw.drop("jet*)
+
+    #_hh_raw = _hh_raw[:len(_qcd_raw)]
 
     return _hh_raw, _qcd_raw
 
