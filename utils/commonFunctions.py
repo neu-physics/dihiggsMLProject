@@ -255,15 +255,26 @@ def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
 
 def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
     
-    _test_data['isSignal'] = _test_labels
+    _test_data = _test_data.copy()
+
+    if type(_test_data) != np.ndarray: # traditional NN and BDT approachs --> passing pandas df directly to function
+        _test_data['isSignal'] = _test_labels
     
-    _test_signal_data = _test_data[ _test_data.isSignal==1 ]
-    _test_bkg_data    = _test_data[ _test_data.isSignal==0 ]
+        _test_signal_data = _test_data[ _test_data.isSignal==1 ]
+        _test_bkg_data    = _test_data[ _test_data.isSignal==0 ]
+        
+        _test_signal_labels = _test_signal_data.isSignal
+        _test_bkg_labels    = _test_bkg_data.isSignal
+        
+        _test_signal_data = _test_signal_data.drop('isSignal', axis=1)
+        _test_bkg_data = _test_bkg_data.drop('isSignal', axis=1)
 
-    _test_signal_labels = _test_signal_data.isSignal
-    _test_bkg_labels    = _test_bkg_data.isSignal
+    elif type(_test_data) == np.ndarray: # LBN Network approach --> passing numpy array
+        _test_signal_data   = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
+        _test_bkg_data      = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[1] == 1]
 
-    _test_signal_data = _test_signal_data.drop('isSignal', axis=1)
-    _test_bkg_data = _test_bkg_data.drop('isSignal', axis=1)
+        _test_signal_labels = [ _signalEncoding for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
+        _test_bkg_labels    = [ _signalEncoding for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[1] == 1]
 
+        
     return _test_signal_data.copy(), _test_signal_labels.copy(), _test_bkg_data.copy(), _test_bkg_labels.copy()
