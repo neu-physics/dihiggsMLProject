@@ -6,6 +6,7 @@ import uproot, uproot_methods
 import uproot_methods.classes.TLorentzVector as TLorentzVector
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import copy, csv, os, itertools
 
 
@@ -72,6 +73,8 @@ class eventReconstruction:
 
         # Branch Definitions
         self.delphesFile      = uproot.rootio.TObject
+        self.inputDF          = None
+        self.nEntries         = -1
         self.l_genPID         = []
         self.l_genD1          = []
         self.l_genD2          = []
@@ -101,7 +104,7 @@ class eventReconstruction:
         self.outputVariableNames = self.createOutputVariableList()
 
 
-        for iEvt in range(0,self.delphesFile._fEntries):
+        for iEvt in range(0,self.nEntries):
             # *** 0. Kick-out condition for testing
             if iEvt > 40 and self.isTestRun is True:
                 continue
@@ -126,7 +129,7 @@ class eventReconstruction:
         # *** 5. Store output data in .csv for later usage
         self.writeDataForTraining()
 
-        print( "Finished processing {0} events...".format(self.delphesFile._fEntries) )
+        print( "Finished processing {0} events...".format(self.nEntries) )
 
         print('jetCounter', self.jetCounter)
         print('matchedCounter', self.matchedCounter)
@@ -360,7 +363,10 @@ class eventReconstruction:
     ##############################################################
 
     def returnListOfTruthBQuarkIndicesByDaughters(self, _iEvent):
-    
+        ##################
+        ### DEPRECATED ###
+        ##################
+        
         for iParticle in range(0, len(_D1)):
             if self.PID[_iEvent][iParticle]==25:
                 _daughter1 = self.l_genD1[_iEvent][iParticle]
@@ -781,12 +787,16 @@ class eventReconstruction:
     def createOutputVariableList( self ):
         _variableNameList = ['hh_mass', 'h1_mass', 'h2_mass', 'hh_pt', 'h1_pt', 'h2_pt', 'deltaR(h1, h2)', 'deltaR(h1 jets)', 'deltaR(h2 jets)', 'deltaPhi(h1, h2)', 'deltaPhi(h1 jets)', 'deltaPhi(h2 jets)', 'met', 'met_phi', 'scalarHT', 'nJets', 'nBTags', 'isMatchable']
         _jetVariables = ['pt', 'eta', 'phi', 'mass', 'px', 'py', 'pz', 'energy', 'btag']
+        _genVariables = ['PID', 'status', 'pt', 'eta', 'phi', 'mass']
     
         for _variable in _jetVariables:
             _variableNameList.extend( ['recoJet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,5)]) # jets used in selected dihiggs reconstruction (should always be 4)
 
         for _variable in _jetVariables:
             _variableNameList.extend( ['jet'+str(_iJet)+'_'+str(_variable) for _iJet in range(1,self.nJetsToStore+1)]) # for all jets by pT ... b-tagged first and then pt ordered
+
+        for _variable in _genVariables:
+            _variableNameList.extend( ['gen'+str(_iJet)+'_'+str(_variable) for _iJet in range(1, 5)]) # for some relevant subset of generated jets ... should be max 4(+1) for the four b quarks from h->bb x 2
 
         return _variableNameList
 
@@ -868,6 +878,30 @@ class eventReconstruction:
             _variableList.extend( allJetPz )
             _variableList.extend( allJetEnergy )
             _variableList.extend( allJetBTags )
+
+            # save info on quarks if relevant
+            allGenVectors = [ TLorentzVector.PtEtaPhiMassLorentzVector( self.l_genPt[_iEvent][iQuark], self.l_genEta[_iEvent][iQuark], self.l_genPhi[_iEvent][iQuark], self.l_genMass[_iEvent][iQuark]) for iQuark in self.quarkIndices ]
+            allGenPID     = [ self.l_genPID[_iEvent][iQuark] for iQuark in self.quarkIndices ]
+            allGenStatus  = [ self.l_genStatus[_iEvent][iQuark] for iQuark in self.quarkIndices ]
+            allGenVectors = allJetVectors[:4] if len(allGenVectors) > 4 else allGenVectors
+
+            while len(allGenVectors) < 4:
+                allGenVectors.append( TLorentzVector.PtEtaPhiMassLorentzVector(0, 0, 0, 0) ) # zero-padding
+                allGenPID.append( -1 ) # zero-padding, not sure if this is the right move for status or PID
+                allGenStatus.append( -1 ) # zero-padding, not sure if this is the right move for status or PID
+
+            allGenPt     = [ i_tlv.pt for i_tlv in allGenVectors]
+            allGenEta    = [ i_tlv.eta for i_tlv in allGenVectors]
+            allGenPhi    = [ i_tlv.phi for i_tlv in allGenVectors]
+            allGenMass   = [ i_tlv.mass for i_tlv in allGenVectors]
+
+            _variableList.extend( allGenPID )
+            _variableList.extend( allGenStatus )
+            _variableList.extend( allGenPt )
+            _variableList.extend( allGenEta )
+            _variableList.extend( allGenPhi )
+            _variableList.extend( allGenMass )
+
             
         return _variableList
 
@@ -934,29 +968,80 @@ class eventReconstruction:
         return 
     
 
+    def returnJetVectorInputsAsBranch( self, _df, _jetType='jet', _jetVar='px', _nJets=4):
+    
+        #flattened
+        _allVectorsFlattened = None
+        _var = [_jetType+'{}_'+_jetVar]
+    
+        for i in range(1, _nJets + 1):
+            _varN = [x.format(i) for x in _var]
+            _jetNData = _df[ _varN ].astype(np.float32)
+            _vectN = [list(x) for x in _jetNData.values]
+        
+            if _allVectorsFlattened == None:
+                _allVectorsFlattened = _vectN
+            else:
+                _allVectorsFlattened = [ x + y for x,y in zip(_allVectorsFlattened, _vectN) ]
+
+        
+        return _allVectorsFlattened
+
+
+    
     def initFileAndBranches( self ):
 
-        print("Setting Delphes file; ", self.inputFileName)
-        self.delphesFile= uproot.open(self.inputFileName)['Delphes']
+        if '.root' in self.inputFileName:
+            print("Setting Delphes file; ", self.inputFileName)
+            self.delphesFile= uproot.open(self.inputFileName)['Delphes']
+            self.nEntries = self.delphesFile._fEntries
+            
+            # branches
+            self.l_genPID         = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.PID']).tolist()
+            self.l_genStatus      = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Status']).tolist()
+            self.l_genPt          = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.PT']).tolist()
+            self.l_genEta         = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Eta']).tolist()
+            self.l_genPhi         = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Phi']).tolist()
+            self.l_genMass        = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Mass']).tolist()
+            self.l_jetPt          = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.PT']).tolist()
+            self.l_jetEta         = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Eta']).tolist()
+            self.l_jetPhi         = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Phi']).tolist()
+            self.l_jetMass        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Mass']).tolist()
+            self.l_jetBTag        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.BTag']).tolist()
+            self.l_missingET_met  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.MET']).tolist()
+            self.l_missingET_phi  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.Phi']).tolist()
+            self.l_scalarHT       = uproot.tree.TBranchMethods.array(self.delphesFile['ScalarHT']['ScalarHT.HT']).tolist()
+            print("Finished loading branches...")
 
-        #b_particles = uproot.tree.TBranchMethods.array(delphes_hh['Particle'])
-        self.l_genPID         = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.PID']).tolist()
-        self.l_genStatus      = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Status']).tolist()
-        self.l_genPt          = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.PT']).tolist()
-        self.l_genEta         = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Eta']).tolist()
-        self.l_genPhi         = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Phi']).tolist()
-        self.l_genMass        = uproot.tree.TBranchMethods.array(self.delphesFile['Particle']['Particle.Mass']).tolist()
-        self.l_jetPt          = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.PT']).tolist()
-        self.l_jetEta         = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Eta']).tolist()
-        self.l_jetPhi         = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Phi']).tolist()
-        self.l_jetMass        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Mass']).tolist()
-        self.l_jetBTag        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.BTag']).tolist()
-        self.l_missingET_met  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.MET']).tolist()
-        self.l_missingET_phi  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.Phi']).tolist()
-        self.l_scalarHT       = uproot.tree.TBranchMethods.array(self.delphesFile['ScalarHT']['ScalarHT.HT']).tolist()
-        print("Finished loading branches...")
+        elif '.csv' in self.inputFileName:
+            print("Setting pre-proceseed .csv file; ", self.inputFileName)
+            self.inputDF = pd.read_csv(self.inputFileName)
+            hh_raw = pd.read_csv('../../dihiggsMLProject_copy/data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv')
+            self.nEntries = len(self.inputDF[ self.inputDF.columns[0] ])
+            _jetType='jet' # this just takes all the jets, this is probably fine to leave alone but maybe needs tweaking if results not identical between delphes output and csv re-process
+            _genType='gen' 
+
+            # "branches"
+            self.l_genPID         = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _genType, 'PID', 4)
+            self.l_genStatus      = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _genType, 'status', 4)
+            self.l_genPt          = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _genType, 'pt', 4)
+            self.l_genEta         = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _genType, 'eta', 4)
+            self.l_genPhi         = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _genType, 'phi', 4)
+            self.l_genMass        = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _genType, 'mass', 4)
+            self.l_jetPt          = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _jetType, 'pt', self.nJetsToStore)
+            self.l_jetEta         = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _jetType, 'eta', self.nJetsToStore)
+            self.l_jetPhi         = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _jetType, 'phi', self.nJetsToStore)
+            self.l_jetMass        = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _jetType, 'mass', self.nJetsToStore)
+            self.l_jetBTag        = self.returnJetVectorInputsAsBranch( self.inputDF.copy(), _jetType, 'btag', self.nJetsToStore)
+            self.l_missingET_met  = [ [x] for x in self.inputDF.met.tolist()]
+            self.l_missingET_phi  = [ [x] for x in self.inputDF.met_phi.tolist()]
+            self.l_scalarHT       = [ [x] for x in self.inputDF.scalarHT.tolist()]
+            
+            print("Finished loading branches...")
 
 
+
+            
     def evaluatePairingAlgorithms( self, _iEvent ): 
 
         for iAlgorithm in self.pairingAlgorithms:
@@ -985,6 +1070,8 @@ class eventReconstruction:
         _csvFile = open(_csvName, mode='w')
         _writer = csv.DictWriter(_csvFile, fieldnames=self.outputVariableNames)
         _writer.writeheader()
+
+        
         for eventData in self.outputDataForLearning:
             _csvLineDict = {}
             # format csv line using names of variables
