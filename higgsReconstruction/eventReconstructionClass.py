@@ -396,7 +396,8 @@ class eventReconstruction:
 
         if self.ptOrdered:
             _added = False
-            for index in range(0, len(_orderedJetIndices)):
+            #for index in range(0, len(_orderedJetIndices)):
+            for index in _orderedJetIndices:
                 if self.l_jetPt[_iEvent][_iJet] > self.l_jetPt[_iEvent][index] and _added==False:
                     _orderedJetIndices.insert(index, _iJet)
                     _added = True
@@ -486,6 +487,7 @@ class eventReconstruction:
         self.allJetIndices = self.allJetIndices[:self.nJetsToStore]
         
         #print (self.nJets, self.nBTags, len(self.jetIndices), self.jetIndices, [self.l_jetPt[_iEvent][g] for g in self.jetIndices])
+        
         return 
 
 
