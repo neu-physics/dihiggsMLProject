@@ -219,37 +219,48 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
                 
         #print(iCutValue, _nSignal, _nBackground, (_nSignal / np.sqrt(_nBackground)))
 
-    _nSignal = sum( value > _bestCutValue for value in _signal) * _signalLumiscale
-    _nBackground = sum( value > _bestCutValue for value in _background) * _bkgLumiscale
+    # ** Raw numbers
+    _nSignal_raw = sum( value > _bestCutValue for value in _signal) 
+    _nBackground_raw = sum( value > _bestCutValue for value in _background) 
+    # ** lumi-scaled numbers
+    _nSignal = _nSignal_raw * _signalLumiscale
+    _nBackground = _nBackground_raw * _bkgLumiscale
+
+    _significance = _nSignal/np.sqrt(_nBackground)
+    _sigError = _significance * np.sqrt( 1/_nSignal_raw + 1/(4*_nBackground_raw) )
+
     #print(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _bestCutValue)
-    print('nSig = {0} , nBkg = {1} with significance = {2} for {3} score > {4}'.format(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _variable, _bestCutValue) )
+
+    
+    print('nSig = {0} , nBkg = {1} with significance = {2} +/- {3} for {4} score > {5}'.format(_nSignal, _nBackground, _significance, _sigError, _variable, _bestCutValue) )
           
     return _bestSignificance, _bestCutValue
 
 
-def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
+def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU'):
     """ function to import datasets from .csv files"""
 
-    _qcd_csv_files = ['/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
-    ]
+    #_qcd_csv_files = ['/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
+    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
+    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
+    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
+    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
+    #]
+    #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
 
-    _qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
-    #_qcd_raw = pd.read_csv('../samples_500k/qcd_outputDataForLearning.csv')
+    # reconstruction opts: >= 4 tags, store 10 jets, use top4 tagged then highest in pt
+    qcd_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_200PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+    hh_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_200PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+
+    _qcd_raw = pd.read_csv( qcd_string )
     _qcd_raw['isSignal'] = 0
-
+    _qcd_raw = _qcd_raw[_qcd_raw.columns.drop(list(_qcd_raw.filter(regex='gen')))] # drop truth quark info
     
-    _hh_raw = pd.read_csv('/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv')
-    #_hh_raw = pd.read_csv('../samples_500k/dihiggs_outputDataForLearning.csv')
+    _hh_raw = pd.read_csv( hh_string )
     _hh_raw['isSignal'] = 1
     _hh_raw = _hh_raw.drop('isMatchable', 1)
+    _hh_raw = _hh_raw[_hh_raw.columns.drop(list(_hh_raw.filter(regex='gen')))] # drop truth quark info
 
-
-    #_qcd_raw.drop("jet*)
-    #_hh_raw = _hh_raw[:len(_qcd_raw)]
 
     return _hh_raw, _qcd_raw
 
