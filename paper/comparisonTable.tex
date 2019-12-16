@@ -1,26 +1,30 @@
 \documentclass{article}
 
+\usepackage{multirow}
 \begin{document}
 
 \begin{table}[h!]
-  \begin{center}
-    \begin{tabular}{|l|c|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+  %\begin{center}
+  \hskip-4.0cm
+    \begin{tabular}{|l|c|c|c|c|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
       \hline\hline
-      \textbf{Method} & Best Significance ($S/\sqrt{B}$) & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$}\\
+      \multirow{2}{*}{\textbf{Method}} & \multicolumn{3}{c|}{0PU} & \multicolumn{3}{c|}{200PU}\\
+      \cline{2-7}
+      & Best $S/\sqrt{B}$ & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$} & Best $S/\sqrt{B}$ & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$}\\
       \hline
-      1D-Rectangular Cuts & 0.82 & 3621.0 & 1.97  $\cdot$ $10^7$\\
-      Log Likelihood & 1.10 & 1415.5 & 1.67 $\cdot$ $10^6$ \\
-      Lorentz Boost Network & 1.64 & 2082.7 & 1.61 $\cdot$ $10^6$ \\
-      Boosted Decision Tree & 1.67 & 1723.0 & 1.06 $\cdot$ $10^6$ \\
-      Feed-Forward NN & 1.71 & 1206.6 & 4.99 $\cdot$ $10^5$ \\
-      Convolutional NN & - & - & - \\
+      1D-Rectangular Cuts   & 0.82 $\pm$ 0.XX & 3621.0 & 1.97 $\cdot$ $10^7$ & X.XX $\pm$ 0.XX & - & -\\
+      Log Likelihood        & 1.10 $\pm$ 0.XX & 1415.5 & 1.67 $\cdot$ $10^6$ & X.XX $\pm$ 0.XX & - & - \\
+      Lorentz Boost Network & 1.64 $\pm$ 0.XX & 2082.7 & 1.61 $\cdot$ $10^6$ & X.XX $\pm$ 0.XX & - & - \\
+      Boosted Decision Tree & 1.67 $\pm$ 0.XX & 1723.0 & 1.06 $\cdot$ $10^6$ & X.XX $\pm$ 0.XX & - & - \\
+      Feed-Forward NN       & 1.71 $\pm$ 0.XX & 1206.6 & 4.99 $\cdot$ $10^5$ & X.XX $\pm$ 0.XX & - & - \\
+      Convolutional NN & - & - & - & - & - & - \\                          
 
-      Residual NN & - & - & - \\
-      ?? & - & - & - \\
+      Residual NN & - & - & - & - & - & - \\
+      ?? & - & - & - & - & - & - \\
       \hline\hline
     \end{tabular}
     \caption{Normalized to full HL-LHC dataset of 3000 fb$^{-1}$}
-  \end{center}
+  %\end{center}
 \end{table}
 
 \end{document}
