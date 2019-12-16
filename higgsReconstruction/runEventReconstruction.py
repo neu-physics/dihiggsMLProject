@@ -68,22 +68,25 @@ for infile in open(args.inputTXTFile, 'r'):
     eventReconstructor = eventReconstruction(outName, infile, isDihiggsSignal)
     eventReconstructor.setConsiderFirstNjetsInPT(4)
     eventReconstructor.setNJetsToStore(10)
-    eventReconstructor.setRequireNTags(3)
+    eventReconstructor.setRequireNTags(4)
     eventReconstructor.runReconstruction()
 
     print(workDir, outName)
 
 
     # ** C. Move output to runSplit directory for .csv organization
-    os.system('mv {} {}'.format(outName, workDir))
-
+    os.system('cp -r {} {}'.format(outName, workDir))
+    os.system('rm -rf {}'.format(outName))
+    
     #passedFirstFile = True
 
 
 # *** 3. Create combined .csv file?
+print("######## Creating combined {} csv file".format(args.outputTag))
 # ** A. Get list of all csv files
 extension = 'csv'
-all_filenames = [i for i in glob.glob('{}/*/*/*.{}'.format(args.outputTag, extension))]
+sampleName = args.outputTag.split('__')[0]
+all_filenames = [i for i in glob.glob('{}/*/{}*/*.{}'.format(sampleName, args.outputTag, extension))]
 
 # ** B. Combine all files in the list
 combined_csv = pd.concat([pd.read_csv(f) for f in all_filenames ])
