@@ -2,9 +2,6 @@ import csv
 import subprocess
 import ROOT as R
 import math as M
-import sys
-sys.path.insert(0, '/Users/flywire/Desktop/sci/dihiggsMLProject/')
-from utils.commonFunctions import *
 
 def makeLL(histo,var,var_h,name):
     histos["LL_s_s"+name] = R.TH1F("LL_s_s"+name,"LL_s_s"+name,2010,-200,10)
@@ -16,19 +13,14 @@ def makeLL(histo,var,var_h,name):
     histos["LL_2D_s"+name] = R.TH2F("LL_2D_s"+name,"LL_2D_s"+name,2010,-200,10,2010,-200,10)
     histos["LL_2D_b"+name] = R.TH2F("LL_2D_b"+name,"LL_2D_b"+name,2010,-200,10,2010,-200,10)
 
-    testingFraction = 0.3
-    lumiscale_hh  = getLumiScaleFactor(testingFraction, True)
-    lumiscale_qcd = getLumiScaleFactor(testingFraction, False)
     
     sig_name = 'dihiggs_outputDataForLearning.csv'
-    #bkg_name = 'qcd_outputDataForLearning.csv'
-    bkg_name = 'qcd_2M_training.csv'
+    bkg_name = 'qcd_outputDataForLearning.csv'
     sig_l = int(subprocess.check_output(["wc","-l",sig_name]).split()[0])
     bkg_l = int(subprocess.check_output(["wc","-l",bkg_name]).split()[0])
 
-    pdf_sig = 'pdf_sig_500k_07.root'
-    pdf_bkg = 'pdf_bkg_2M_07.root'
-    #pdf_bkg = 'pdf_bkg.root'
+    pdf_sig = 'pdf_sig.root'
+    pdf_bkg = 'pdf_bkg.root'
 
 
     f_pdf_sig = R.TFile(pdf_sig)
@@ -42,7 +34,7 @@ def makeLL(histo,var,var_h,name):
     with open(sig_name) as f_sig:
         r_sig = csv.DictReader(f_sig)
         for nr, row in enumerate(r_sig):
-            if(nr<=sig_l*(1-testingFraction)):
+            if(nr<=sig_l/2):   
                 continue
             ll_sig = 0
             ll_bkg = 0
@@ -83,18 +75,12 @@ def makeLL(histo,var,var_h,name):
                 histos["LLR_s"+name].Fill(ll_sig-ll_bkg)
             else:
                 histos["LLR_s"+name].Fill(50)
-    print(lumiscale_hh)
-    histos["LL_s_s"+name].Scale(lumiscale_hh)
-    histos["LL_s_b"+name].Scale(lumiscale_hh)
-    histos["LL_2D_s"+name].Scale(lumiscale_hh)
-    histos["LLR_s"+name].Scale(lumiscale_hh)
 
 
-
-    with open(bkg_name,encoding='utf-8-sig') as f_bkg:
+    with open(bkg_name) as f_bkg:
         r_bkg = csv.DictReader(f_bkg)
         for nr, row in enumerate(r_bkg):
-            if(nr<=bkg_l*(1-testingFraction)):   
+            if(nr<=bkg_l/2):   
                 continue
             ll_sig = 0
             ll_bkg = 0
@@ -138,12 +124,6 @@ def makeLL(histo,var,var_h,name):
             else:
                 histos["LLR_b"+name].Fill(50)
 
-    print(lumiscale_qcd)
-    histos["LL_b_s"+name].Scale(lumiscale_qcd)
-    histos["LL_b_b"+name].Scale(lumiscale_qcd)
-    histos["LL_2D_b"+name].Scale(lumiscale_qcd)
-    histos["LLR_b"+name].Scale(lumiscale_qcd)
-
 
 histos = {}
 
@@ -168,10 +148,9 @@ var_part_h = ['h1_mass', 'h2_mass', 'deltaR_h1_jet', 'deltaR_h2_jet', 'deltaPhi_
 makeLL(histos,var_part,var_part_h,'_part')
 
 
-output = 'output_multi_QCD2M_07.root'
+output = 'output_multi_test.root'
 fOut=R.TFile(output,"RECREATE")
-#for hn, histo in histos.iteritems():
-for hn, histo in histos.items():
+for hn, histo in histos.iteritems():
    histo.Write()
 fOut.Close()
-print ("Saved histos in "+output)
+print "Saved histos in "+output

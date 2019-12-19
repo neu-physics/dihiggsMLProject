@@ -18,9 +18,7 @@ void significance(TH1F *s, TH1F *b, float up, float low, TString tag)
 
         double sig = 0;
         if (B!=0){
-            sig = S/sqrt(B);
-            //sig = (S*0.1483)/sqrt(B*5302.392);
-            //sig = (3000.*S*w)/sqrt(3000.*B);
+            sig = (3000.*S*w)/sqrt(3000.*B);
             //std::cout << S << " " << B << " " << sig << std::endl;
         }
         double ll = s->GetBinCenter(i);
@@ -28,12 +26,8 @@ void significance(TH1F *s, TH1F *b, float up, float low, TString tag)
         LL.push_back(ll);
         if(sig > sig_max){
             sig_max = sig;
-            N_sig = S;
-            N_bkg = B;
-            //N_sig = S*0.1483;
-            //N_bkg = B*5302.392;
-            //N_sig = 3000.*S*w;
-            //N_bkg = 3000.*B;
+            N_sig = 3000.*S*w;
+            N_bkg = 3000.*B;
         }
     }
     std::cout << "For " << tag << " significance max: " << sig_max << " N_sig: " << N_sig << " N_bkg: " << N_bkg << std::endl;
@@ -55,7 +49,7 @@ void Add(TString name)
 {
     const double L_s = 33034.175242;
     const double L_b = 1.357924;
-    TString f_name = "output_multi_QCD2M_07.root";
+    TString f_name = "output_multi_test.root";
     TFile *f = new TFile(f_name);
     TString p_name[6] = {"LL_s_s"+name, "LL_b_s"+name, "LL_s_b"+name, "LL_b_b"+name, "LLR_s"+name, "LLR_b"+name};
     TH1F *h[6];
@@ -67,14 +61,12 @@ void Add(TString name)
             h[i]->SetLineColor(kRed);
         }
     }
-    /*
     for (int n = 0; n<6; n+=2){
         h[n]->Scale((1.0*(h[n+1]->Integral()))/h[n]->Integral());
     }
     for(int k = 0; k<6; ++k){
         std::cout << h[k]->Integral() << std::endl;
     }
-    */
 
     TH2F *h2D_s = (TH2F*)f->Get("LL_2D_s"+name);
     TH2F *h2D_b = (TH2F*)f->Get("LL_2D_b"+name);
