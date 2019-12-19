@@ -3,11 +3,8 @@ import subprocess
 import ROOT as R
 import math as M
 
-f_train = 0.7
 sig_name = 'dihiggs_outputDataForLearning.csv'
-#bkg_name = 'qcd_outputDataForLearning.csv'
-bkg_name = 'qcd_2M_training.csv'
-#f_name = bkg_name
+bkg_name = 'qcd_outputDataForLearning.csv'
 f_name = sig_name
 l = int(subprocess.check_output(["wc","-l",f_name]).split()[0])
 vars_list = ['hh_mass', 'h1_mass', 'h2_mass', 'hh_pt', 'h1_pt', 'h2_pt', 'deltaR(h1, h2)', 'deltaR(h1 jets)', 'deltaR(h2 jets)', 'deltaPhi(h1, h2)', 'deltaPhi(h1 jets)', 'deltaPhi(h2 jets)', 'met', 'met_phi', 'scalarHT', 'nJets', 'nBTags', 'jet1_pt', 'jet2_pt', 'jet3_pt', 'jet4_pt', 'jet1_eta', 'jet2_eta', 'jet3_eta', 'jet4_eta', 'jet1_phi', 'jet2_phi', 'jet3_phi', 'jet4_phi', 'jet1_mass', 'jet2_mass', 'jet3_mass', 'jet4_mass', 'jet1_px', 'jet2_px', 'jet3_px', 'jet4_px', 'jet1_py', 'jet2_py', 'jet3_py', 'jet4_py', 'jet1_pz', 'jet2_pz', 'jet3_pz', 'jet4_pz', 'jet1_energy', 'jet2_energy', 'jet3_energy', 'jet4_energy']
@@ -73,26 +70,26 @@ for ij in jet_var:
 
 
 
-with open(f_name,encoding='utf-8-sig') as f:
+with open(f_name) as f:
     r = csv.DictReader(f)
     for nr, row in enumerate(r):
-        #if(nr<=l/2):
-        #    continue
-        if(nr>l*f_train):   
-            break
+        if(nr<=l/2):
+            continue
+        #if(nr>l/2):   
+        #    break
         for i in range(0,len(vars_list)):
             histos[var_namel[i]].Fill(float(row[vars_list[i]]))
-            #if(nr==1):
-            #    print (vars_list[i])
-            #    print (var_namel[i])
-            #    print (float(row[vars_list[i]]))
+            if(nr==1):
+                print (vars_list[i])
+                print (var_namel[i])
+                print (float(row[vars_list[i]]))
         
 
 
 
-output = 'pdf_sig_500k_07.root'
+output = 'pdf_sig.root'
 fOut=R.TFile(output,"RECREATE")
-for hn, histo in histos.items():
+for hn, histo in histos.iteritems():
     histo.Scale(1.0/(histo.Integral()))
     histo.Write()
 fOut.Close()
