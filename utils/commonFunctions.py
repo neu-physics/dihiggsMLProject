@@ -141,7 +141,7 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
                     
 
     # set max y-value of histogram so there's room for legend
-    _yMax = 0.25 if _normed else _yMax
+    _yMax = 0.15 if _normed else _yMax
     axes = plt.gca()
     axes.set_ylim([0,_yMax])
         
@@ -281,11 +281,20 @@ def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
         _test_bkg_data = _test_bkg_data.drop('isSignal', axis=1)
 
     elif type(_test_data) == np.ndarray: # LBN Network approach --> passing numpy array
-        _test_signal_data   = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
-        _test_bkg_data      = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[1] == 1]
 
-        _test_signal_labels = [ _signalEncoding for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
-        _test_bkg_labels    = [ _signalEncoding for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[1] == 1]
+        print(np.shape(_test_labels))
+        if np.shape(_test_labels)[1] == 2:
+            _test_signal_data   = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
+            _test_bkg_data      = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[1] == 1]
+            
+            _test_signal_labels = [ _signalEncoding for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
+            _test_bkg_labels    = [ _signalEncoding for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[1] == 1]
+        elif np.shape(_test_labels)[1] == 1:
+            _test_signal_data   = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
+            _test_bkg_data      = [ _eventVectors for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 0]
 
-        
+            _test_signal_labels = [ _signalEncoding[0] for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
+            _test_bkg_labels    = [ _signalEncoding[0] for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 0]
+
+            
     return _test_signal_data.copy(), _test_signal_labels.copy(), _test_bkg_data.copy(), _test_bkg_labels.copy()
