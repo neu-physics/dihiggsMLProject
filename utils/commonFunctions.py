@@ -104,6 +104,7 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
 
     # *** 3. Make test/train split
     data_train, data_test, labels_train, labels_test = train_test_split(all_dataForSplit, all_labelsForSplit, test_size=_fractionEventsForTesting, shuffle= True, random_state=30)
+    #data_train, data_test, labels_train, labels_test = train_test_split(all_dataForSplit, all_labelsForSplit, test_size=_fractionEventsForTesting, shuffle= True)
     
     # *** 3. Sanity check
     print(len(all_dataForSplit), 'rows of total data with ', len(all_labelsForSplit), 'labels [Train+Test]')
@@ -203,6 +204,9 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
         if _nBackground < _minBackground: # 500 is semi-random choice.. it's where one series started to oscillate
             #print("continued on {0}".format(iCutValue))
             continue
+
+        if (np.sqrt( 1/(_nSignal/_signalLumiscale) + 1/(4*_nBackground/_bkgLumiscale) ) > 0.05 ):
+            continue
         
         #if _method == 'S/sqrt(B)':
         #    print(_nSignal, _nBackground, iCutValue, (_nSignal / np.sqrt(_nBackground)), (_nSignal / np.sqrt(_nSignal + _nBackground)))
@@ -219,10 +223,20 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
                 
         #print(iCutValue, _nSignal, _nBackground, (_nSignal / np.sqrt(_nBackground)))
 
-    _nSignal = sum( value > _bestCutValue for value in _signal) * _signalLumiscale
-    _nBackground = sum( value > _bestCutValue for value in _background) * _bkgLumiscale
+    # ** Raw numbers
+    _nSignal_raw = sum( value > _bestCutValue for value in _signal) 
+    _nBackground_raw = sum( value > _bestCutValue for value in _background) 
+    # ** lumi-scaled numbers
+    _nSignal = _nSignal_raw * _signalLumiscale
+    _nBackground = _nBackground_raw * _bkgLumiscale
+
+    _significance = _nSignal/np.sqrt(_nBackground)
+    _sigError = _significance * np.sqrt( 1/_nSignal_raw + 1/(4*_nBackground_raw) )
+
     #print(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _bestCutValue)
-    print('nSig = {0} , nBkg = {1} with significance = {2} for {3} score > {4}'.format(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _variable, _bestCutValue) )
+
+    
+    print('nSig = {0} , nBkg = {1} with significance = {2} +/- {3} for {4} score > {5}'.format(_nSignal, _nBackground, _significance, _sigError, _variable, _bestCutValue) )
           
     return _bestSignificance, _bestCutValue
 
@@ -230,19 +244,28 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
 def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
     """ function to import datasets from .csv files"""
 
-    _qcd_csv_files = ['/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
-                     '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
-    ]
+    #_qcd_csv_files = [
+                     #'/Users/flywire/Desktop/sci/dihiggsMLProject/data/qcd_2M_training.csv'
+                     #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
+                     #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
+                     #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
+                     #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
+                     #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
+    #]
 
-    _qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
-    #_qcd_raw = pd.read_csv('../samples_500k/qcd_outputDataForLearning.csv')
+    #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
+    _qcd_raw = pd.read_csv(
+        '/Users/flywire/Desktop/sci/dihiggsMLProject/data/Ben/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+        #'/Users/flywire/Desktop/sci/dihiggsMLProject/data/qcd_2M_training.csv'
+        )
     _qcd_raw['isSignal'] = 0
 
     
-    _hh_raw = pd.read_csv('/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv')
+    _hh_raw = pd.read_csv(
+        '/Users/flywire/Desktop/sci/dihiggsMLProject/data/Ben/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+        #'/Users/flywire/Desktop/sci/dihiggsMLProject/higgsReconstruction/diHiggs_reco/dihiggs_outputDataForLearning_diHiggs_reco.csv'
+        #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv'
+        )
     #_hh_raw = pd.read_csv('../samples_500k/dihiggs_outputDataForLearning.csv')
     _hh_raw['isSignal'] = 1
     _hh_raw = _hh_raw.drop('isMatchable', 1)
