@@ -2,6 +2,7 @@
 
 INSTALLPATH=$PWD/HEPTools/pythia8/
 MG5PATH=$PWD/
+PYTHIA8DATA=$MG5PATH/HEPTools/pythia8/share/Pythia8/xmldoc
 
 echo " >> Download PYTHIA8"
 wget http://home.thep.lu.se/~torbjorn/pythia8/pythia82.tgz
@@ -10,7 +11,7 @@ tar -xf pythia82.tgz
 
 
 echo " >> Enter PYTHIA8 directory"
-cd pythia8243
+cd pythia8244
 
 echo " >> Configure PYTHIA8"
 make distclean
