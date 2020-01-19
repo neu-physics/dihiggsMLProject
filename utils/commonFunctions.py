@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-
+from sklearn.metrics import roc_curve, roc_auc_score
 
 
 def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True ):
@@ -237,7 +237,7 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
     return _bestSignificance, _bestCutValue
 
 
-def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU'):
+def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU', _btags='4'):
     """ function to import datasets from .csv files"""
 
     #_qcd_csv_files = ['/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
@@ -249,9 +249,12 @@ def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU'):
     #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
 
     # reconstruction opts: >= 4 tags, store 10 jets, use top4 tagged then highest in pt
-    qcd_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_200PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
-    hh_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_200PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+    qcd_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_200PU_v2-05__top4inPt-'+_btags+'tags-10jets_combined_csv.csv'
+    hh_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_200PU_v2-05__top4inPt-'+_btags+'tags-10jets_combined_csv.csv'
 
+    print("Dihiggs file: ", hh_string)
+    print("QCD file: ", qcd_string)
+    
     _qcd_raw = pd.read_csv( qcd_string )
     _qcd_raw['isSignal'] = 0
     _qcd_raw = _qcd_raw[_qcd_raw.columns.drop(list(_qcd_raw.filter(regex='gen')))] # drop truth quark info
@@ -298,3 +301,79 @@ def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
 
             
     return _test_signal_data.copy(), _test_signal_labels.copy(), _test_bkg_data.copy(), _test_bkg_labels.copy()
+
+
+def makeHistoryPlots(_history, _curves=['loss'], _modelName=''):
+    """ make history curves for user-specified training parameters"""
+
+    for curve in _curves:
+        if curve == 'loss':
+            # summarize history for loss
+            plt.plot(_history.history['loss'])
+            plt.plot(_history.history['val_loss'])
+            plt.title('{} Model Loss'.format(_modelName))
+            plt.ylabel('Loss [A.U.]')
+            plt.xlabel('Epoch')
+            plt.legend(['Train', 'Test'], loc='upper right')
+            plt.show()
+        elif curve == 'auc':
+            # summarize history for loss
+            plt.plot(_history.history['auc'])
+            plt.plot(_history.history['val_auc'])
+            plt.title('{} Model AUC'.format(_modelName))
+            plt.ylabel('AUC [A.U.]')
+            plt.xlabel('Epoch')
+            plt.legend(['Train', 'Test'], loc='lower right')
+            plt.show()
+        elif curve == 'categorical_accuracy':
+            # summarize history for accuracy
+            plt.plot(_history.history['categorical_accuracy'])
+            plt.plot(_history.history['val_categorical_accuracy'])
+            plt.title('{} Accuracy'.format(_modelName))
+            plt.ylabel('Accuracy [%]')
+            plt.xlabel('Epoch')
+            plt.legend(['Train', 'Test'], loc='lower right')
+            plt.show()
+
+        else:
+            # summarize history for accuracy
+            plt.plot(_history.history[ curve])
+            plt.plot(_history.history['val_'+curve])
+            plt.title('{} {}'.format(_modelName, curve))
+            plt.ylabel('{} [A.U.]'.format(curve))
+            plt.xlabel('Epoch')
+            plt.legend(['Train', 'Test'], loc='lower right')
+            plt.show()
+
+    return
+
+def makeEfficiencyCurves(*data):
+    """ make curve of signal efficiency vs background rejection given some inputs"""
+
+    # basic plot setup
+    plt.plot([0, 1], [1, 0], color="black", linestyle="--")
+    plt.title("ROC curves")
+    plt.xlabel("Signal Efficiency")
+    plt.ylabel("Background Rejection")
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    #plt.xscale('log')
+    #plt.yscale('log')
+    plt.tick_params(axis="both", direction="in")
+
+    # add data
+    for d in data:
+        auc = roc_auc_score(d["labels"], d["prediction"])
+        label = "{} ({:.3f})".format(d.get("label", "ROC"), auc)
+        roc = roc_curve(d["labels"][:, 1], d["prediction"][:, 1])
+        fpr, tpr, _ = roc
+        plt.plot(tpr, 1 - fpr, label=label, color=d.get("color", "#118730"))
+        
+
+    # legend
+    leg = plt.legend(loc="lower left", fontsize="small")
+    #leg.get_frame().set_linewidth(0.0)
+
+    plt.show()
+
+    return
