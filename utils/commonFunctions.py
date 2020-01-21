@@ -232,9 +232,9 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
     #print(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _bestCutValue)
 
     
-    print('nSig = {0} , nBkg = {1} with significance = {2} +/- {3} for {4} score > {5}'.format(_nSignal, _nBackground, _significance, _sigError, _variable, _bestCutValue) )
+    print('nSig = {0} , nBkg = {1} with significance = {2} +/- {3} for {4} score > {5}'.format( round(_nSignal, 2), round(_nBackground, 2), round(_significance, 3), round(_sigError, 3), _variable, round(_bestCutValue, 3)) )
           
-    return _bestSignificance, _bestCutValue
+    return _bestSignificance, _bestCutValue, _sigError
 
 
 def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU', _btags='4'):
