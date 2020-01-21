@@ -114,7 +114,7 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
     return data_train, data_test, labels_train, labels_test
 
 
-def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, _savePlot=False):
+def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir=''):
        
     if len(_dict.keys()) < len(_labels):
         print ("!!! Unequal number of arrays and labels. Learn to count better.")
@@ -156,13 +156,13 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     plt.show()
     
     #save an image file
-    if(_savePlot):
+    if(savePlot):
         _scope    = _title.split(' ')[0].lower()
         _variable = _xtitle.lstrip('Jet Pair').replace(' ','').replace('[GeV]','').replace('(','_').replace(')','')
         _filename  = _scope + '_' + _variable
         if _normed:
             _filename = _filename + '_norm'
-        fig.savefig( _filename+'.png', bbox_inches='tight' )
+        fig.savefig( saveDir + _filename+'.png', bbox_inches='tight' )
     
     
     return
@@ -303,47 +303,39 @@ def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
     return _test_signal_data.copy(), _test_signal_labels.copy(), _test_bkg_data.copy(), _test_bkg_labels.copy()
 
 
-def makeHistoryPlots(_history, _curves=['loss'], _modelName=''):
+def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, saveDir=''):
     """ make history curves for user-specified training parameters"""
 
     for curve in _curves:
-        if curve == 'loss':
-            # summarize history for loss
-            plt.plot(_history.history['loss'])
-            plt.plot(_history.history['val_loss'])
+        plt.plot(_history.history[ curve])
+        plt.plot(_history.history['val_'+curve])
+        plt.xlabel('Epoch')
+        plt.legend(['Train', 'Test'], loc='upper right')
+        
+        if curve == 'loss':            # summarize history for loss
             plt.title('{} Model Loss'.format(_modelName))
             plt.ylabel('Loss [A.U.]')
-            plt.xlabel('Epoch')
-            plt.legend(['Train', 'Test'], loc='upper right')
-            plt.show()
-        elif curve == 'auc':
-            # summarize history for loss
-            plt.plot(_history.history['auc'])
-            plt.plot(_history.history['val_auc'])
+        elif curve == 'auc':            # summarize history for loss
             plt.title('{} Model AUC'.format(_modelName))
             plt.ylabel('AUC [A.U.]')
-            plt.xlabel('Epoch')
-            plt.legend(['Train', 'Test'], loc='lower right')
-            plt.show()
-        elif curve == 'categorical_accuracy':
-            # summarize history for accuracy
-            plt.plot(_history.history['categorical_accuracy'])
-            plt.plot(_history.history['val_categorical_accuracy'])
+        elif curve == 'categorical_accuracy': # summarize history for accuracy
             plt.title('{} Accuracy'.format(_modelName))
             plt.ylabel('Accuracy [%]')
-            plt.xlabel('Epoch')
-            plt.legend(['Train', 'Test'], loc='lower right')
-            plt.show()
-
-        else:
-            # summarize history for accuracy
-            plt.plot(_history.history[ curve])
-            plt.plot(_history.history['val_'+curve])
+        else:            # summarize history for accuracy
             plt.title('{} {}'.format(_modelName, curve))
             plt.ylabel('{} [A.U.]'.format(curve))
-            plt.xlabel('Epoch')
-            plt.legend(['Train', 'Test'], loc='lower right')
-            plt.show()
+
+            
+        # store figure copy for later saving
+        fig = plt.gcf()
+
+        # draw interactively
+        plt.show()
+    
+        #save an image file
+        if(savePlot):
+            _filename  = '{}_history_{}'.format(_modelName, curve)
+            fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
 
     return
 

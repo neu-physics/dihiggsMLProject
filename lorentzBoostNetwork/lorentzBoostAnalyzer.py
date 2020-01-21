@@ -187,21 +187,19 @@ class lorentzBoostAnalyzer:
         return _model
 
 
-    def fit_model( self, epochs=10, batch_size=512, model_hyperparams={}):
+    def fit_model( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100, modelName=''):
            
         # *** 0. Create model
         _model = self.createModelLBN(model_hyperparams)
-        #self.createModelLBN(model_hyperparams)
-        
+        modelName = self.modelName if modelName == '' else modelName
+                
         # *** 1. Define output directory
-        model_dir = os.path.join(topDir, "lbn", "models", self.modelName)
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
+        model_dir = self.getModelDir( modelName )
             
         # *** 2. Define callbacks for training
         fit_callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(model_dir, self.modelName)+'.hdf5',
+                filepath=os.path.join(model_dir, modelName)+'.hdf5',
                 save_best_only=True,
                 save_weights_only=True,
                 monitor="val_auc",
@@ -215,7 +213,7 @@ class lorentzBoostAnalyzer:
                 #monitor='val_loss', 
                 #mode='min', 
                 verbose=1, 
-                patience=100, 
+                patience=patience, 
                 min_delta=.0025,
             ),
         ]
@@ -227,7 +225,7 @@ class lorentzBoostAnalyzer:
         
         # *** 4. Fit!!
         print('++ Begin model training\n')
-        _history = _model.fit(data[0], data[1],
+        self.history = _model.fit(data[0], data[1],
                               validation_data=validation_data,
                               epochs=epochs,
                               batch_size=batch_size,
@@ -236,13 +234,16 @@ class lorentzBoostAnalyzer:
         self.model = _model
     
         # *** 5. Save hyperparameters
-        hp_filename=os.path.join(model_dir, self.modelName)+'_hyperparameters.json'
+        hp_filename=os.path.join(model_dir, modelName)+'_hyperparameters.json'
         with open(hp_filename, 'w') as outfile:
             json.dump( self.hyperparameters, outfile)
-            
 
-        # *** 6. Store best model
-        self.load_model( self.modelName, best_model=True )
+
+        # *** 6. Save history plots
+        makeHistoryPlots( self.history, ['categorical_accuracy', 'loss', 'auc'], 'LBN', savePlot=True, saveDir=model_dir)
+
+        # *** 7. Store best model
+        self.load_model( modelName, best_model=True )
 
         #return self.model, self.history
 
@@ -270,21 +271,75 @@ class lorentzBoostAnalyzer:
         #return self.model
     
 
-    def test_model( self, _model):
+    def test_model( self, _model, modelName='', savePlots=False):
         """test model for significance etc"""
 
-        # *** 0. Split testing data into signal and background samples
+        # *** 0. Define output directory if appropriate
+        modelName = self.modelName if modelName == '' else modelName
+        model_dir = self.getModelDir( modelName ) + '/'        
+        
+        # *** 1. Split testing data into signal and background samples
         hh_data_test, hh_labels_test, qcd_data_test, qcd_labels_test = returnTestSamplesSplitIntoSignalAndBackground(self.testVectorsByEvent, self.testLabelsByEvent)
 
-        # """ 1. Make predictions
+        # """ 2. Make predictions
         pred_hh = _model.predict(np.array(hh_data_test))
         pred_qcd = _model.predict(np.array(qcd_data_test))
 
         # *** 3. Make plot of prediction results
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh[:,0], 'qcd_pred':pred_qcd[:,0]}
-        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'LBN Signal Score', 0, 1, _nBins, _yMax = 5, _normed=True, _savePlot=False )
+        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'LBN Signal Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=savePlots, saveDir=model_dir)
 
         # *** 4. Get best cut value for ff-NN assuming some minimal amount of signal
         print("++ Calculating best significance")
-        returnBestCutValue('ff-NN', pred_hh[:,0].copy(), pred_qcd[:,0].copy(), _minBackground=200, _testingFraction=self.testingFraction)
+
+        sig, cut, err = returnBestCutValue('ff-NN', pred_hh[:,0].copy(), pred_qcd[:,0].copy(), _minBackground=200, _testingFraction=self.testingFraction)
+
+        return sig, cut, err
+
+
+    def getModelDir(self, modelName):
+        """ common function for setting model directory"""
+
+        # *** 1. Define output directory and create if necessary
+        model_dir = os.path.join(topDir, "lbn", "models", modelName)
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+
+        return model_dir
+    
+    def runIterations( self, iterations=5, epochs=10, batch_size=512, model_hyperparams={}, patience=100 ):
+        """ run user-specified iterations on same model"""
+
+        results={}
+
+        # *** 1. Iteration
+        for step in range(0, iterations):
+
+            # ** A. Fit Xth iteration of model
+            modelName = '{}_step{}'.format(self.modelName, step)
+            self.fit_model(epochs=epochs, batch_size=batch_size, model_hyperparams=model_hyperparams, patience=patience, modelName = modelName)
+                        
+            # ** B. Test model
+            sig, cut, err = self.test_model( self.best_model, modelName=modelName, savePlots=True )
+            
+            # ** C. Store best cut value in dictionary
+            results[step] = {'Sig': sig, 'Error': err, 'Cut': cut}
+
+        print (results)
+        
+        # *** 2. Find best
+        best_iteration = -1
+        for iStep in results:
+            if best_iteration == -1:
+                best_iteration = iStep
+            else:
+                if results[iStep]['Sig'] > results[best_iteration]['Sig']:
+                    best_iteration = iStep
+
+        print("\nBest iteration was step {}:".format(best_iteration))
+        print('Significance = {} +/- {} with score > {}\n'.format( round(results[best_iteration]['Sig'], 3), round(results[best_iteration]['Error'], 3), round(results[best_iteration]['Cut'], 3)))
+
+
+        
+
