@@ -4,8 +4,8 @@ echo "Starting job on " `date` #Date/time of start of job
 echo "Running on: `uname -a`" #Condor job is running on this node
 echo "System software: `cat /etc/redhat-release`" #Operating System on that node
 
-#source /cvmfs/sft.cern.ch/lcg/views/LCG_92/x86_64-centos7-gcc62-opt/setup.sh # CentOS7
-source /cvmfs/sft.cern.ch/lcg/views/LCG_89/x86_64-slc6-gcc62-opt/setup.sh # SLC6
+source /cvmfs/sft.cern.ch/lcg/views/LCG_92/x86_64-centos7-gcc62-opt/setup.sh # CentOS7
+#source /cvmfs/sft.cern.ch/lcg/views/LCG_89/x86_64-slc6-gcc62-opt/setup.sh # SLC6
 
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/madgraph5/MG5_aMC_v2.6.6.tar.gz .
 xrdcp -s root://cmseos.fnal.gov//store/user/benjtann/upgrade/delphes/PhaseII/MinBias_100k.pileup .
@@ -39,8 +39,14 @@ cp Delphes/cards/CMS_PhaseII/trackMomentumResolution.tcl Template/Common/Cards/
 cp Delphes/cards/CMS_PhaseII/muonTightId.tcl Template/Common/Cards/
 cp Delphes/cards/CMS_PhaseII/muonLooseId.tcl Template/Common/Cards/
 echo "----> sed Delphes card for pileup location"
-sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_0PU_v02.tcl
-sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v02.tcl
+#sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_0PU_v02.tcl
+#sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v02.tcl
+#sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v03.tcl
+#sed -i "s|/eos/cms/store/group/upgrade/delphes/PhaseII/|${_CONDOR_SCRATCH_DIR}/|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v04.tcl
+sed -i "s|/MinBias_100k.pileup|${_CONDOR_SCRATCH_DIR}/MinBias_100k.pileup|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_0PU_v02.tcl
+sed -i "s|/MinBias_100k.pileup|${_CONDOR_SCRATCH_DIR}/MinBias_100k.pileup|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v02.tcl
+sed -i "s|/MinBias_100k.pileup|${_CONDOR_SCRATCH_DIR}/MinBias_100k.pileup|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v03.tcl
+sed -i "s|/MinBias_100k.pileup|${_CONDOR_SCRATCH_DIR}/MinBias_100k.pileup|g" Delphes/cards/CMS_PhaseII/CMS_PhaseII_200PU_v04.tcl
 
 echo "----> Try generating some events?"
 echo $PWD
