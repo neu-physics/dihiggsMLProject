@@ -13,7 +13,7 @@ from keras.layers import Dense, Activation, Dropout, BatchNormalization
 from keras.utils import normalize, to_categorical
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.model_selection import StratifiedKFold
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
 from keras.regularizers import l1, l2
 from keras.backend import manual_variable_initialization 
 import json
@@ -216,6 +216,11 @@ class lorentzBoostAnalyzer:
                 patience=patience, 
                 min_delta=.0025,
             ),
+            tf.keras.callbacks.CSVLogger(
+                filename=os.path.join(model_dir, modelName)+'_training.log',
+                separator=';',
+                append=False,
+            ),
         ]
         
         # *** 3. Safety checks for data
@@ -288,7 +293,7 @@ class lorentzBoostAnalyzer:
         # *** 3. Make plot of prediction results
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh[:,0], 'qcd_pred':pred_qcd[:,0]}
-        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'LBN Signal Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=savePlots, saveDir=model_dir)
+        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'LBN Signal Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=savePlots, saveDir=model_dir, writeSignificance=True, _testingFraction=self.testingFraction)
 
         # *** 4. Get best cut value for ff-NN assuming some minimal amount of signal
         print("++ Calculating best significance")

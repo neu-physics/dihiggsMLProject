@@ -114,7 +114,7 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
     return data_train, data_test, labels_train, labels_test
 
 
-def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir=''):
+def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir='', writeSig=False, _testingFraction=1.0):
        
     if len(_dict.keys()) < len(_labels):
         print ("!!! Unequal number of arrays and labels. Learn to count better.")
@@ -148,6 +148,14 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     #draw legend
     plt.legend(loc='upper left')
     #plt.text(.1, .1, s1)
+
+    # ** X. Add significance and cut if requested
+    if writeSignificance==True:
+        _pred_sig = _dict['pred_hh']
+        _pred_bkg = _dict['pred_qcd']
+
+        sig, cut, err = returnBestCutValue('ff-NN', _pred_sig.copy(), pred_bkg.copy(), _minBackground=200, _testingFraction=_testingFraction)
+
     
     # store figure copy for later saving
     fig = plt.gcf()
