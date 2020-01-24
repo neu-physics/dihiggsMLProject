@@ -25,7 +25,7 @@ from lbn import LBN, LBNLayer
 # Fix random seed for reproducibility
 seed = 7
 np.random.seed(seed)
-tf.random.set_seed(seed)
+#tf.random.set_seed(seed)
 
 import sys, os
 sys.path.insert(0, '/home/btannenw/Desktop/ML/dihiggsMLProject/')
@@ -291,13 +291,18 @@ class lorentzBoostAnalyzer:
         pred_qcd = _model.predict(np.array(qcd_data_test))
 
         # *** 3. Make plot of prediction results
+        print("++ Plotting test sample prediction results")
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh[:,0], 'qcd_pred':pred_qcd[:,0]}
         compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'LBN Signal Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=savePlots, saveDir=model_dir, writeSignificance=True, _testingFraction=self.testingFraction)
 
-        # *** 4. Get best cut value for ff-NN assuming some minimal amount of signal
-        print("++ Calculating best significance")
+        # *** 4. Make ROC curve
+        print("++ Making ROC curve")
+        testPredsByEvent = _model.predict(self.testVectorsByEvent.copy())
+        makeEfficiencyCurves( dict(label="LBN+DNN", labels=self.testLabelsByEvent, prediction=testPredsByEvent, color="blue"), saveDir=model_dir, _modelName=modelName, savePlot=savePlots)
 
+        # *** 5. Get best cut value for model assuming some minimal amount of signal
+        print("++ Calculating best significance")
         sig, cut, err = returnBestCutValue('ff-NN', pred_hh[:,0].copy(), pred_qcd[:,0].copy(), _minBackground=200, _testingFraction=self.testingFraction)
 
         return sig, cut, err

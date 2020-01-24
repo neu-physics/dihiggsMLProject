@@ -114,7 +114,7 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
     return data_train, data_test, labels_train, labels_test
 
 
-def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir='', writeSig=False, _testingFraction=1.0):
+def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir='', writeSignificance=False, _testingFraction=1.0):
        
     if len(_dict.keys()) < len(_labels):
         print ("!!! Unequal number of arrays and labels. Learn to count better.")
@@ -151,12 +151,12 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
 
     # ** X. Add significance and cut if requested
     if writeSignificance==True:
-        _pred_sig = _dict['pred_hh']
-        _pred_bkg = _dict['pred_qcd']
+        _pred_sig = _dict['hh_pred']
+        _pred_bkg = _dict['qcd_pred']
 
-        sig, cut, err = returnBestCutValue('ff-NN', _pred_sig.copy(), pred_bkg.copy(), _minBackground=200, _testingFraction=_testingFraction)
-
-    
+        sig, cut, err = returnBestCutValue(_xtitle, _pred_sig.copy(), _pred_bkg.copy(), _minBackground=200, _testingFraction=_testingFraction)
+        plt.text(x=0.6, y=0.12, s= '$\sigma$ = {} $\pm$ {}\n (score > {})'.format(round(sig, 2), round(err, 2), round(cut, 3)), fontsize=13 )
+            
     # store figure copy for later saving
     fig = plt.gcf()
     
@@ -347,7 +347,7 @@ def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, 
 
     return
 
-def makeEfficiencyCurves(*data):
+def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
     """ make curve of signal efficiency vs background rejection given some inputs"""
 
     # basic plot setup
@@ -372,8 +372,17 @@ def makeEfficiencyCurves(*data):
 
     # legend
     leg = plt.legend(loc="lower left", fontsize="small")
-    #leg.get_frame().set_linewidth(0.0)
+    
+    # store figure copy for later saving
+    fig = plt.gcf()
 
+    # draw interactively
     plt.show()
+    
+    #save an image file
+    if(savePlot):
+        _filename  = '{}_ROC'.format(_modelName)
+        fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
+
 
     return
