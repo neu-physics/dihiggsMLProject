@@ -16,9 +16,11 @@ from sklearn.model_selection import StratifiedKFold
 from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
 from keras.regularizers import l1, l2
 from keras.backend import manual_variable_initialization 
-import json
-
 manual_variable_initialization(True)
+
+import json
+import multiprocessing as mp
+from time import sleep
 
 from lbn import LBN, LBNLayer
 
@@ -187,7 +189,7 @@ class lorentzBoostAnalyzer:
         return _model
 
 
-    def fit_model( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100, modelName=''):
+    def fit_model( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100, modelName='', verbose=1):
            
         # *** 0. Create model
         _model = self.createModelLBN(model_hyperparams)
@@ -231,10 +233,11 @@ class lorentzBoostAnalyzer:
         # *** 4. Fit!!
         print('++ Begin model training\n')
         self.history = _model.fit(data[0], data[1],
-                              validation_data=validation_data,
-                              epochs=epochs,
-                              batch_size=batch_size,
-                              callbacks=fit_callbacks,
+                                  validation_data=validation_data,
+                                  epochs=epochs,
+                                  batch_size=batch_size,
+                                  callbacks=fit_callbacks,
+                                  verbose=verbose,
         )
         self.model = _model
     
@@ -251,6 +254,38 @@ class lorentzBoostAnalyzer:
         self.load_model( modelName, best_model=True )
 
         #return self.model, self.history
+
+
+    def fit_swarm( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100):
+        """ some fitting with particle swarm"""
+
+        # *** 0. Figure out what step we're on ... I worry about this when running in parallel
+        model_dir = self.getModelDir('')
+        _modelStem = self.modelName + '_step'
+        _previousRuns = []
+        #_delay = np.abs(3*np.random.normal())
+        #sleep(_delay)
+        _currentProcess = mp.current_process()
+        _swarmID = int(str(_currentProcess).split('-')[1].split(',')[0])
+
+        print(_currentProcess, _currentProcess.pid, _swarmID)
+
+        for d, s, f in os.walk(model_dir):
+            for dd in d.split('\n'):
+                if _modelStem in dd:
+                    _previousRuns.append(int(dd.split(_modelStem)[1]))
+
+        #_nextRun = (max(_previousRuns)+1 if len(_previousRuns)>0 else 0) + _swarmID
+        _nextRun = (max(_previousRuns) if len(_previousRuns)>0 else 0) + _swarmID
+        
+        # *** 1. Fit Xth iteration of model
+        modelName = '{}_step{}'.format(self.modelName, _nextRun)
+        self.fit_model(epochs=epochs, batch_size=batch_size, model_hyperparams=model_hyperparams, patience=patience, modelName = modelName, verbose=0)
+
+        # *** 2. Evaluate best_model and return AUC?
+        evals = self.best_model.evaluate(self.testVectorsByEvent, self.testLabelsByEvent, verbose=0) # reutnrs list of [loss, accuracy, auc]
+
+        return (1-evals[2]) # FIXME... figure out how to get PSO to try to maximize instead of minimize
 
 
     def load_model(self, modelDirectory, best_model=False):
