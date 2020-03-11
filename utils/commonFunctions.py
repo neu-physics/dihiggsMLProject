@@ -255,14 +255,14 @@ def importDatasets( _hhLabel = "500k", _qcdLabel = "2M"):
 
     #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
     _qcd_raw = pd.read_csv(
-        '/Users/flywire/Desktop/sci/dihiggsMLProject/data/Ben/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+        '/eos/user/l/lian/diHiggs/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
         #'/Users/flywire/Desktop/sci/dihiggsMLProject/data/qcd_2M_training.csv'
         )
     _qcd_raw['isSignal'] = 0
 
     
     _hh_raw = pd.read_csv(
-        '/Users/flywire/Desktop/sci/dihiggsMLProject/data/Ben/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+        '/eos/user/l/lian/diHiggs/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
         #'/Users/flywire/Desktop/sci/dihiggsMLProject/higgsReconstruction/diHiggs_reco/dihiggs_outputDataForLearning_diHiggs_reco.csv'
         #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv'
         )
