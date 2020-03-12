@@ -1,0 +1,1 @@
+root://cmseos.fnal.gov//eos/uscms/store/user/benjtann/upgrade/samples/pp2hh4b_1MEvents_addConstituents_0PU_v2-06/15000-17500/pp2hh4b_14TeV_0PU_AUTO-v2/Events/run_01_decayed_1/tag_1_delphes_events.root
