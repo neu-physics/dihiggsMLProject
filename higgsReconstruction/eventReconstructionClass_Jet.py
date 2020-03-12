@@ -14,11 +14,12 @@ import pickle
 
 class eventReconstruction:
     
-    def __init__ (self, _datasetName, _inputFile, _isDihiggsMC, _isTestRun = False):
+    def __init__ (self, _datasetName, _inputFile, _isDihiggsMC, _isTestRun = False, _saveIdx = 0):
         self.datasetName   = _datasetName
         self.inputFileName = _inputFile
         self.isTestRun     = _isTestRun
         self.isDihiggsMC   = _isDihiggsMC
+        self.saveIdx       = _saveIdx
         if os.path.isdir( self.datasetName )==False:
             os.mkdir( self.datasetName )
 
@@ -44,6 +45,8 @@ class eventReconstruction:
         self.variableCategoryDict = {'All':[], 'Matchable':[], 'Best':[], 'Best+Matchable':[], 'Correct':[]}
         
         # Jet constituents information
+        self.jetPtCut = 20
+        self.jetEtaCut = 2.0
         self.jetConsCand_Names = ["EFlowTrack", "EFlowNeutralHadron", "EFlowPhoton"]
         self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
         self.jetOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity"]
@@ -72,6 +75,7 @@ class eventReconstruction:
         self.nBTags = 0
         self.quarkIndices  = []
         self.jetIndices    = []
+        self.jetIndicesPtCut = []
         self.allJetIndices = []
         self.matchedQuarksToJets = {}
         self.jetVectorDict = {}
@@ -123,10 +127,6 @@ class eventReconstruction:
             if iEvt%2000==0:
                 print("Analyzing event number",iEvt)
 
-            #jetConstituent = self.getListOfJetCons( iEvt )
-            #for cons in jetConstituent:
-            #    print("AFTER:   UID: {0}  PT: {1}  Eta: {2}  Phi: {3}  Y: {4}".format(cons.get('UID'), cons.get('PT'), cons.get('Eta'), cons.get('Phi'), cons.get('rapidity')))
-
 
             # *** 1. Get truth information
             self.getTruthInformation( iEvt )
@@ -142,10 +142,6 @@ class eventReconstruction:
             # *** 4. Evaluate all pairing algorithms
             self.evaluatePairingAlgorithms( iEvt )
 
-            # *** 4.5. Get Jet Constituents
-            if(self.saveJetConstituents==True):
-                jetConstituent = self.getListOfJetCons( iEvt )
-                self.outputJetCons(jetConstituent)
 
         # *** 5. Store output data in .csv for later usage
         self.writeDataForTraining()
@@ -447,6 +443,7 @@ class eventReconstruction:
         self.nBTags = 0
         self.jetIndices = []
         self.allJetIndices = []
+        self.jetIndicesPtCut = []
         untaggedJetIndices = []
         taggedJetIndices   = []
 
@@ -457,6 +454,7 @@ class eventReconstruction:
                 # surpringly some jets (<1%) have negative mass. filter these out
                 self.jetCutflow['pt+eta'] += 1
                 self.nJets += 1
+                self.addJetToList( self.jetIndicesPtCut, _iEvent, iJet)
          
 
                 if self.l_jetBTag[_iEvent][iJet] == 0: # un-tagged jets
@@ -978,6 +976,8 @@ class eventReconstruction:
 
     def getRecoInformation( self, _iEvent ):
         self.returnNumberAndListOfJetIndicesPassingCuts( _iEvent )
+        if(self.saveJetConstituents==True):
+            self.outputJetCons( _iEvent )
         self.nJetsPerEvent.append( self.nJets )
         self.nBTagsPerEvent.append( self.nBTags  )
         self.countEvents( 'All' )
@@ -1000,9 +1000,9 @@ class eventReconstruction:
         return 
 
     def getJetConsCand( self ):
+        Cons_list = []
         #obj_name = ["EFlowTrack", "EFlowNeutralHadron", "EFlowPhoton"]
         #obj_keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
-        Cons_list = []
         #Cons_list[i] is feature for object obj_name[i]
         #Cons_list[iObj][iKey][iEvt][iCons]
         for obj in self.jetConsCand_Names:
@@ -1021,12 +1021,11 @@ class eventReconstruction:
     def getListOfJetCons( self, _iEvent ):
         ConsList = []
         #print("For Event: {}".format(_iEvent))
-        for iJet in range(0,len(self.l_jetCons[_iEvent])):
+        for iJet in self.jetIndicesPtCut:
             #print("For Jet: {0} PT: {1} Eta: {2} Phi: {3} ".format(iJet,self.l_jetPt[_iEvent][iJet],self.l_jetEta[_iEvent][iJet],self.l_jetPhi[_iEvent][iJet]))
-            for iCons in range(0,len(self.l_jetCons[_iEvent][iJet])):
-                #print(self.jetConsCand[0][])
-                for iObj_t in range(0,len(self.jetConsCand)):
-                    for iObj in range(0,len(self.jetConsCand[iObj_t][0][_iEvent])):
+            for iCons in range(0,len(self.l_jetCons[_iEvent][iJet])):   #loop over all constituents in a jet
+                for iObj_t in range(0,len(self.jetConsCand)):     #loop over all types of object s.t. tracks towers etc.
+                    for iObj in range(0,len(self.jetConsCand[iObj_t][0][_iEvent])):   #loop over all particles in each object type
                         if(self.l_jetCons[_iEvent][iJet][iCons]==self.jetConsCand[iObj_t][0][_iEvent][iObj]):
                             ConsList.append(
                                 JetCons(self.jetConsCand[iObj_t][0][_iEvent][iObj], #UID
@@ -1041,8 +1040,8 @@ class eventReconstruction:
         #self.JetConsList.append(ConsList)
         return ConsList
 
-    def outputJetCons( self, ConsList ):
-        #prop_keys = ["UID", "PT", "Eta", "Phi", "E", "rapidity"]
+    def outputJetCons( self, _iEvent ):
+        ConsList = self.getListOfJetCons( _iEvent )
         cons = []
         for iCons in ConsList:
             cons_properties = []
@@ -1155,7 +1154,7 @@ class eventReconstruction:
 
     def writeDataForTraining(self):
 
-        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning_{0}.csv'.format(self.datasetName)
+        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning_{0}_{1}.csv'.format(self.datasetName,self.saveIdx)
         _csvFile = open(_csvName, mode='w')
         _writer = csv.DictWriter(_csvFile, fieldnames=self.outputVariableNames)
         _writer.writeheader()
@@ -1173,7 +1172,7 @@ class eventReconstruction:
         return
 
     def writeJetData(self):
-        _savename = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputJetData_{0}.pkl'.format(self.datasetName)
+        _savename = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputJetData_{0}_{1}.pkl'.format(self.datasetName,self.saveIdx)
         file_to_save = open(_savename, "wb")
         pickle.dump(self.outputJetConsInfo, file_to_save, -1)
         file_to_save.close()
