@@ -42,160 +42,36 @@
 %\emailAdd{crt9ag@virginia.edu}
 
 
-\abstract{Machine learning techniques have started being low-key legit in the realm of high energy physics analysis. Powerful methods can be used to identify and measure rare processes from previously insurmountable backgrounds. One of the most profound Standard Model signatures still to be discovered at the LHC is the pair production of Higgs bosons through the Higgs self-coupling. The small cross section of this process makes detection in the largest branching fraction ($hh\rightarrow b\bar{b}$) very difficult. This paper benchmarks a variety of approaches (boosted decision trees, neural networks with straightforward and novel architectures, semi-supervised algorithms) against one another in an attempt to catalogue the various avaiable to high energy physicists as the era of the HL-LHC approaches.}
-
+\input{abstract.tex}
 
 
 \begin{document} 
 \maketitle
 \flushbottom
 
-\section{Some examples and best-practices}
-\label{sec:intro}
+%%% Main body of paper
+\input{intro.tex}
 
-For internal references use label-refs: see section~\ref{sec:intro}.
-Bibliographic citations can be done with cite: refs.~\cite{a,b,c}.
-When possible, align equations on the equal sign. The package
-\texttt{amsmath} is already loaded. See \eqref{eq:x}.
-\begin{equation}
-\label{eq:x}
-\begin{split}
-x &= 1 \,,
-\qquad
-y = 2 \,,
-\\
-z &= 3 \,.
-\end{split}
-\end{equation}
-Also, watch out for the punctuation at the end of the equations.
+%\input{defaultContent_1.tex}
+%\input{defaultContent_2.tex}
+
+\input{dihiggs_physics.tex}
+
+\input{supervised_ml.tex}
+
+\input{semi-supervised_ml.tex}
+
+\input{results.tex}
+
+\input{conclusions.tex}
 
 
-If you want some equations without the tag (number), please use the available
-starred-environments. For example:
-\begin{equation*}
-x = 1
-\end{equation*}
+% Extra stuff
+\input{acknowledgements.tex}
 
-The amsmath package has many features. For example, you can use use
-\texttt{subequations} environment:
-\begin{subequations}\label{eq:y}
-\begin{align}
-\label{eq:y:1}
-a & = 1
-\\
-\label{eq:y:2}
-b & = 2
-\end{align}
-and it will continue to operate across the text also.
-\begin{equation}
-\label{eq:y:3}
-c = 3
-\end{equation}
-\end{subequations}
-The references will work as you'd expect: \eqref{eq:y:1},
-\eqref{eq:y:2} and \eqref{eq:y:3} are all part of \eqref{eq:y}.
+\input{bibliography.tex}
 
-A similar solution is available for figures via the \texttt{subfigure}
-package (not loaded by default and not shown here). 
-All figures and tables should be referenced in the text and should be
-placed at the top of the page where they are first cited or in
-subsequent pages. Positioning them in the source file
-after the paragraph where you first reference them usually yield good
-results. See figure~\ref{fig:i} and table~\ref{tab:i}.
-
-\begin{figure}[tbp]
-\centering % \begin{center}/\end{center} takes some additional vertical space
-\includegraphics[width=.45\textwidth,trim=0 380 0 200,clip]{img1.pdf}
-\hfill
-\includegraphics[width=.45\textwidth,origin=c,angle=180]{img2.pdf}
-% "\includegraphics" is very powerful; the graphicx package is already loaded
-\caption{\label{fig:i} Always give a caption.}
-\end{figure}
-
-\begin{table}[tbp]
-\centering
-\begin{tabular}{|lr|c|}
-\hline
-x&y&x and y\\
-\hline 
-a & b & a and b\\
-1 & 2 & 1 and 2\\
-$\alpha$ & $\beta$ & $\alpha$ and $\beta$\\
-\hline
-\end{tabular}
-\caption{\label{tab:i} We prefer to have borders around the tables.}
-\end{table}
-
-We discourage the use of inline figures (wrapfigure), as they may be
-difficult to position if the page layout changes.
-
-We suggest not to abbreviate: ``section'', ``appendix'', ``figure''
-and ``table'', but ``eq.'' and ``ref.'' are welcome. Also, please do
-not use \texttt{\textbackslash emph} or \texttt{\textbackslash it} for
-latin abbreviaitons: i.e., et al., e.g., vs., etc.
+\input{appendixA.tex}
 
 
-
-\section{Sections}
-\subsection{And subsequent}
-\subsubsection{Sub-sections}
-\paragraph{Up to paragraphs.} We find that having more levels usually
-reduces the clarity of the article. Also, we strongly discourage the
-use of non-numbered sections (e.g.~\texttt{\textbackslash
-  subsubsection*}).  Please also see the use of
-``\texttt{\textbackslash texorpdfstring\{\}\{\}}'' to avoid warnings
-from the hyperref package when you have math in the section titles
-
-
-
-\appendix
-\section{Some title}
-Please always give a title also for appendices.
-
-
-
-
-
-\acknowledgments
-
-This is the most common positions for acknowledgments. A macro is
-available to maintain the same layout and spelling of the heading.
-
-\paragraph{Note added.} This is also a good position for notes added
-after the paper has been written.
-
-
-
-
-
-% The bibliography will probably be heavily edited during typesetting.
-% We'll parse it and, using the arxiv number or the journal data, will
-% query inspire, trying to verify the data (this will probalby spot
-% eventual typos) and retrive the document DOI and eventual errata.
-% We however suggest to always provide author, title and journal data:
-% in short all the informations that clearly identify a document.
-
-\begin{thebibliography}{99}
-
-\bibitem{a}
-Author, \emph{Title}, \emph{J. Abbrev.} {\bf vol} (year) pg.
-
-\bibitem{b}
-Author, \emph{Title},
-arxiv:1234.5678.
-
-\bibitem{c}
-Author, \emph{Title},
-Publisher (year).
-
-
-% Please avoid comments such as "For a review'', "For some examples",
-% "and references therein" or move them in the text. In general,
-% please leave only references in the bibliography and move all
-% accessory text in footnotes.
-
-% Also, please have only one work for each \bibitem.
-
-
-\end{thebibliography}
 \end{document}
