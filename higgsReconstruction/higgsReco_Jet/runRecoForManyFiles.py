@@ -1,6 +1,6 @@
 import os,sys,argparse
-sys.path.insert(0, '/afs/cern.ch/user/l/lian/public/diHiggs/dihiggsMLProject/higgsReconstruction')
-#sys.path.insert(0,'../')
+#sys.path.insert(0, '/afs/cern.ch/user/l/lian/public/diHiggs/dihiggsMLProject/higgsReconstruction')
+sys.path.insert(0,'../')
 
 from eventReconstructionClass_Jet import eventReconstruction
 import argparse
@@ -25,7 +25,7 @@ with open(args.filename) as f:
   while line:
     file_to_process = line.strip('\n')
     print(args.diHiggs)
-    reco = eventReconstruction(args.tag, file_to_process, diHiggs, _isTestRun = True, _saveIdx=process_idx)
+    reco = eventReconstruction(args.tag, file_to_process, diHiggs, _isTestRun = False, _saveIdx=process_idx)
     reco.setConsiderFirstNjetsInPT(4)
     reco.setNJetsToStore(10)
     reco.setRequireNTags(4)
