@@ -263,8 +263,6 @@ class lorentzBoostAnalyzer:
         model_dir = self.getModelDir('')
         _modelStem = self.modelName + '_step'
         _previousRuns = []
-        #_delay = np.abs(3*np.random.normal())
-        #sleep(_delay)
         _currentProcess = mp.current_process()
         _swarmID = int(str(_currentProcess).split('-')[1].split(',')[0])
 
@@ -275,7 +273,6 @@ class lorentzBoostAnalyzer:
                 if _modelStem in dd:
                     _previousRuns.append(int(dd.split(_modelStem)[1]))
 
-        #_nextRun = (max(_previousRuns)+1 if len(_previousRuns)>0 else 0) + _swarmID
         _nextRun = (max(_previousRuns) if len(_previousRuns)>0 else 0) + _swarmID
         
         # *** 1. Fit Xth iteration of model
@@ -285,6 +282,10 @@ class lorentzBoostAnalyzer:
         # *** 2. Evaluate best_model and return AUC?
         evals = self.best_model.evaluate(self.testVectorsByEvent, self.testLabelsByEvent, verbose=0) # reutnrs list of [loss, accuracy, auc]
 
+        # ** 3. Make Test model
+        sig, cut, err = self.test_model( self.best_model, modelName=modelName, savePlots=True )
+
+        
         return (1-evals[2]) # FIXME... figure out how to get PSO to try to maximize instead of minimize
 
 
