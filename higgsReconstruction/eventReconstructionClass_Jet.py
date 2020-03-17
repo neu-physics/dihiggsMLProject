@@ -1023,9 +1023,8 @@ class eventReconstruction:
         #print("For Event: {}".format(_iEvent))
         for iJet in self.jetIndicesPtCut:
             #print("For Jet: {0} PT: {1} Eta: {2} Phi: {3} ".format(iJet,self.l_jetPt[_iEvent][iJet],self.l_jetEta[_iEvent][iJet],self.l_jetPhi[_iEvent][iJet]))
-            #for iCons in range(0,len(self.l_jetCons[_iEvent][iJet])):   #loop over all constituents in a jet
             for iObj_t in range(0,len(self.jetConsCand)):     #loop over all types of object s.t. tracks towers etc.
-                mask = np.isin(self.jetConsCand[iObj_t][0][_iEvent],self.l_jetCons[_iEvent][iJet])
+                mask = np.isin(self.jetConsCand[iObj_t][0][_iEvent],self.l_jetCons[_iEvent][iJet])    #use a mask to pick all the candidats that are present in jet
                 UID_array = self.jetConsCand[iObj_t][0][_iEvent][mask]
                 PT_array = self.jetConsCand[iObj_t][1][_iEvent][mask]
                 Eta_array = self.jetConsCand[iObj_t][2][_iEvent][mask]
@@ -1040,17 +1039,6 @@ class eventReconstruction:
                                 E_array[iObj],   #E
                         )
                     )
-                    #for iObj in range(0,len(self.jetConsCand[iObj_t][0][_iEvent])):   #loop over all particles in each object type
-                    #    if(self.l_jetCons[_iEvent][iJet][iCons]==self.jetConsCand[iObj_t][0][_iEvent][iObj]):
-                    #        ConsList.append(
-                    #            JetCons(self.jetConsCand[iObj_t][0][_iEvent][iObj], #UID
-                    #                    self.jetConsCand[iObj_t][1][_iEvent][iObj], #PT
-                    #                    self.jetConsCand[iObj_t][2][_iEvent][iObj], #Eta
-                    #                    self.jetConsCand[iObj_t][3][_iEvent][iObj], #Phi
-                    #                    self.jetConsCand[iObj_t][4][_iEvent][iObj]  #E
-                    #                    )
-                    #        )
-                            
                             #print("UID: {0}  PT: {1}  Eta: {2}  Phi: {3}".format(self.jetConsCand[iObj_t][0][_iEvent][iObj],self.jetConsCand[iObj_t][1][_iEvent][iObj],self.jetConsCand[iObj_t][2][_iEvent][iObj],self.jetConsCand[iObj_t][3][_iEvent][iObj]))
         #self.JetConsList.append(ConsList)
         return ConsList
