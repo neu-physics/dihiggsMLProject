@@ -1037,7 +1037,7 @@ class eventReconstruction:
                                 E_array[iObj],   #E
                         )
                     )
-                    consList[-1].property['type'] = iObj_t # 0 == EFlowTrack, 1 == EFlowNeutralHadron, 2 == EFlowPhoton
+                    ConsList[-1].property['type'] = iObj_t # 0 == EFlowTrack, 1 == EFlowNeutralHadron, 2 == EFlowPhoton
 
                 #print("UID: {0}  PT: {1}  Eta: {2}  Phi: {3}".format(self.jetConsCand[iObj_t][0][_iEvent][iObj],self.jetConsCand[iObj_t][1][_iEvent][iObj],self.jetConsCand[iObj_t][2][_iEvent][iObj],self.jetConsCand[iObj_t][3][_iEvent][iObj]))
         #self.JetConsList.append(ConsList)

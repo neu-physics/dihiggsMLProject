@@ -71,9 +71,10 @@ class eventReconstruction:
         self.thisEventWasCorrectlyMatched = False
         self.nJets  = 0
         self.nBTags = 0
-        self.quarkIndices  = []
-        self.jetIndices    = []
-        self.allJetIndices = []
+        self.quarkIndices    = []
+        self.jetIndices      = []
+        self.storeJetIndices = []
+        self.allJetIndices   = []
         self.matchedQuarksToJets = {}
         self.jetVectorDict = {}
         self.quarkVectorDict = {}
@@ -438,6 +439,7 @@ class eventReconstruction:
         self.nJets = 0
         self.nBTags = 0
         self.jetIndices = []
+        self.storeJetIndices = []
         self.allJetIndices = []
         untaggedJetIndices = []
         taggedJetIndices   = []
@@ -449,6 +451,7 @@ class eventReconstruction:
                 # surpringly some jets (<1%) have negative mass. filter these out
                 self.jetCutflow['pt+eta'] += 1
                 self.nJets += 1
+                self.addJetToList( self.allJetIndices, _iEvent, iJet) # add to non-fixed-length list of jets passing kinematic cuts
 
                 if self.l_jetBTag[_iEvent][iJet] == 0: # un-tagged jets
                     untaggedJetIndices = self.addJetToList( untaggedJetIndices, _iEvent, iJet)
@@ -490,22 +493,22 @@ class eventReconstruction:
 
 
         # add block to make list of jet indices up to nJetsToStore which can be greater than considerFirstNjetsInPT. these are jets for low-level analysis and not for use in higgs reconstruction algorithm
-        self.allJetIndices = self.jetIndices.copy()
+        self.storeJetIndices = self.jetIndices.copy()
         i_jetParser = 0
-        while (len(self.allJetIndices) < self.nJetsToStore):
-            # run loop until either a) allJetIndices is length of nJetsToStore or break if exhausted event jetPt vector 
+        while (len(self.storeJetIndices) < self.nJetsToStore):
+            # run loop until either a) storeJetIndices is length of nJetsToStore or break if exhausted event jetPt vector 
             if i_jetParser > len(self.l_jetPt[_iEvent])-1:
                 break
 
             # append jet index if not already in list of indices
-            if i_jetParser not in self.allJetIndices:
-                self.allJetIndices.append(i_jetParser)
+            if i_jetParser not in self.storeJetIndices:
+                self.storeJetIndices.append(i_jetParser)
 
             # bump up iterator
             i_jetParser += 1
 
-        # trim allJetIndices if necessary but this should never happen unless user has specified some weird shit
-        self.allJetIndices = self.allJetIndices[:self.nJetsToStore]
+        # trim storeJetIndices if necessary but this should never happen unless user has specified some weird shit
+        self.storeJetIndices = self.storeJetIndices[:self.nJetsToStore]
         
         #print (self.nJets, self.nBTags, len(self.jetIndices), self.jetIndices, [self.l_jetPt[_iEvent][g] for g in self.jetIndices])
         
@@ -875,8 +878,8 @@ class eventReconstruction:
                                ] )
 
             # save info on all jets up to self.nJetsToStore
-            allJetVectors = [ TLorentzVector.PtEtaPhiMassLorentzVector( self.l_jetPt[_iEvent][iJet], self.l_jetEta[_iEvent][iJet], self.l_jetPhi[_iEvent][iJet], self.l_jetMass[_iEvent][iJet]) for iJet in self.allJetIndices ]
-            allJetBTags   = [ self.l_jetBTag[_iEvent][iJet] for iJet in self.allJetIndices ]
+            allJetVectors = [ TLorentzVector.PtEtaPhiMassLorentzVector( self.l_jetPt[_iEvent][iJet], self.l_jetEta[_iEvent][iJet], self.l_jetPhi[_iEvent][iJet], self.l_jetMass[_iEvent][iJet]) for iJet in self.storeJetIndices ]
+            allJetBTags   = [ self.l_jetBTag[_iEvent][iJet] for iJet in self.storeJetIndices ]
             allJetVectors = allJetVectors[:self.nJetsToStore] if len(allJetVectors) > self.nJetsToStore else allJetVectors
             allJetBTags   = allJetBTags[:self.nJetsToStore] if len(allJetBTags) > self.nJetsToStore else allJetBTags
             while len(allJetVectors) < self.nJetsToStore:
@@ -1046,7 +1049,11 @@ class eventReconstruction:
             for key in self.jetConsOutputKeys:
                 cons_properties.append(iCons.get(key))
             cons.append(np.array(cons_properties))
-        self.outputJetConsInfo.append(np.array(cons))
+
+        #self.outputJetConsInfo.append(np.array(cons))
+        totalInfo = {'nJets':self.nJets, 'nBTags':self.nBTags, 'Constituents':np.array(cons) }
+        self.outputJetConsInfo.append( totalInfo )
+
         return
 
 
