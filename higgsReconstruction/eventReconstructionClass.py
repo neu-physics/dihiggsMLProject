@@ -8,15 +8,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import copy, csv, os, itertools
+from JetCons import JetCons
+import pickle
 
 
 class eventReconstruction:
     
-    def __init__ (self, _datasetName, _inputFile, _isDihiggsMC, _isTestRun = False):
+    def __init__ (self, _datasetName, _inputFile, _isDihiggsMC, _isTestRun = False, _saveIdx = 0):
         self.datasetName   = _datasetName
         self.inputFileName = _inputFile
         self.isTestRun     = _isTestRun
         self.isDihiggsMC   = _isDihiggsMC
+        self.saveIdx       = _saveIdx
         if os.path.isdir( self.datasetName )==False:
             os.mkdir( self.datasetName )
 
@@ -34,11 +37,18 @@ class eventReconstruction:
         self.considerFirstNjetsInPT = -1
         self.saveAlgorithm = 'equalDijetMass'
         self.saveLowLevelVariablesForTraining = True
+        self.saveJetConstituents = False
 
         # Global Variables 
         self.outputDataForLearning = []
         self.pairingAlgorithms = ['minHarmonicMeanDeltaR', 'closestDijetMassesToHiggs', 'equalDijetMass', 'equalDeltaR', 'dijetMasses']
         self.variableCategoryDict = {'All':[], 'Matchable':[], 'Best':[], 'Best+Matchable':[], 'Correct':[]}
+        
+        # Jet constituents information
+        self.jetConsCand_Names = ["EFlowTrack", "EFlowNeutralHadron", "EFlowPhoton"]
+        self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
+        self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type"]
+        self.outputJetConsInfo = []
 
         self.cutflowDict = { 'All':0, 'Matchable':0, 'Fully Matched':0, '>= 1 Pair Matched':0}
         self.jetTagCategories = ['Incl',
@@ -88,9 +98,11 @@ class eventReconstruction:
         self.l_jetPhi         = []
         self.l_jetMass        = []
         self.l_jetBTag        = []
+        self.l_jetCons        = []
         self.l_missingET_met  = []
         self.l_missingET_phi  = []
         self.l_scalarHT       = []
+        self.jetConsCand      = []      #jet constituent candidate
 
 
     ##############################################################
@@ -107,7 +119,7 @@ class eventReconstruction:
         for iEvt in range(0,self.nEntries):
             # *** 0. Kick-out condition for testing
             if iEvt > 40 and self.isTestRun is True:
-                continue
+                break
             if iEvt%2000==0:
                 print("Analyzing event number",iEvt)
 
@@ -126,8 +138,13 @@ class eventReconstruction:
             # *** 4. Evaluate all pairing algorithms
             self.evaluatePairingAlgorithms( iEvt )
 
+
         # *** 5. Store output data in .csv for later usage
         self.writeDataForTraining()
+
+        # *** 6. Store output jet constituent data in .pkl
+        if(self.saveJetConstituents==True):
+            self.writeJetConsData()
 
         print( "Finished processing {0} events...".format(self.nEntries) )
 
@@ -248,6 +265,11 @@ class eventReconstruction:
         self.ptOrdered = bool(_ptOrdered)
     def getPtOrdered(self):
         print ("Order jets by pT: ", self.ptOrdered)
+
+    def setSaveJetConstituents(self, _saveJetCons):
+        self.saveJetConstituents = bool(_saveJetCons)
+    def getSaveJetConstituents(self):
+        print ("Save Jet Constituents: ", self.saveJetConstituents)
 
 
     def printAllOptions(self):
@@ -427,7 +449,6 @@ class eventReconstruction:
                 # surpringly some jets (<1%) have negative mass. filter these out
                 self.jetCutflow['pt+eta'] += 1
                 self.nJets += 1
-         
 
                 if self.l_jetBTag[_iEvent][iJet] == 0: # un-tagged jets
                     untaggedJetIndices = self.addJetToList( untaggedJetIndices, _iEvent, iJet)
@@ -948,6 +969,8 @@ class eventReconstruction:
 
     def getRecoInformation( self, _iEvent ):
         self.returnNumberAndListOfJetIndicesPassingCuts( _iEvent )
+        if(self.saveJetConstituents==True):
+            self.outputJetCons( _iEvent )
         self.nJetsPerEvent.append( self.nJets )
         self.nBTagsPerEvent.append( self.nBTags  )
         self.countEvents( 'All' )
@@ -968,6 +991,65 @@ class eventReconstruction:
             print ("!!! WARNING: Event = {0} did not find 4 truth b-quarks. Only found {1} !!!".format(iEvent, len(self.quarkIndices)))
             
         return 
+
+    def getJetConsCand( self ):
+        Cons_list = []
+        #obj_name = ["EFlowTrack", "EFlowNeutralHadron", "EFlowPhoton"]
+        #obj_keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
+        #Cons_list[i] is feature for object obj_name[i]
+        #Cons_list[iObj][iKey][iEvt][iCons]
+        for obj in self.jetConsCand_Names:
+            #print(obj)
+            obj_values = []
+            for key in self.jetConsCand_Keys:
+                if(not obj=="EFlowTrack"):
+                    if( key=="PT"):
+                        key = "ET"
+                    elif(key=="P"):
+                        key = "E"
+                obj_values.append(self.delphesFile[obj]["{0}.{1}".format(obj,key)].array())
+            Cons_list.append(obj_values)
+        return Cons_list
+
+    def getListOfJetCons( self, _iEvent ):
+        ConsList = []
+        #print("For Event: {}".format(_iEvent))
+        for iJet in self.allJetIndices:
+            #print("For Jet: {0} PT: {1} Eta: {2} Phi: {3} ".format(iJet,self.l_jetPt[_iEvent][iJet],self.l_jetEta[_iEvent][iJet],self.l_jetPhi[_iEvent][iJet]))
+            for iObj_t in range(0,len(self.jetConsCand)):     #loop over all types of object s.t. tracks towers etc.
+                mask = np.isin(self.jetConsCand[iObj_t][0][_iEvent],self.l_jetCons[_iEvent][iJet])    #use a mask to pick all the candidats that are present in jet
+                UID_array = self.jetConsCand[iObj_t][0][_iEvent][mask]
+                PT_array = self.jetConsCand[iObj_t][1][_iEvent][mask]
+                Eta_array = self.jetConsCand[iObj_t][2][_iEvent][mask]
+                Phi_array = self.jetConsCand[iObj_t][3][_iEvent][mask]
+                E_array = self.jetConsCand[iObj_t][4][_iEvent][mask]
+                for iObj in range(0,len(UID_array)):
+                    ConsList.append(
+                        JetCons(UID_array[iObj], #UID
+                                PT_array[iObj],  #PT
+                                Eta_array[iObj], #Eta
+                                Phi_array[iObj], #Phi
+                                E_array[iObj],   #E
+                        )
+                    )
+                    ConsList[-1].property['type'] = iObj_t # 0 == EFlowTrack, 1 == EFlowNeutralHadron, 2 == EFlowPhoton
+
+                #print("UID: {0}  PT: {1}  Eta: {2}  Phi: {3}".format(self.jetConsCand[iObj_t][0][_iEvent][iObj],self.jetConsCand[iObj_t][1][_iEvent][iObj],self.jetConsCand[iObj_t][2][_iEvent][iObj],self.jetConsCand[iObj_t][3][_iEvent][iObj]))
+        #self.JetConsList.append(ConsList)
+        return ConsList
+
+    def outputJetCons( self, _iEvent ):
+        ConsList = self.getListOfJetCons( _iEvent )
+        cons = []
+        for iCons in ConsList:
+            cons_properties = []
+            for key in self.jetConsOutputKeys:
+                cons_properties.append(iCons.get(key))
+            cons.append(np.array(cons_properties))
+        self.outputJetConsInfo.append(np.array(cons))
+        return
+
+
     
 
     def returnJetVectorInputsAsBranch( self, _df, _jetType='jet', _jetVar='px', _nJets=4):
@@ -1010,9 +1092,11 @@ class eventReconstruction:
             self.l_jetPhi         = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Phi']).tolist()
             self.l_jetMass        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Mass']).tolist()
             self.l_jetBTag        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.BTag']).tolist()
+            self.l_jetCons        = uproot.tree.TBranchMethods.array(self.delphesFile['Jet']['Jet.Constituents']).tolist()
             self.l_missingET_met  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.MET']).tolist()
             self.l_missingET_phi  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.Phi']).tolist()
             self.l_scalarHT       = uproot.tree.TBranchMethods.array(self.delphesFile['ScalarHT']['ScalarHT.HT']).tolist()
+            self.jetConsCand      = self.getJetConsCand()
             print("Finished loading branches...")
 
         elif '.csv' in self.inputFileName:
@@ -1068,7 +1152,7 @@ class eventReconstruction:
 
     def writeDataForTraining(self):
 
-        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning_{0}.csv'.format(self.datasetName)
+        _csvName = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputDataForLearning_{0}_{1}.csv'.format(self.datasetName,self.saveIdx)
         _csvFile = open(_csvName, mode='w')
         _writer = csv.DictWriter(_csvFile, fieldnames=self.outputVariableNames)
         _writer.writeheader()
@@ -1084,5 +1168,11 @@ class eventReconstruction:
         _csvFile.close()
        
         return
+
+    def writeJetConsData(self):
+        _savename = self.datasetName + '/' + ('dihiggs_' if self.isDihiggsMC else 'qcd_') + 'outputJetData_{0}_{1}.pkl'.format(self.datasetName,self.saveIdx)
+        file_to_save = open(_savename, "wb")
+        pickle.dump(self.outputJetConsInfo, file_to_save, -1)
+        file_to_save.close()
 
     

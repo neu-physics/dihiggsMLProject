@@ -37,7 +37,7 @@ class eventReconstruction:
         self.considerFirstNjetsInPT = -1
         self.saveAlgorithm = 'equalDijetMass'
         self.saveLowLevelVariablesForTraining = True
-        self.saveJetConstituents = True
+        self.saveJetConstituents = False
 
         # Global Variables 
         self.outputDataForLearning = []
@@ -45,11 +45,9 @@ class eventReconstruction:
         self.variableCategoryDict = {'All':[], 'Matchable':[], 'Best':[], 'Best+Matchable':[], 'Correct':[]}
         
         # Jet constituents information
-        self.jetPtCut = 20
-        self.jetEtaCut = 2.0
         self.jetConsCand_Names = ["EFlowTrack", "EFlowNeutralHadron", "EFlowPhoton"]
         self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
-        self.jetOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity"]
+        self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type"]
         self.outputJetConsInfo = []
 
         self.cutflowDict = { 'All':0, 'Matchable':0, 'Fully Matched':0, '>= 1 Pair Matched':0}
@@ -1039,7 +1037,9 @@ class eventReconstruction:
                                 E_array[iObj],   #E
                         )
                     )
-                            #print("UID: {0}  PT: {1}  Eta: {2}  Phi: {3}".format(self.jetConsCand[iObj_t][0][_iEvent][iObj],self.jetConsCand[iObj_t][1][_iEvent][iObj],self.jetConsCand[iObj_t][2][_iEvent][iObj],self.jetConsCand[iObj_t][3][_iEvent][iObj]))
+                    consList[-1].property['type'] = iObj_t # 0 == EFlowTrack, 1 == EFlowNeutralHadron, 2 == EFlowPhoton
+
+                #print("UID: {0}  PT: {1}  Eta: {2}  Phi: {3}".format(self.jetConsCand[iObj_t][0][_iEvent][iObj],self.jetConsCand[iObj_t][1][_iEvent][iObj],self.jetConsCand[iObj_t][2][_iEvent][iObj],self.jetConsCand[iObj_t][3][_iEvent][iObj]))
         #self.JetConsList.append(ConsList)
         return ConsList
 
@@ -1048,7 +1048,7 @@ class eventReconstruction:
         cons = []
         for iCons in ConsList:
             cons_properties = []
-            for key in self.jetOutputKeys:
+            for key in self.jetConsOutputKeys:
                 cons_properties.append(iCons.get(key))
             cons.append(np.array(cons_properties))
         self.outputJetConsInfo.append(np.array(cons))
