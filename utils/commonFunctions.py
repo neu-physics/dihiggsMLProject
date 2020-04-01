@@ -9,13 +9,13 @@ from sklearn.model_selection import train_test_split
 
 
 
-def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True ):
+def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True, hh_nEventsGen = 500e3, qcd_nEventsGen = 2e6 ):
     """ function to return lumi-scale for events used in testing and significance calculations """
 
     # *** 0. Set number of events and total HL-LHC lumi
     lumi_HLLHC = 3000 #fb-1
-    hh_nEventsGen = 500e3
-    qcd_nEventsGen = 2e6
+    #hh_nEventsGen = 500e3
+    #qcd_nEventsGen = 2e6
     #qcd_nEventsGen = 500e3
 
     nEventsGen = hh_nEventsGen if _isDihiggs else qcd_nEventsGen
@@ -169,11 +169,11 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     return
 
 
-def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, _testingFraction=1.):
+def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, _testingFraction=1., hh_nEventsGen = 500e3, qcd_nEventsGen = 2e6):
     """find best cut according to user-specified significance metric"""
 
-    _signalLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = True)
-    _bkgLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = False)
+    _signalLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = True, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
+    _bkgLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = False, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
     
     _bestSignificance = -1
     _bestCutValue = -1
@@ -204,6 +204,9 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
         if _nBackground < _minBackground: # 500 is semi-random choice.. it's where one series started to oscillate
             #print("continued on {0}".format(iCutValue))
             continue
+
+        if _nSignal <= 0:
+          continue
 
         if (np.sqrt( 1/(_nSignal/_signalLumiscale) + 1/(4*_nBackground/_bkgLumiscale) ) > 0.05 ):
             continue
