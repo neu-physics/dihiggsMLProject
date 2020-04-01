@@ -13,7 +13,8 @@ from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
 
 import sys
-sys.path.insert(0, '/afs/cern.ch/work/l/lian/public/diHiggs/dihiggsMLProject/')
+#sys.path.insert(0, '/afs/cern.ch/work/l/lian/public/diHiggs/dihiggsMLProject/')
+sys.path.insert(0, '/uscms/home/ali/nobackup/diHiggs/dihiggsMLProject/')
 from utils.commonFunctions import *
 
 parser = argparse.ArgumentParser()
@@ -35,8 +36,9 @@ def preprocess(x):
 def MakeSameLengthForGivenIdx(data,y,n,idx=[1,3,5],nJets=1):   #data is raw data, n is the number of Jet constituents to keep, idx is the index of useful variables of each jet constituents(the number of variables in data)
     data_modified_list = []
     valid_idx = []
-    for ievt, x in enumerate(data):
-        if(len(x)<nJets): 
+    for ievt, x_dict in enumerate(data):
+        x = x_dict['Constituents']
+        if(x_dict['nJets']<nJets): 
         #    data_modified_list.append(np.zeros((n,d)))
             continue
         elif(len(x)>=n):
