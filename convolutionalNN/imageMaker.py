@@ -51,7 +51,7 @@ class imageMaker:
 
         ## Objects per dataset
         # images for saving
-        self.final_images = [ [], [], [] ] # tracks, nHadrons, photons
+        self.final_images = [ [], [], [], [] ] # tracks, nHadrons, photons, composite (all three)
         self.final_eventQuantities = [ [], [] ] # nJets, nBTags
 
 
@@ -319,7 +319,7 @@ class imageMaker:
 
         # *** Set options for saving (bins, range, etc)
         _imgOpts = dict( _nbins_phi=51, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=51, _range_rap=[-3.0, 3.0] )
-
+        _compositeImages = []
         for iEvent in range(0, len(self.final_tracks[0])):
 
             # *** Loosely keep track of events
@@ -330,15 +330,21 @@ class imageMaker:
             _tracks_img = self.function_hist2d( self.final_tracks[0][iEvent], self.final_tracks[1][iEvent], self.final_tracks[2][iEvent], **_imgOpts)
             _nHadrons_img = self.function_hist2d( self.final_nHadrons[0][iEvent], self.final_nHadrons[1][iEvent], self.final_nHadrons[2][iEvent], **_imgOpts)
             _photons_img = self.function_hist2d( self.final_photons[0][iEvent], self.final_photons[1][iEvent], self.final_photons[2][iEvent], **_imgOpts)
+            _composite_img = np.stack( (_tracks_img, _nHadrons_img, _photons_img), axis = -1)
             
             self.final_tracks[3].append( _tracks_img )
             self.final_nHadrons[3].append( _nHadrons_img )
             self.final_photons[3].append( _photons_img )
 
+            # *** Make composite image (51, 51, 3)
+            _compositeImages.append( _composite_img )
+
+
         # *** Append to global list
         self.final_images[0] += self.final_tracks[3]
         self.final_images[1] += self.final_nHadrons[3]
         self.final_images[2] += self.final_photons[3]
+        self.final_images[3] += _compositeImages
         self.final_eventQuantities[0] += self.nJets
         self.final_eventQuantities[1] += self.nBTags
         
@@ -490,6 +496,7 @@ class imageMaker:
         hf.create_dataset('trackImgs', data=self.final_images[0], compression="gzip", compression_opts=3)
         hf.create_dataset('nHadronImgs', data=self.final_images[1], compression="gzip", compression_opts=3)
         hf.create_dataset('photonImgs', data=self.final_images[2], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs', data=self.final_images[3], compression="gzip", compression_opts=3)
         hf.create_dataset('nJets', data = self.final_eventQuantities[0], compression="gzip", compression_opts=3)
         hf.create_dataset('nBTags', data = self.final_eventQuantities[1], compression="gzip", compression_opts=3)
 
