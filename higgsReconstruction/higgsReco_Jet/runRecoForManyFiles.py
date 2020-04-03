@@ -2,7 +2,7 @@ import os,sys,argparse
 #sys.path.insert(0, '/afs/cern.ch/user/l/lian/public/diHiggs/dihiggsMLProject/higgsReconstruction')
 sys.path.insert(0,'../')
 
-from eventReconstructionClass_Jet import eventReconstruction
+from eventReconstructionClass import eventReconstruction
 import argparse
 
 parser = argparse.ArgumentParser()
