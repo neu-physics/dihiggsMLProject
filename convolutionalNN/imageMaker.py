@@ -141,7 +141,8 @@ class imageMaker:
         print( "Opening file: {} ...".format(_filename))
         if os.path.isfile(_filename):
             # Do something with the file
-            self.allEvents = pkl.load( open( _filename, 'rb' ))
+            with open(_filename, 'rb') as f:
+                self.allEvents = pkl.load( f )
             print( "Loading {} events...".format(len(self.allEvents)))
         else:
             print("File not accessible")
