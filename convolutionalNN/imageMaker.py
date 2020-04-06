@@ -32,7 +32,8 @@ class imageMaker:
         self.isTestRun = _isTestRun
         if os.path.isdir( self.datasetName )==False:
             os.mkdir( self.datasetName )
-
+        self.pixelWidth = 15
+            
         ## Objects per file
         # input file
         self.allEvents = []
@@ -77,6 +78,7 @@ class imageMaker:
 
             # *** 3. Make images
             self.makeEventImages()
+
 
         # *** 4. Save images from all processed files
         self.saveFilesToH5()
@@ -319,7 +321,7 @@ class imageMaker:
         """ construct the event images """
 
         # *** Set options for saving (bins, range, etc)
-        _imgOpts = dict( _nbins_phi=51, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=51, _range_rap=[-3.0, 3.0] )
+        _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
         _compositeImages = []
         for iEvent in range(0, len(self.final_tracks[0])):
 
@@ -337,7 +339,7 @@ class imageMaker:
             self.final_nHadrons[3].append( _nHadrons_img )
             self.final_photons[3].append( _photons_img )
 
-            # *** Make composite image (51, 51, 3)
+            # *** Make composite image (15, 15, 3)
             _compositeImages.append( _composite_img )
 
 
@@ -385,11 +387,10 @@ class imageMaker:
     
     def returnPlotOpts(self, _consLabel ):
         """ common function for returning plotting opts"""
-    
-        track_plotOpts  = dict(bins=(101, 101), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Reds)
-        #photon_plotOpts = dict(bins=(33, 33), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.YlGnBu)
-        photon_plotOpts = dict(bins=(51, 51), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Blues)
-        nHad_plotOpts   = dict(bins=(51, 51), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Greens)
+
+        track_plotOpts  = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Reds)
+        photon_plotOpts = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Blues)
+        nHad_plotOpts   = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Greens)
 
         _plotOpts = {}
         if _consLabel == 'Tracks':
