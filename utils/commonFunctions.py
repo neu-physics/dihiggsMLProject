@@ -9,14 +9,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, roc_auc_score
 
 
-def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True ):
+def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True, _nEventsGen=-1 ):
     """ function to return lumi-scale for events used in testing and significance calculations """
 
     # *** 0. Set number of events and total HL-LHC lumi
     lumi_HLLHC = 3000 #fb-1
+
     hh_nEventsGen = 500e3
     qcd_nEventsGen = 2e6
-    #qcd_nEventsGen = 500e3
+
+    if _isDihiggs and _nEventsGen > 0:
+        hh_nEvetsGen = _nEventsGen
+    if _isDihiggs==False and _nEventsGen > 0:
+        qcd_nEvetsGen = _nEventsGen
 
     nEventsGen = hh_nEventsGen if _isDihiggs else qcd_nEventsGen
     

@@ -52,7 +52,7 @@ class imageMaker:
 
         ## Objects per dataset
         # images for saving
-        self.final_images = [ [], [], [], [] ] # tracks, nHadrons, photons, composite (all three)
+        self.final_images = [ [], [], [], [], [] ] # tracks, nHadrons, photons, composite (all three), composite (only events with >=4j)
         self.final_eventQuantities = [ [], [] ] # nJets, nBTags
 
 
@@ -323,6 +323,7 @@ class imageMaker:
         # *** Set options for saving (bins, range, etc)
         _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
         _compositeImages = []
+        _compositeImages_4j = []
         for iEvent in range(0, len(self.final_tracks[0])):
 
             # *** Loosely keep track of events
@@ -341,13 +342,15 @@ class imageMaker:
 
             # *** Make composite image (15, 15, 3)
             _compositeImages.append( _composite_img )
-
+            if self.nJets[iEvent] >= 4:
+                _compositeImages_4j.append( _composite_img )
 
         # *** Append to global list
         self.final_images[0] += self.final_tracks[3]
         self.final_images[1] += self.final_nHadrons[3]
         self.final_images[2] += self.final_photons[3]
         self.final_images[3] += _compositeImages
+        self.final_images[4] += _compositeImages_4j
         self.final_eventQuantities[0] += self.nJets
         self.final_eventQuantities[1] += self.nBTags
         
@@ -499,6 +502,7 @@ class imageMaker:
         hf.create_dataset('nHadronImgs', data=self.final_images[1], compression="gzip", compression_opts=3)
         hf.create_dataset('photonImgs', data=self.final_images[2], compression="gzip", compression_opts=3)
         hf.create_dataset('compositeImgs', data=self.final_images[3], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_4j', data=self.final_images[3], compression="gzip", compression_opts=3)
         hf.create_dataset('nJets', data = self.final_eventQuantities[0], compression="gzip", compression_opts=3)
         hf.create_dataset('nBTags', data = self.final_eventQuantities[1], compression="gzip", compression_opts=3)
 
