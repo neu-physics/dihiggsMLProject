@@ -11,6 +11,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
+import tensorflow as tf
 
 import sys
 #sys.path.insert(0, '/afs/cern.ch/work/l/lian/public/diHiggs/dihiggsMLProject/')
@@ -25,6 +26,13 @@ parser.add_argument('--nBkg',dest='nBkg',type=int, default=-1)
 parser.add_argument('--nJets',dest='nJets', type=int, default=1)
 
 args = parser.parse_args()
+
+def auc( y_true, y_pred ) :
+      score = tf.py_function( lambda y_true, y_pred : roc_auc_score( y_true, y_pred, average='macro', sample_weight=None).astype('float32'),
+                          [y_true, y_pred],
+                          'float32',
+                          name='sklearnAUC' )
+      return score
 
 def preprocess(x):
     mask = x[:,0] > 0
@@ -52,11 +60,11 @@ def MakeSameLengthForGivenIdx(data,y,n,idx=[1,3,5],nJets=1):   #data is raw data
     y_mod = np.array(y)[valid_idx]
     return data_mod,y_mod
 
-def plot_history(history):
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
+def plot_history(history,tag='loss'):
+    plt.plot(history.history[tag])
+    plt.plot(history.history["val_{}".format(tag)])
+    plt.title('model_{}'.format(tag))
+    plt.ylabel(tag)
     plt.xlabel('epoch')
     plt.legend(['train', 'val'], loc='upper left')
     return plt
@@ -125,30 +133,41 @@ Y = to_categorical(y, num_classes=2)
 batch_size = 500
 val = 0.2
 test = 0.2
-Phi_sizes, F_sizes = (100, 100, 128), (100, 100, 100)
+Phi_sizes, F_sizes = (200, 200, 256), (200, 200, 200)
 num_epoch = 1000
 (z_train, z_val, z_test, 
  p_train, p_val, p_test,
  Y_train, Y_val, Y_test) = data_split(X[:,:,0], X[:,:,1:], Y, val=val, test=test)
-es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=50)
-mc = ModelCheckpoint('best_model.h5', monitor='val_loss', mode='min', verbose=1, save_best_only=True)
-efn = EFN(input_dim=2, Phi_sizes=Phi_sizes, F_sizes=F_sizes, Phi_l2_regs=5e-04, F_l2_regs=5e-04)
+es = EarlyStopping(monitor='val_auc', mode='max', verbose=1, patience=50, restore_best_weights=True)
+mc = ModelCheckpoint('best_model.h5', monitor='val_auc', mode='max', verbose=1, save_best_only=True)
+efn = EFN(input_dim=2, Phi_sizes=Phi_sizes, F_sizes=F_sizes, metrics=['acc', auc], Phi_l2_regs=5e-05, F_l2_regs=5e-05)
 history = efn.fit([z_train, p_train], Y_train,
           epochs=num_epoch,
           batch_size=batch_size,
           validation_data=([z_val, p_val], Y_val),
           verbose=1, callbacks=[es, mc])
 
-saved_model = load_model('best_model.h5')
+dependencies = {
+  'auc': tf.keras.metrics.AUC(name="auc")
+}
+saved_model = load_model('best_model.h5', custom_objects=dependencies)
 preds = saved_model.predict([z_test, p_test], batch_size=1000)
 #preds = efn.predict([z_test, p_test], batch_size=1000)
 auc = roc_auc_score(Y_test[:,1], preds[:,1])
 print('EFN AUC:', auc)
 
 #save plots
-p_history = plot_history(history)
-p_history.savefig("lossHistory.png")
-p_history.close()
+p_loss = plot_history(history,'loss')
+p_loss.savefig("lossHistory.png")
+p_loss.close()
+p_acc = plot_history(history,'acc')
+p_acc.savefig("accHistory.png")
+p_acc.close()
+p_auc = plot_history(history,'auc')
+p_auc.savefig("aucHistory.png")
+p_auc.close()
+
+
 p_score = plot_EFNScore(Y_test,preds,nsig,nbkg)
 p_score.savefig("score.png")
 p_score.close()
