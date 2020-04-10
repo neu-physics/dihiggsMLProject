@@ -328,15 +328,19 @@ def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, 
         if curve == 'loss':            # summarize history for loss
             plt.title('{} Model Loss'.format(_modelName))
             plt.ylabel('Loss [A.U.]')
-        elif curve == 'auc':            # summarize history for loss
+            plt.ylim([0, 1])
+        elif curve == 'auc':            # summarize history for AUC
             plt.title('{} Model AUC'.format(_modelName))
             plt.ylabel('AUC [A.U.]')
+            plt.ylim([0, 1])
         elif curve == 'categorical_accuracy': # summarize history for accuracy
             plt.title('{} Accuracy'.format(_modelName))
             plt.ylabel('Accuracy [%]')
+            plt.ylim([0.5, 1])
         else:            # summarize history for accuracy
             plt.title('{} {}'.format(_modelName, curve))
             plt.ylabel('{} [A.U.]'.format(curve))
+            plt.ylim([0.5, 1])
 
             
         # store figure copy for later saving
@@ -357,8 +361,8 @@ def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
     
     # basic plot setup
     #plt.plot([0, 1], [1, 0], color="black", linestyle="--")
-    plt.plot([0, 0], [1, 1], color="black", linestyle="--")
-    plt.title("ROC curves")
+    plt.plot( [[0, 0], [1, 1]], color="black", linestyle="--")
+    plt.title("{} ROC curve".format(_modelName))
     #plt.xlabel("Signal Efficiency")
     #plt.ylabel("Background Rejection")
     plt.xlabel("Background Efficiency")
@@ -398,3 +402,48 @@ def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
 
 
     return
+
+
+
+def overlayROCCurves(data, savePlot=False, saveDir=''):
+    """ overlay multiple ROC curves given some inputs"""
+
+    # basic plot setup
+    plt.plot( [[0, 0], [1, 1]], color="black", linestyle="--")
+    plt.title("ROC Curves")
+    plt.xlabel("Background Efficiency")
+    plt.ylabel("Signal Efficiency")
+    plt.xlim(1e-4, 1)
+    plt.ylim(1e-3, 1)
+    #plt.xscale('log')
+    #plt.yscale('log')
+    plt.tick_params(axis="both", direction="in")
+
+    
+    for d in data:    
+        auc = roc_auc_score(d['labels'], d['prediction'])
+        label = "{} ({:.3f})".format(d.get("label", "ROC"), auc)
+        if len(d["prediction"][0]) == 1:
+            roc = roc_curve(d["labels"][:], d["prediction"][:])
+        else:
+            roc = roc_curve(d["labels"][:, 1], d["prediction"][:, 1])
+        fpr, tpr, _ = roc
+        plt.plot(fpr, tpr, label=label, color=d.get("color", "#118730")) # signal eff vs background eff
+
+    # legend
+    leg = plt.legend(loc="lower right", fontsize="small")
+
+    # store figure copy for later saving
+    fig = plt.gcf()
+
+    # draw interactively
+    plt.show()
+
+    #save an image file
+    if(savePlot):
+        _filename  = '{}_ROC'.format(_modelName)
+        fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
+
+
+    return 
+
