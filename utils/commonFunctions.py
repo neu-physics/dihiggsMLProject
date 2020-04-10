@@ -354,12 +354,15 @@ def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, 
 
 def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
     """ make curve of signal efficiency vs background rejection given some inputs"""
-
+    
     # basic plot setup
-    plt.plot([0, 1], [1, 0], color="black", linestyle="--")
+    #plt.plot([0, 1], [1, 0], color="black", linestyle="--")
+    plt.plot([0, 0], [1, 1], color="black", linestyle="--")
     plt.title("ROC curves")
-    plt.xlabel("Signal Efficiency")
-    plt.ylabel("Background Rejection")
+    #plt.xlabel("Signal Efficiency")
+    #plt.ylabel("Background Rejection")
+    plt.xlabel("Background Efficiency")
+    plt.ylabel("Signal Efficiency")
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     #plt.xscale('log')
@@ -370,9 +373,13 @@ def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
     for d in data:
         auc = roc_auc_score(d["labels"], d["prediction"])
         label = "{} ({:.3f})".format(d.get("label", "ROC"), auc)
-        roc = roc_curve(d["labels"][:, 1], d["prediction"][:, 1])
+        if len(d["prediction"][0]) == 1:
+            roc = roc_curve(d["labels"][:], d["prediction"][:])
+        else:
+            roc = roc_curve(d["labels"][:, 1], d["prediction"][:, 1])
         fpr, tpr, _ = roc
-        plt.plot(tpr, 1 - fpr, label=label, color=d.get("color", "#118730"))
+        #plt.plot(tpr, 1 - fpr, label=label, color=d.get("color", "#118730")) # signal eff vs background rejection
+        plt.plot(fpr, tpr, label=label, color=d.get("color", "#118730")) # signal eff vs background eff
         
 
     # legend
