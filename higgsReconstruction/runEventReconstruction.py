@@ -68,7 +68,9 @@ for infile in open(args.inputTXTFile, 'r'):
     eventReconstructor = eventReconstruction(outName, infile, isDihiggsSignal)
     eventReconstructor.setConsiderFirstNjetsInPT(4)
     eventReconstructor.setNJetsToStore(10)
-    eventReconstructor.setRequireNTags(4)
+    eventReconstructor.setRequireNTags(2)
+    #eventReconstructor.setRequireNTags(4)
+    eventReconstructor.setSaveJetConstituents(True)
     eventReconstructor.runReconstruction()
 
     print(workDir, outName)

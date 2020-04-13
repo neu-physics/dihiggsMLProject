@@ -65,12 +65,14 @@ class eventReconstruction:
         self.eventCounterDict = { algorithm:{category:copy.deepcopy(self.cutflowDict) for category in self.jetTagCategories} for algorithm in self.pairingAlgorithms}
         self.nBTagsPerEvent  = []
         self.nJetsPerEvent   = []
+        self.HTPerEvent   = []
 
         # Per-Event Variables
         self.thisEventIsMatchable = False
         self.thisEventWasCorrectlyMatched = False
         self.nJets  = 0
         self.nBTags = 0
+        self.HT  = 0
         self.quarkIndices    = []
         self.jetIndices      = []
         self.storeJetIndices = []
@@ -438,6 +440,7 @@ class eventReconstruction:
     def returnNumberAndListOfJetIndicesPassingCuts(self, _iEvent):
         self.nJets = 0
         self.nBTags = 0
+        self.HT = 0
         self.jetIndices = []
         self.storeJetIndices = []
         self.allJetIndices = []
@@ -974,7 +977,10 @@ class eventReconstruction:
         self.returnNumberAndListOfJetIndicesPassingCuts( _iEvent )
         if(self.saveJetConstituents==True):
             self.outputJetCons( _iEvent )
-        self.nJetsPerEvent.append( self.nJets )
+
+        self.HT = self.l_scalarHT[_iEvent][0]
+        self.HTPerEvent.append( self.HT )
+        self.nJetsPerEvent.append( self.nJets  )
         self.nBTagsPerEvent.append( self.nBTags  )
         self.countEvents( 'All' )
         
@@ -1051,7 +1057,7 @@ class eventReconstruction:
             cons.append(np.array(cons_properties))
 
         #self.outputJetConsInfo.append(np.array(cons))
-        totalInfo = {'nJets':self.nJets, 'nBTags':self.nBTags, 'Constituents':np.array(cons) }
+        totalInfo = {'nJets':self.nJets, 'nBTags':self.nBTags, 'HT':self.HT, 'Constituents':np.array(cons) }
         self.outputJetConsInfo.append( totalInfo )
 
         return
