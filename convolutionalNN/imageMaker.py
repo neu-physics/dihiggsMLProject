@@ -19,7 +19,7 @@ from JetCons import JetCons
 
 class imageMaker:
 
-    def __init__ (self, _datasetName, _inputFileList, _isSignal, _pixelWidth=15, _isTestRun=False):
+    def __init__ (self, _datasetName, _inputFileList, _isSignal=None, _pixelWidth=15, _isTestRun=False):
         self.datasetName = _datasetName
 
         if os.path.isfile(_inputFileList):
@@ -28,7 +28,10 @@ class imageMaker:
         else:
             print("!!! Input file {} DNE !!!".format(_inputFileList) )
 
-        self.isSignal = _isSignal
+        self.isSignal = _isSignal 
+        if self.isSignal == None:
+            self.isSignal = True if 'pp2hh4b' in self.datasetName else False
+
         self.isTestRun = _isTestRun
         if os.path.isdir( self.datasetName )==False:
             os.mkdir( self.datasetName )
