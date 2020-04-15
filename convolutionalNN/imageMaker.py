@@ -2,12 +2,17 @@
 ##  Date:    April 1, 2020
 ##  Purpose: Class to handle making images for CNN consumption from jet constituent data
 
+import os 
 import numpy as np
 import pickle as pkl
-from matplotlib import pyplot as plt
 import h5py as h5
 
-import os 
+import matplotlib
+#if "_CONDOR_SCRATCH_DIR" in os.environ:
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+
+
 import uproot, uproot_methods
 import uproot_methods.classes.TLorentzVector as TLorentzVector
 import uproot_methods.classes.TVector3 as TVector3

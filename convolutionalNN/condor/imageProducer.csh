@@ -21,8 +21,8 @@ do
   xrdcp -s $filepath .
 done < ./$1
 
-touch tempCondor.txt
-echo $PWD/*.pkl > tempCondor.txt
+touch tempCondorFiles.txt
+ls $PWD/*.pkl > tempCondorFiles.txt
 echo "----> List input file(s) locally"
 ls -a  *.pkl
 
@@ -32,18 +32,24 @@ python -m venv ${ENVNAME}
 source ${ENVNAME}/bin/activate
 python -m pip install uproot
 
+echo "----> create temp wrapper"
+touch temp_wrapper.py
+echo "#!/usr/bin/python" >> temp_wrapper.py
+echo "from imageMaker import imageMaker" >> temp_wrapper.py
+echo "imager = imageMaker('$2', 'tempCondorFiles.txt')" >> temp_wrapper.py
+echo "imager.processFiles()" >> temp_wrapper.py
 
-echo "----> Try reconstructing some events?"
+echo "----> Try imaging some events"
 echo $PWD
-python imageMaker.py --inputTXTFile tempCondor.txt --outputTag $2
+python temp_wrapper.py 
+
+echo "----> Post imaging"
 
 
 #### Now that the run is over, there is one or more root files created
 echo "List all the things = "
 ls ./*
 ls ./$2/*
-ls ./$2/images/*
-ls ./$2/plots/*
 
 echo "List all .h5 files = "
 ls ./$2/images/*.h5
@@ -57,7 +63,22 @@ do
   xrdcp -f ${FILE} ${OUTDIR}/${FILE} 2>&1
   XRDEXIT=$?
   if [[ $XRDEXIT -ne 0 ]]; then
-    rm *.root
+    rm *.h5
+    echo "exit code $XRDEXIT, failure in xrdcp"
+    exit $XRDEXIT
+  fi
+  rm ${FILE}
+done
+
+echo ">> xrdcp .png plots"
+ls ./$2/plots/*
+for FILE in ./$2/plots/*.png
+do
+  echo "xrdcp -f ${FILE} ${OUTDIR}/${FILE}"
+  xrdcp -f ${FILE} ${OUTDIR}/${FILE} 2>&1
+  XRDEXIT=$?
+  if [[ $XRDEXIT -ne 0 ]]; then
+    rm *.png
     echo "exit code $XRDEXIT, failure in xrdcp"
     exit $XRDEXIT
   fi
@@ -67,5 +88,8 @@ done
 echo " >> cleanup and close"
 deactivate
 cd ${_CONDOR_SCRATCH_DIR}
+rm tempCondorFiles.txt
+rm temp_wrapper.py
 rm -rf ${ENVNAME}
+rm -rf *.pkl
 

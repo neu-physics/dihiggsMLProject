@@ -49,9 +49,9 @@ else:
 
 # ** C. Test nOutputFiles and exit if not sensible
 if (args.nOutputFiles).isdigit() is True:
-    print "-- Running with {0} outputfiles\n".format(args.nOutputFiles)
+    print( "-- Running with {0} outputfiles\n".format(args.nOutputFiles) )
 else:
-    print "#### WARNING: Passed option of {0} number of output files makes no sense. DNE ####\nEXITING\n".format(args.nOutputFiles)
+    print( "#### WARNING: Passed option of {0} number of output files makes no sense. DNE ####\nEXITING\n".format(args.nOutputFiles))
     quit()
 
 # FIXME, 05-08-19 BBT
@@ -79,11 +79,11 @@ for startFile in np.arange(0, len(pklFileList), stepSize):
 
     # ** A. Calculate upper limit of file range
     endFile = min( (startFile + stepSize ), len(pklFileList)  )
-    iteration = startFile / stepSize
+    iteration = str(int(startFile / stepSize))
 
     # ** B. Make temporary subset .txt
-    tempFileList = pklFileList[startFile:endFile]
-    tempTxtName = "temp_{}.txt".format(startFile)
+    tempFileList = pklFileList[int(startFile):int(endFile)]
+    tempTxtName = "{}/temp_{}.txt".format(args.outputDir, iteration)
     os.system( "touch {}".format( tempTxtName ) )
     with open( '{}'.format(tempTxtName), 'w') as f:
         for t_file in tempFileList:
@@ -98,19 +98,17 @@ for startFile in np.arange(0, len(pklFileList), stepSize):
     os.system("echo Should_Transfer_Files = YES >> {0}".format(jdl_filename))
     os.system("echo WhenToTransferOutput = ON_EXIT >> {0}".format(jdl_filename))
     os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
-    os.system("echo Transfer_Input_Files = imageFiles.csh, ../imageMaker.py, {} >> {}".format(tempTxtFile, jdl_filename))
-    os.system("echo Output = {0}/condor_out/outfile_{1}.out  >> {2}".format(args.outputDir, eventRange, jdl_filename))
-    os.system("echo Error = {0}/condor_err/outfile_{1}.err >> {2}".format(args.outputDir, eventRange, jdl_filename))
-    os.system("echo Log = {0}/condor_logs/outfile_{1}.log >> {2}".format(args.outputDir, eventRange, jdl_filename))
+    os.system("echo Transfer_Input_Files = imageProducer.csh, ../../higgsReconstruction/JetCons.py, ../imageMaker.py, {} >> {}".format(tempTxtName, jdl_filename))
+    os.system("echo Output = {0}/condor_out/outfile_{1}.out  >> {2}".format( args.outputDir, iteration, jdl_filename))
+    os.system("echo Error = {0}/condor_err/outfile_{1}.err >> {2}".format(args.outputDir , iteration, jdl_filename))
+    os.system("echo Log = {0}/condor_logs/outfile_{1}.log >> {2}".format(args.outputDir , iteration, jdl_filename))
     os.system("echo x509userproxy = ${{X509_USER_PROXY}} >> {0}".format(jdl_filename))
     os.system("echo Arguments = {0} {1} {2} >> {3}".format( tempTxtName, str(args.outputDir + '_' + iteration), args.outputDir, jdl_filename)) 
     os.system("echo Queue 1 >> {0}".format(jdl_filename))       
     #os.system("""echo +DesiredOS="SL7" >> {}""".format(jdl_filename))
     os.system("condor_submit {0}".format(jdl_filename))
 
-    os.system("rm {}".format(tempTxtFile)) # remove temp txt file
-
 # *** 3. Cleanup submission directory
 print( "\n##########     Cleanup submission directory     ##########\n")
-os.system("rm *.jdl")
+os.system("rm *.jdl") # remove temp condor submission scripts
 
