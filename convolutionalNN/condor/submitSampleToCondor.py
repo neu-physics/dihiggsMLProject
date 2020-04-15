@@ -83,9 +83,10 @@ for startFile in np.arange(0, len(pklFileList), stepSize):
 
     # ** B. Make temporary subset .txt
     tempFileList = pklFileList[int(startFile):int(endFile)]
-    tempTxtName = "{}/temp_{}.txt".format(args.outputDir, iteration)
-    os.system( "touch {}".format( tempTxtName ) )
-    with open( '{}'.format(tempTxtName), 'w') as f:
+    tempTxtName = "temp_{}_{}.txt".format( args.outputDir, iteration)
+    tempTxtDir  = "{}/{}".format(args.outputDir, tempTxtName)
+    os.system( "touch {}".format( tempTxtDir ) )
+    with open( '{}'.format(tempTxtDir), 'w') as f:
         for t_file in tempFileList:
             f.write( t_file )
 
@@ -98,7 +99,7 @@ for startFile in np.arange(0, len(pklFileList), stepSize):
     os.system("echo Should_Transfer_Files = YES >> {0}".format(jdl_filename))
     os.system("echo WhenToTransferOutput = ON_EXIT >> {0}".format(jdl_filename))
     os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
-    os.system("echo Transfer_Input_Files = imageProducer.csh, ../../higgsReconstruction/JetCons.py, ../imageMaker.py, {} >> {}".format(tempTxtName, jdl_filename))
+    os.system("echo Transfer_Input_Files = imageProducer.csh, ../../higgsReconstruction/JetCons.py, ../imageMaker.py, {} >> {}".format(tempTxtDir, jdl_filename))
     os.system("echo Output = {0}/condor_out/outfile_{1}.out  >> {2}".format( args.outputDir, iteration, jdl_filename))
     os.system("echo Error = {0}/condor_err/outfile_{1}.err >> {2}".format(args.outputDir , iteration, jdl_filename))
     os.system("echo Log = {0}/condor_logs/outfile_{1}.log >> {2}".format(args.outputDir , iteration, jdl_filename))

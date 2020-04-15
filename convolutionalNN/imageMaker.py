@@ -8,8 +8,8 @@ import pickle as pkl
 import h5py as h5
 
 import matplotlib
-#if "_CONDOR_SCRATCH_DIR" in os.environ:
-matplotlib.use('Agg')
+if "_CONDOR_SCRATCH_DIR" in os.environ:
+    matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 
