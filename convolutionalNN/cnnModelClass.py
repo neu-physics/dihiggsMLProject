@@ -22,6 +22,7 @@
 
 
 # Import the needed libraries
+import os
 import tensorflow as tf
 import numpy as np
 import matplotlib
@@ -29,7 +30,7 @@ if "_CONDOR_SCRATCH_DIR" in os.environ:
     matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import h5py as h5
-import os 
+
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, BatchNormalization, Flatten, Conv2D, MaxPooling2D
@@ -59,14 +60,14 @@ class cnnModelClass:
         self.qcdFile = _qcdFile
         self.imageCollection = _imageCollection
         self.isTestRun = _testRun
-        self.self.loadSavedModel = _loadSavedModel
+        self.loadSavedModel = _loadSavedModel
 
         # Class Defaults
         #self.transparency = 0.5  # transparency of plots
 
         # Global Variables 
-        self.hhImgs = []
-        self.qcdImgs = []
+        self.hh = []
+        self.qcd = []
         self.model = []
         self.model_history = []
         self.images_train = []
@@ -75,7 +76,8 @@ class cnnModelClass:
         self.labels_test  = []
         #self.outputDataForLearning = []
 
-
+        print("+++ Initialized {}".format(self.modelName) )
+        
     ##############################################################
     ##                           MAIN                           ##
     ##############################################################
@@ -83,7 +85,7 @@ class cnnModelClass:
     def run(self):
         ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
 
-        processInputs()
+        self.processInputs()
 
         self.makeCNN()
 
@@ -91,8 +93,6 @@ class cnnModelClass:
             self.trainCNN()
 
         self.evaluateModel()
-
-        self.saveModel()
 
         return
 
@@ -104,31 +104,32 @@ class cnnModelClass:
     def processInputs(self):
         """ open files and load images"""
 
-        # Get image data
-        if self.isTestRun:
-            _nEventsForTesting = 1000
-            hh_h5  = h5.File( self.hhName , 'r')[:_nEventsForTesting]
-            qcd_h5  = h5.File( self.qcdName , 'r')[:_nEventsForTesting]
-        else:
-            hh_h5  = h5.File( self.hhName , 'r')
-            qcd_h5  = h5.File( self.qcdName , 'r')
+        # Load files
+        hh_h5  = h5.File( self.hhFile, 'r')
+        qcd_h5  = h5.File( self.qcdFile , 'r')
 
         # Print image collection names
         print("+++ Available image collections: {}".format( ",".join(hh_h5.keys()) ))
         
         # Load user-specified image collection
-        self.hh = hh_h5[ self.imageCollection ]
-        self.qcd = qcd_h5[ self.imageCollection]
-        print("+++ {} hh images, {} qcd images"format( len(self.hh), len(self.qcd)))
+        if self.isTestRun:
+            _nEventsForTesting = 1000
+            self.hh  = hh_h5[ self.imageCollection ][:_nEventsForTesting]
+            self.qcd = qcd_h5[ self.imageCollection ][:_nEventsForTesting]
+        else:
+            self.hh = hh_h5[ self.imageCollection ]
+            self.qcd = qcd_h5[ self.imageCollection]
+            
+        print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
 
         # Make labels
-        hh_labels = np.ones( len(self.hhImgs) )
-        qcd_labels = np.zeros( len(self.qcdImgs) )
+        hh_labels = np.ones( len(self.hh) )
+        qcd_labels = np.zeros( len(self.qcd) )
         
         # Make combined dataset
-        all_images = np.concatenate ( (self.hhImgs, self.qcdImgs) )
+        all_images = np.concatenate ( (self.hh, self.qcd) )
         all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
-        print("+++ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
+        print("+ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
 
         # Create training and testing sets
         self.images_train, self.images_test, self.labels_train, self.labels_test = train_test_split(all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
@@ -141,9 +142,9 @@ class cnnModelClass:
         """ make a few single event images"""
 
         if isSignal:
-            imgs = self.hhImgs
+            imgs = self.hh
         else:
-            imgs = self.qcdImgs
+            imgs = self.qcd
             
         evt = 503
         plt.imshow(imgs[evt], alpha=0.88)
@@ -161,6 +162,7 @@ class cnnModelClass:
     
     def makeCNN(self):
         """ create CNN and return compiled model"""
+        print("+++ Make CNN")
 
         # *** 0. Set general options
         # ** A. General layer options. probably should allow for top-line flexibility here
@@ -173,18 +175,18 @@ class cnnModelClass:
         dense_kwargs = conv_kwargs
 
         # ** B. Intial output bias. probably should allow for top-line flexibility here
-        initial_bias = np.log([len(hh)/len(qcd)])
+        initial_bias = np.log([len(self.hh)/len(self.qcd)])
         output_bias = Constant(initial_bias)
-        print("+++ initial bias: {}".format(initial_bias))
+        print("+ initial bias: {}".format(initial_bias))
         
         # ** C. Create class weights for weighted training. probably should allow for top-line flexibility here
         # Scaling by total/2 helps keep the loss to a similar magnitude. The sum of the weights of all examples stays the same.
-        total = len(qcd) + len(hh)
-        weight_for_0 = (1 / len(qcd))*(total)/2.0 
-        weight_for_1 = (1 / len(hh))*(total)/2.0
+        total = len(self.qcd) + len(self.hh)
+        weight_for_0 = (1 / len(self.qcd))*(total)/2.0 
+        weight_for_1 = (1 / len(self.hh))*(total)/2.0
         class_weight = {0: weight_for_0, 1: weight_for_1}
-        print('+++ Weight for class 0: {:.2f}'.format(weight_for_0))
-        print('+++ Weight for class 1: {:.2f}'.format(weight_for_1))
+        print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
+        print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
         
 
         # *** 1. Define model
@@ -192,11 +194,15 @@ class cnnModelClass:
         pixelWidth = self.images_train.shape[1]
         
         # ** A. Convolutional component
+        firstLayer = True
         for layer in self.cnnLayers:
             # layer format example: [ "Conv2D", [16, (3,3)]] or ["MaxPooling2D", [(3, 3)]]
-            if layer[0] == "Conv2D":
+            if layer[0] == "Conv2D" and firstLayer:
                 self.model.add( Conv2D( layer[1][0], layer[1][1], input_shape=(pixelWidth, pixelWidth, 3), **conv_kwargs) )
-            if layer[0] == "MaxPooling2D":
+                firstLayer = False
+            elif layer[0] == "Conv2D" and not firstLayer:
+                self.model.add( Conv2D( layer[1][0], layer[1][1], **conv_kwargs) )
+            elif layer[0] == "MaxPooling2D":
                 self.model.add( MaxPooling2D( layer[1][0]) )
 
         # ** B. Flatten model for input to feed-forward network
@@ -207,21 +213,21 @@ class cnnModelClass:
             # layer format example: [ "Dense", [64]] or ["BatchNormalization"], ["Dropout", [0.2]]
             if layer[0] == "Dense":
                 self.model.add( Dense( layer[1][0], **dense_kwargs) )
-            if layer[0] == "BatchNormalization":
+            elif layer[0] == "BatchNormalization":
                 self.model.add(  BatchNormalization() )
-            if layer[0] == "Dropout":
+            elif layer[0] == "Dropout":
                 self.model.add( Dropout( layer[1][0]) )
 
         
         # ** D. Output layer
-        _model.add( Dense(1, activation='sigmoid', bias_initializer=output_bias) )
+        self.model.add( Dense(1, activation='sigmoid', bias_initializer=output_bias) )
     
         # ** E. Print summary
-        print("++++ Model Summary\n {}".format(self.model.summary()))
+        print("++ Model Summary\n {}".format(self.model.summary()))
 
         # ** F. Define metrics and compile
         metrics = [ tf.keras.metrics.categorical_accuracy,
-                    #'accuracy',
+                    'accuracy',
                     tf.keras.metrics.AUC(name='auc'),
         ]
 
@@ -233,13 +239,13 @@ class cnnModelClass:
         # **G. Load model if appropriate
         if self.loadSavedModel:
             local_dir = os.path.join(self.modelName, "models")
-            modelfile = os.path.join(self.modelName, self.modelName)+'.hdf5'
+            modelfile = os.path.join(local_dir, self.modelName)+'.hdf5'
             print("++ loading model from {}".format(modelfile))
             if not os.path.isfile(modelfile):
                 print("--- ERROR, Modelfile {} NOT FOUND. No weights initialized".format(modefile))
                 return
         
-            self.model.predict( np.empty( (pixelWidth, pixelWidth, 3) ))
+            self.model.predict( np.empty( (1, pixelWidth, pixelWidth, 3) ))
             self.model.load_weights(modelfile)
 
             
@@ -247,6 +253,7 @@ class cnnModelClass:
 
 
     def trainCNN(self):
+        print("+++ Train CNN" )
 
         # *** 1. Define output directory
         topDir = self.modelName
@@ -256,6 +263,7 @@ class cnnModelClass:
             model_dir = os.path.join(topDir, "", "models")
             if not os.path.exists(model_dir):
                 os.makedirs(model_dir)
+        model_dir = os.path.join(topDir, "", "models")
                 
         # *** 2. Define callbacks for training
         fit_callbacks = [
@@ -281,7 +289,8 @@ class cnnModelClass:
         
         
         # *** 3. Train model
-        self.model_history = self.model.fit(self.images_train, self.labels_train, epochs=50, 
+        nEpochs = 10 if self.isTestRun else 50
+        self.model_history = self.model.fit(self.images_train, self.labels_train, epochs=nEpochs, 
                                             shuffle=True,
                                             batch_size=512,
                                             validation_data=(self.images_test, self.labels_test),
@@ -293,9 +302,10 @@ class cnnModelClass:
     
 
 
-    def evaluateModel(self , _labels):
+    def evaluateModel(self):
         """ evaluateModel( modelNoWeights, historyNoWeights, self.images_test, self.labels_test) """
-
+        print("+++ Evaluate Model")
+        
         # *** 0. set inputs --> special treatment if loading saved model
         images = []
         labels = []
@@ -314,8 +324,9 @@ class cnnModelClass:
         qcd_labels_test = np.asarray([y for x,y in zip( images, labels) if y==0])
                 
         # *** 2. Make history plots
-        print("*** Training History Plots")
-        makeHistoryPlots( self.model_history, ['accuracy', 'loss', 'auc'] )
+        if not self.loadSavedModel:
+            print("++ Training History Plots")
+            makeHistoryPlots( self.model_history, ['accuracy', 'loss', 'auc'], self.modelName, savePlot=True, saveDir=self.modelName )
         
         # *** 3. Make predictions
         score_hh = self.model.evaluate(hh_data_test, hh_labels_test)
@@ -325,10 +336,10 @@ class cnnModelClass:
         pred_qcd = self.model.predict(qcd_data_test)
         
         # *** 4. make output score plot
-        print("*** Output Score Plot")
+        print("++ Output Score Plot")
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh, 'qcd_pred':pred_qcd}
-        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=False )
+        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.modelName )
         
         # *** 5. Get best cut value for CNN assuming some minimal amount of signal
         pred_hh_sig = [x[0] for x in pred_hh.copy()]
@@ -347,7 +358,7 @@ class cnnModelClass:
         #print('nSig = {0} , nBkg = {1} with significance = {2} for NN score > {3}'.format(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), cut) )
 
         # *** 6. Confusion matrix
-        print("*** Confusion Matrix")
+        print("++ Confusion Matrix")
         preds_test = self.model.predict(self.images_test)
         cm = confusion_matrix( self.labels_test, preds_test > cut)
         print(cm)
@@ -358,10 +369,12 @@ class cnnModelClass:
         print('Total Dihiggs: ', np.sum(cm[1]))
         
         # *** 7. Make ROC curve
-        print("*** ROC Curve")
-        makeEfficiencyCurves( dict(label="CNN", labels=self.labels_test, prediction=preds_test, color="blue"), self.modelName='CNN')
+        print("++ ROC Curve")
+        makeEfficiencyCurves( dict(label="CNN", labels=self.labels_test, prediction=preds_test, color="blue"), _modelName = self.modelName, savePlot=True, saveDir=self.modelName)
         #utils/commonFunctions.py: def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
-        
+
+        return
+
 
 #==========================================================================================
 

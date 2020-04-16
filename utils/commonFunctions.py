@@ -175,7 +175,7 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
         _filename  = _scope + '_' + _variable
         if _normed:
             _filename = _filename + '_norm'
-        fig.savefig( saveDir + _filename+'.png', bbox_inches='tight' )
+        fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
     
     
     return
