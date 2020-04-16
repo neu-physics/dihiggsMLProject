@@ -6,7 +6,7 @@ import subprocess
 
 import matplotlib.pyplot as plt
 import energyflow as ef
-from energyflow.archs import EFN
+from energyflow.archs import PFN
 from energyflow.utils import data_split, to_categorical
 from sklearn.metrics import roc_auc_score, roc_curve
 from keras.callbacks import EarlyStopping
@@ -75,7 +75,7 @@ def plot_history(history,tag='loss', name=''):
     plt.close()
     return 
 
-def plot_EFNScore(Y_test, preds, nsig, nbkg, name=''):
+def plot_PFNScore(Y_test, preds, nsig, nbkg, name=''):
     sig_mask = Y_test[:,1]==1
     bkg_mask = Y_test[:,1]==0
     sig_preds = preds[sig_mask,1]
@@ -83,11 +83,11 @@ def plot_EFNScore(Y_test, preds, nsig, nbkg, name=''):
     plt.hist(sig_preds, bins=30, alpha=0.5, density=True, stacked=True, label="signal")
     plt.hist(bkg_preds, bins=30, alpha=0.5, density=True, stacked=True, label="background")
     plt.legend(loc="best")
-    plt.title("EFN score")
+    plt.title("PFN score")
     plt.xlabel('score')
     plt.ylabel('A.U.')
-    returnBestCutValue('EFN',sig_preds.copy(), bkg_preds.copy(), _testingFraction=0.2, hh_nEventsGen = nsig, qcd_nEventsGen = nbkg)
-    plt.savefig("EFNscore_{}.png".format(name))
+    returnBestCutValue('PFN',sig_preds.copy(), bkg_preds.copy(), _testingFraction=0.2, hh_nEventsGen = nsig, qcd_nEventsGen = nbkg)
+    plt.savefig("PFNscore_{}.png".format(name))
     plt.close()
     return 
 
@@ -156,18 +156,17 @@ Y = to_categorical(y, num_classes=2)
 batch_size = 500
 val = 0.2
 test = 0.2
-Phi_sizes, F_sizes = (500, 500, 256), (500, 500, 300)
+Phi_sizes, F_sizes = (200, 200, 256), (200, 200, 200)
 num_epoch = 1000
-(z_train, z_val, z_test, 
- p_train, p_val, p_test,
- Y_train, Y_val, Y_test) = data_split(X[:,:,0], X[:,:,1:], Y, val=val, test=test)
+(X_train, X_val, X_test, 
+ Y_train, Y_val, Y_test) = data_split(X, Y, val=val, test=test)
 es = EarlyStopping(monitor='val_auc', mode='max', verbose=1, patience=20, restore_best_weights=True)
 #mc = ModelCheckpoint('best_model.h5', monitor='val_auc', mode='max', verbose=1, save_best_only=True)
-efn = EFN(input_dim=2, Phi_sizes=Phi_sizes, F_sizes=F_sizes, metrics=['acc', auc], Phi_l2_regs=5e-05, F_l2_regs=5e-05)
-history = efn.fit([z_train, p_train], Y_train,
+pfn = PFN(input_dim=3, Phi_sizes=Phi_sizes, F_sizes=F_sizes, metrics=['acc', auc], latent_dropout=0.2, F_dropouts=0.2)
+history = pfn.fit(X_train, Y_train,
           epochs=num_epoch,
           batch_size=batch_size,
-          validation_data=([z_val, p_val], Y_val),
+          validation_data=(X_val, Y_val),
           verbose=1, callbacks=[es])
 
 #dependencies = {
@@ -175,9 +174,9 @@ history = efn.fit([z_train, p_train], Y_train,
 #}
 #saved_model = load_model('best_model.h5', custom_objects=dependencies)
 #preds = saved_model.predict([z_test, p_test], batch_size=1000)
-preds = efn.predict([z_test, p_test], batch_size=1000)
+preds = pfn.predict(X_test, batch_size=1000)
 auc = roc_auc_score(Y_test[:,1], preds[:,1])
-print('EFN AUC:', auc)
+print('PFN AUC:', auc)
 
 #save plots
 name = "{0}Jet_{1}Tag".format(args.nJets,args.nTags)
@@ -185,7 +184,7 @@ plot_history(history,'loss',name)
 plot_history(history,'acc',name)
 plot_history(history,'auc',name)
 plot_ROC(Y_test,preds,name)
-plot_EFNScore(Y_test,preds,nsig,nbkg,name)
+plot_PFNScore(Y_test,preds,nsig,nbkg,name)
 print("Plots saved :)")
 
 

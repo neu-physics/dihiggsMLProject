@@ -200,6 +200,7 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
         _nSignal = sum( value > iCutValue for value in _signal) * _signalLumiscale
         _nBackground = sum( value > iCutValue for value in _background) * _bkgLumiscale
         
+        #print(_nSignal/_signalLumiscale, _nBackground/_bkgLumiscale)
         # safety check to avoid division by 0
         if _nBackground < _minBackground: # 500 is semi-random choice.. it's where one series started to oscillate
             #print("continued on {0}".format(iCutValue))
