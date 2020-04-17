@@ -1,6 +1,6 @@
 from keras.regularizers import l2, l1
 from pandas import read_csv
-from AE_utils import process, epoch_history, AEmodel, AE_statistics
+import AE_utils
 import FF_NeuralNet_Utils
 
 #Some hyperparameters
@@ -14,7 +14,6 @@ varlen = len(vars)
 testing_fraction = 0.2
 l1_reg = l1(0.0001)
 l2_reg = l2(0.0001) #More harsh against anomalies
-loss_threshold = 1.125
 
 #Import files
 dihiggs_file = r"C:\Users\Colby\Desktop\Neu-work\delphes stuff\spreadsheets\higgs\closestDijetMassesToHiggs.csv" #equalDijetMass_sig.csv
@@ -23,10 +22,13 @@ dfhiggs = read_csv(dihiggs_file)
 dfqcd = read_csv(qcd_file)
 
 #Preprocess data
-qcd_train_set, qcd_test_set, higgs_test_set, test_set = process(dfhiggs, dfqcd, vars, testing_fraction)
+qcd_train_set, qcd_test_set, higgs_test_set, test_set = AE_utils.process(dfhiggs, dfqcd, vars, testing_fraction)
 
 #Run model on training set
-history, autoencoder, encoder  = AEmodel(qcd_train_set, varlen, l1_reg)
+history, autoencoder, encoder  = AE_utils.AEmodel(qcd_train_set, varlen, l1_reg)
 autoencoder.summary()
-epoch_history(history)
-AE_statistics(autoencoder, qcd_train_set, qcd_test_set, higgs_test_set, loss_threshold)
+AE_utils.epoch_history(history)
+qcdlosshistory, higgslosshistory, loss_threshold = AE_utils.AE_statistics(autoencoder, qcd_train_set,
+                                                                 qcd_test_set, higgs_test_set)
+AE_utils.loss_distribution(qcdlosshistory, higgslosshistory)
+AE_utils.significacne(qcdlosshistory, higgslosshistory, loss_threshold, testing_fraction)
