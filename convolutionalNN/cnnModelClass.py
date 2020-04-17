@@ -5,19 +5,17 @@
 
 
 # To-Do
-#1) transfer files locally from lxplus or maybe figure out venv on lxplus
 #X) CM of phi for image?
-#3) bb-center a la photography talk
-#4) slide 9: remake these for diHiggs events that have the Higgs back-to-back ie no ISR. Are the blobs more pronounced than non-back-to-back diHiggs events?
-#X) increase pixels to see if better? --> 15 -> 25 not really improved
-#6) compare expected yields post-selection from this to other approaches. Much higher signal stats here! But by how much?
-#7) subtract average a la Anna's idea
-#X) store images by jet category?
+#2) bb-center a la photography talk
+#3) slide 9: remake these for diHiggs events that have the Higgs back-to-back ie no ISR. Are the blobs more pronounced than non-back-to-back diHiggs events?
+#X) compare expected yields post-selection from this to other approaches. Much higher signal stats here! But by how much?
+#5) subtract average a la Anna's idea
 # ...
-# ...
-#X) script image making --> different pixel sizes, jet categories
-#10) compare ROC curves for different approaches a la Evan's work
-#11) make cnn training class-script for automation -> saves models, roc curve as member, etc
+#X) compare ROC curves for different approaches a la Evan's work
+#7) the pimples are weird in the ensemble QCD events. what causes the pimple?
+#8) look at the per-jet-tag category yields after the macro-sample cut and compare to 4j4t S,B from other approaches
+#9) do other processes matter?
+#10) try those things you wanted
 
 
 
@@ -63,7 +61,7 @@ class cnnModelClass:
         self.loadSavedModel = _loadSavedModel
 
         # Class Defaults
-        #self.transparency = 0.5  # transparency of plots
+        self.transparency = 0.88  # transparency of plots
 
         # Global Variables 
         self.hh = []
@@ -74,7 +72,7 @@ class cnnModelClass:
         self.labels_train = []
         self.images_test  = []
         self.labels_test  = []
-        #self.outputDataForLearning = []
+        self.predictions_test  = []
 
         print("+++ Initialized {}".format(self.modelName) )
         
@@ -147,13 +145,13 @@ class cnnModelClass:
             imgs = self.qcd
             
         evt = 503
-        plt.imshow(imgs[evt], alpha=0.88)
+        plt.imshow(imgs[evt], alpha=self.transparency)
         plt.show()
-        plt.imshow(imgs[evt+1], alpha=0.88)
+        plt.imshow(imgs[evt+1], alpha=self.transparency)
         plt.show()
-        plt.imshow(imgs[evt+2], alpha=0.88)
+        plt.imshow(imgs[evt+2], alpha=self.transparency)
         plt.show()
-        plt.imshow(imgs[evt+3], alpha=0.88)
+        plt.imshow(imgs[evt+3], alpha=self.transparency)
         plt.clim(.5, 1)
         plt.show()
 
@@ -359,8 +357,8 @@ class cnnModelClass:
 
         # *** 6. Confusion matrix
         print("++ Confusion Matrix")
-        preds_test = self.model.predict(self.images_test)
-        cm = confusion_matrix( self.labels_test, preds_test > cut)
+        self.predictions_test = self.model.predict(self.images_test)
+        cm = confusion_matrix( self.labels_test, self.predictions_test > cut)
         print(cm)
         print('QCD called QCD (True Negatives): {} ({}%)'.format( cm[0][0], round(100*(cm[0][0]/sum(cm[0]))) ))
         print('QCD called Dihiggs (False Positives):  {} ({}%)'.format( cm[0][1], round(100*(cm[0][1]/sum(cm[0]))) ))
@@ -370,7 +368,7 @@ class cnnModelClass:
         
         # *** 7. Make ROC curve
         print("++ ROC Curve")
-        makeEfficiencyCurves( dict(label="CNN", labels=self.labels_test, prediction=preds_test, color="blue"), _modelName = self.modelName, savePlot=True, saveDir=self.modelName)
+        makeEfficiencyCurves( dict(label="CNN", labels=self.labels_test, prediction=self.predictions_test, color="blue"), _modelName = self.modelName, savePlot=True, saveDir=self.modelName)
         #utils/commonFunctions.py: def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
 
         return
@@ -383,9 +381,9 @@ class cnnModelClass:
 ## *** 7. Make overlaid ROC curves
 #predsNoWeights = modelNoWeights.predict(self.images_test)
 #predsWeighted  = modelWeighted.predict(self.images_test)
-#overlay = [ dict(label="No Weights", labels=self.labels_test, prediction=predsNoWeights, color="blue"),
-#           dict(label="Weighted", labels=self.labels_test, prediction=predsWeighted, color="red")
-#         ]
+#overlay = [ dict(label="No Weights", labels = model_1.labels_test, prediction = model_1.predictions_test, color="blue"),
+#            dict(label="Weighted", labels = model_2.labels_test, prediction = model_2.predictions_test, color="red")
+#          ]
 #overlayROCCurves( overlay )
 
 

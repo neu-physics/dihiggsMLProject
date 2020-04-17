@@ -442,6 +442,10 @@ class imageMaker:
         if os.path.isdir( _plotDir )==False:
             os.mkdir( _plotDir )
 
+        # skip plt making for condor submission. adds a surprising amount of time
+        if "_CONDOR_SCRATCH_DIR" in os.environ:
+            return
+
         _plotOpts = self.returnPlotOpts( consLabel )
         _sampleLabel = 'Dihiggs' if self.isSignal else 'QCD'
         _weightLabel = 'Pt-Weighted' if _ptWeighted else 'Unweighted'
