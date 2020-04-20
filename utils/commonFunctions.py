@@ -209,8 +209,8 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
     #print(_minVal, _maxVal)
 
     for iCutValue in _cuts:
-        _nSignal = sum( value > iCutValue for value in _signal) * _signalLumiscale
-        _nBackground = sum( value > iCutValue for value in _background) * _bkgLumiscale
+        _nSignal = float(sum( value > iCutValue for value in _signal) * _signalLumiscale)
+        _nBackground = float(sum( value > iCutValue for value in _background) * _bkgLumiscale)
         
         # safety check to avoid division by 0
         if _nBackground < _minBackground: # 500 is semi-random choice.. it's where one series started to oscillate
@@ -221,14 +221,14 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
         #    print(_nSignal, _nBackground, iCutValue, (_nSignal / np.sqrt(_nBackground)), (_nSignal / np.sqrt(_nSignal + _nBackground)))
         
         if _method == 'S/B' and (_nSignal / _nBackground) > _bestSignificance:
-            _bestSignificance = (_nSignal / _nBackground)
-            _bestCutValue = iCutValue
+            _bestSignificance = float(_nSignal / _nBackground)
+            _bestCutValue = float(iCutValue)
         elif _method == 'S/sqrt(B)' and (_nSignal / np.sqrt(_nBackground)) > _bestSignificance:
-            _bestSignificance = (_nSignal / np.sqrt(_nBackground))
-            _bestCutValue = iCutValue
+            _bestSignificance = float(_nSignal / np.sqrt(_nBackground))
+            _bestCutValue = float(iCutValue)
         elif _method == 'S/sqrt(S+B)' and (_nSignal / np.sqrt(_nSignal + _nBackground)) > _bestSignificance:
-            _bestSignificance = (_nSignal / np.sqrt(_nSignal + _nBackground))
-            _bestCutValue = iCutValue
+            _bestSignificance = float(_nSignal / np.sqrt(_nSignal + _nBackground))
+            _bestCutValue = float(iCutValue)
                 
         #print(iCutValue, _nSignal, _nBackground, (_nSignal / np.sqrt(_nBackground)))
 
@@ -236,18 +236,18 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
     _nSignal_raw = sum( value > _bestCutValue for value in _signal) 
     _nBackground_raw = sum( value > _bestCutValue for value in _background) 
     # ** lumi-scaled numbers
-    _nSignal = _nSignal_raw * _signalLumiscale
-    _nBackground = _nBackground_raw * _bkgLumiscale
+    _nSignal = float(_nSignal_raw * _signalLumiscale)
+    _nBackground = float(_nBackground_raw * _bkgLumiscale)
 
-    _significance = _nSignal/np.sqrt(_nBackground)
-    _sigError = _significance * np.sqrt( 1/_nSignal_raw + 1/(4*_nBackground_raw) )
+    _significance = float(_nSignal/np.sqrt(_nBackground))
+    _sigError = float(_significance * np.sqrt( 1/_nSignal_raw + 1/(4*_nBackground_raw) ))
 
     #print(_nSignal, _nBackground, _nSignal/np.sqrt(_nBackground), _bestCutValue)
 
     
-    print('nSig = {0} , nBkg = {1} with significance = {2} +/- {3} for {4} score > {5}'.format( round(_nSignal, 2), round(_nBackground, 2), round(_significance, 3), round(_sigError, 3), _variable, round(_bestCutValue, 3)) )
+    print('nSig = {0} , nBkg = {1} with significance = {2} +/- {3} for {4} score > {5}'.format( round(_nSignal, 2), round(_nBackground, 2), round(_significance, 3), round(_sigError, 3), _variable, round(float(_bestCutValue), 3)) )
           
-    return _bestSignificance, _bestCutValue, _sigError
+    return _bestSignificance, float(_bestCutValue), _sigError
 
 
 def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU', _btags='4'):

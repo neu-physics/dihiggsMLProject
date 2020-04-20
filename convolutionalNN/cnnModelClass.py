@@ -50,7 +50,7 @@ from utils.commonFunctions import *
 
 class cnnModelClass:
     
-    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _loadSavedModel = False, _testRun = False):
+    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _loadSavedModel = False, _testRun = False, _useClassWeights=False):
         self.modelName   = _modelName
         self.cnnLayers = _cnnLayers
         self.ffnnLayers = _ffnnLayers
@@ -58,21 +58,26 @@ class cnnModelClass:
         self.qcdFile = _qcdFile
         self.imageCollection = _imageCollection
         self.isTestRun = _testRun
+        self.useClassWeights = _useClassWeights
         self.loadSavedModel = _loadSavedModel
-
+        
         # Class Defaults
         self.transparency = 0.88  # transparency of plots
-
+        self.testingFraction = 0.05/4
+        self.nEventsForTesting = 1000
+        
         # Global Variables 
         self.hh = []
         self.qcd = []
         self.model = []
+        self.class_weights = []
         self.model_history = []
         self.images_train = []
         self.labels_train = []
         self.images_test  = []
         self.labels_test  = []
         self.predictions_test  = []
+
 
         print("+++ Initialized {}".format(self.modelName) )
         
@@ -92,16 +97,38 @@ class cnnModelClass:
 
         self.evaluateModel()
 
+        self.close()
+        
         return
 
     ##############################################################
     ##                        functions                         ##
     ##############################################################
 
+    def close(self):
+        """ close things to save memory"""
+
+        # Close files
+        #self.hh.file.close()
+        #self.qcd.file.close()
+        
+        return
+    
     
     def processInputs(self):
         """ open files and load images"""
 
+        if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
+            self.loadSingleFile( self.hhFile, isSignal = True)
+        elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
+            self.loadMultipleFiles( self.hhFile, isSignal = True)
+        
+        if '.h5' in self.qcdFile:    # ** C. User single .h5 file
+            self.loadSingleFile( self.qcdFile, isSignal = False)
+        elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
+            self.loadMultipleFiles( self.qcdFile, isSignal = False)
+
+        """    
         # Load files
         hh_h5  = h5.File( self.hhFile, 'r')
         qcd_h5  = h5.File( self.qcdFile , 'r')
@@ -115,9 +142,9 @@ class cnnModelClass:
             self.hh  = hh_h5[ self.imageCollection ][:_nEventsForTesting]
             self.qcd = qcd_h5[ self.imageCollection ][:_nEventsForTesting]
         else:
-            self.hh = hh_h5[ self.imageCollection ]
-            self.qcd = qcd_h5[ self.imageCollection]
-            
+            self.hh = hh_h5[ self.imageCollection ][:]
+            self.qcd = qcd_h5[ self.imageCollection][:]
+        """    
         print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
 
         # Make labels
@@ -132,7 +159,62 @@ class cnnModelClass:
         # Create training and testing sets
         self.images_train, self.images_test, self.labels_train, self.labels_test = train_test_split(all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
 
-        
+        return
+
+    
+    def loadMultipleFiles(self, filename, isSignal):
+        """ function for reading multiple files and adding to dataset"""
+
+        if os.path.isfile(filename):
+            # Do something with the file
+            with open(filename, 'r') as f:
+                _fileList = f.readlines()
+                for _file in _fileList:
+                    _singleFile = _file.split('\n')[0]
+                    print( "Opening file: {} ...".format(_singleFile))
+                    self.loadSingleFile( _singleFile, isSignal)          
+        else:
+            print("File not accessible")
+            return
+
+        return
+
+    
+    def loadSingleFile(self, filename, isSignal):
+        """ function for reading single file and adding to dataset"""
+
+        # open file
+        _h5File = h5.File( filename, 'r' )
+
+        # load slice of dataset
+        _dataset = []
+        if self.isTestRun:
+            _dataset = _h5File[ self.imageCollection ][:self.nEventsForTesting]
+        else:
+            _dataset = _h5File[ self.imageCollection ][:]
+
+        # store if signal
+        if isSignal:
+            # first file for this dataset
+            if len(self.hh) == 0:  
+                self.hh = _dataset
+            # add file to existing dataset
+            else:
+                self.hh = np.concatenate( (self.hh, _dataset) )
+        # store if background
+        else:
+            # first file for this dataset
+            if len(self.qcd) == 0:  
+                self.qcd = _dataset
+            # add file to existing dataset
+            else:
+                self.qcd = np.concatenate( (self.qcd, _dataset) )
+
+        print( len(_dataset), len(self.hh), len(self.qcd))
+
+        # Close files
+        _h5File.close()
+
         return
 
     
@@ -179,13 +261,13 @@ class cnnModelClass:
         
         # ** C. Create class weights for weighted training. probably should allow for top-line flexibility here
         # Scaling by total/2 helps keep the loss to a similar magnitude. The sum of the weights of all examples stays the same.
-        total = len(self.qcd) + len(self.hh)
-        weight_for_0 = (1 / len(self.qcd))*(total)/2.0 
-        weight_for_1 = (1 / len(self.hh))*(total)/2.0
-        class_weight = {0: weight_for_0, 1: weight_for_1}
-        print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
-        print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
-        
+        if self.useClassWeights:
+            total = len(self.qcd) + len(self.hh)
+            weight_for_0 = (1 / len(self.qcd))*(total)/2.0 
+            weight_for_1 = (1 / len(self.hh))*(total)/2.0
+            print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
+            print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
+            self.class_weights = {0: weight_for_0, 1: weight_for_1}        
 
         # *** 1. Define model
         self.model = Sequential()
@@ -269,16 +351,16 @@ class cnnModelClass:
                 filepath=os.path.join(model_dir, name)+'.hdf5',
                 save_best_only=True,
                 save_weights_only=True,
-                #monitor="val_auc",
-                #mode="max",
-                monitor="val_loss",
-                mode="min",
+                monitor="val_auc",
+                mode="max",
+                #monitor="val_loss",
+                #mode="min",
             ),
             tf.keras.callbacks.EarlyStopping(
-                #monitor="val_auc",
-                #mode="max",
-                monitor='val_loss', 
-                mode='min', 
+                monitor="val_auc",
+                mode="max",
+                #monitor='val_loss', 
+                #mode='min', 
                 verbose=1, 
                 patience=15,  
                 min_delta=.0025,
@@ -288,12 +370,17 @@ class cnnModelClass:
         
         # *** 3. Train model
         nEpochs = 10 if self.isTestRun else 50
-        self.model_history = self.model.fit(self.images_train, self.labels_train, epochs=nEpochs, 
-                                            shuffle=True,
-                                            batch_size=512,
+        trainOpts = dict(shuffle=True,
+                         epochs=nEpochs, 
+                         batch_size=2056, #512,
+                         callbacks=fit_callbacks,
+        )
+        if self.useClassWeights:
+            trainOpts['class_weights'=self.class_weights]
+        
+        self.model_history = self.model.fit(self.images_train, self.labels_train,
                                             validation_data=(self.images_test, self.labels_test),
-                                            callbacks=fit_callbacks,
-                                            #class_weight=class_weight
+                                            **trainOpts,
         )
         
         return
@@ -337,13 +424,13 @@ class cnnModelClass:
         print("++ Output Score Plot")
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh, 'qcd_pred':pred_qcd}
-        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.modelName )
+        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.modelName, writeSignificance=True, _testingFraction=self.testingFraction )
         
         # *** 5. Get best cut value for CNN assuming some minimal amount of signal
         pred_hh_sig = [x[0] for x in pred_hh.copy()]
         pred_qcd_sig = [x[0] for x in pred_qcd.copy()]
         
-        sig, cut, sigErr = returnBestCutValue('CNN', pred_hh_sig, pred_qcd_sig, _minBackground=400e3, _testingFraction=0.025)
+        sig, cut, sigErr = returnBestCutValue('CNN', pred_hh_sig, pred_qcd_sig, _minBackground=400e3, _testingFraction=self.testingFraction)
 
         ## *** 5B. Get signifiance for any user-specified NN score cut value
         #testingFraction = 0.1
