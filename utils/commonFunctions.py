@@ -332,7 +332,7 @@ def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, 
         elif curve == 'auc':            # summarize history for AUC
             plt.title('{} Model AUC'.format(_modelName))
             plt.ylabel('AUC [A.U.]')
-            plt.ylim([0, 1])
+            plt.ylim([0.5, 1])
         elif curve == 'categorical_accuracy': # summarize history for accuracy
             plt.title('{} Accuracy'.format(_modelName))
             plt.ylabel('Accuracy [%]')

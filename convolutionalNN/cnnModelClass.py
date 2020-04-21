@@ -24,8 +24,8 @@ import os
 import tensorflow as tf
 import numpy as np
 import matplotlib
-if "_CONDOR_SCRATCH_DIR" in os.environ:
-    matplotlib.use('Agg')
+#if "_CONDOR_SCRATCH_DIR" in os.environ:
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import h5py as h5
 
@@ -50,7 +50,7 @@ from utils.commonFunctions import *
 
 class cnnModelClass:
     
-    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _loadSavedModel = False, _testRun = False, _useClassWeights=False):
+    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False):
         self.modelName   = _modelName
         self.cnnLayers = _cnnLayers
         self.ffnnLayers = _ffnnLayers
@@ -60,10 +60,11 @@ class cnnModelClass:
         self.isTestRun = _testRun
         self.useClassWeights = _useClassWeights
         self.loadSavedModel = _loadSavedModel
+        self.datasetPercentage = _datasetPercentage
         
         # Class Defaults
         self.transparency = 0.88  # transparency of plots
-        self.testingFraction = 0.05/4
+        self.testingFraction = self.datasetPercentage/4
         self.nEventsForTesting = 1000
         
         # Global Variables 
@@ -376,7 +377,7 @@ class cnnModelClass:
                          callbacks=fit_callbacks,
         )
         if self.useClassWeights:
-            trainOpts['class_weights'=self.class_weights]
+            trainOpts['class_weight']=self.class_weights
         
         self.model_history = self.model.fit(self.images_train, self.labels_train,
                                             validation_data=(self.images_test, self.labels_test),
