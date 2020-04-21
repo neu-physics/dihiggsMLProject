@@ -44,8 +44,16 @@ np.random.seed(seed)
 
 import sys
 sys.path.insert(0, '/home/btannenw/Desktop/ML/dihiggsMLProject/')
+sys.path.insert(0, '/uscms_data/d2/benjtann/ML/dihiggsMLProject/')
 from utils.commonFunctions import *
 
+
+def auc( y_true, y_pred ) :
+      score = tf.py_func( lambda y_true, y_pred : roc_auc_score( y_true, y_pred, average='macro', sample_weight=None).astype('float32'),
+                          [y_true, y_pred],
+                          'float32',
+                          name='sklearnAUC' )
+      return score
 
 
 class cnnModelClass:
@@ -309,7 +317,8 @@ class cnnModelClass:
         # ** F. Define metrics and compile
         metrics = [ tf.keras.metrics.categorical_accuracy,
                     'accuracy',
-                    tf.keras.metrics.AUC(name='auc'),
+                    #tf.keras.metrics.AUC(name='auc'),
+                    auc,
         ]
 
         self.model.compile(loss='binary_crossentropy',
@@ -412,15 +421,27 @@ class cnnModelClass:
         # *** 2. Make history plots
         if not self.loadSavedModel:
             print("++ Training History Plots")
-            makeHistoryPlots( self.model_history, ['accuracy', 'loss', 'auc'], self.modelName, savePlot=True, saveDir=self.modelName )
+            makeHistoryPlots( self.model_history, ['acc', 'loss', 'auc'], self.modelName, savePlot=True, saveDir=self.modelName )
         
         # *** 3. Make predictions
-        score_hh = self.model.evaluate(hh_data_test, hh_labels_test)
-        score_qcd = self.model.evaluate(qcd_data_test, qcd_labels_test)
-        print(score_hh, score_qcd)
+        #print("++ Calculate scores")
+        # ** A. Approach, the first
+        #score_hh = self.model.evaluate(hh_data_test, hh_labels_test)
+        #score_qcd = self.model.evaluate(qcd_data_test, qcd_labels_test)
+        # ** B. Approach, the second
+        #scores = self.model.evaluate(images, labels)
+        #score_hh = [score for score,label in zip(scores, labels) if label==1]
+        #score_qcd = [score for score,label in zip(scores, labels) if label==0]
+        #print(score_hh, score_qcd)
+        print("++ Make predictions")
+        #preds = self.model.predict(images)
+        #pred_hh = [pred for pred,label in zip(preds, labels) if label==1]
+        #pred_qcd = [pred for pred,label in zip(preds, labels) if label==0]
         pred_hh = self.model.predict(hh_data_test)
         pred_qcd = self.model.predict(qcd_data_test)
-        
+      
+
+
         # *** 4. make output score plot
         print("++ Output Score Plot")
         _nBins = 40

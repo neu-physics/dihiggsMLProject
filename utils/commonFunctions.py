@@ -404,7 +404,6 @@ def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
     return
 
 
-
 def overlayROCCurves(data, savePlot=False, saveDir=''):
     """ overlay multiple ROC curves given some inputs"""
 
