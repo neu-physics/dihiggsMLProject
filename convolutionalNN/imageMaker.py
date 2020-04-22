@@ -8,8 +8,8 @@ import pickle as pkl
 import h5py as h5
 
 import matplotlib
-if "_CONDOR_SCRATCH_DIR" in os.environ:
-    matplotlib.use('Agg')
+#if "_CONDOR_SCRATCH_DIR" in os.environ:
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 
@@ -18,7 +18,7 @@ import uproot_methods.classes.TLorentzVector as TLorentzVector
 import uproot_methods.classes.TVector3 as TVector3
 
 import sys
-sys.path.insert(0, '/home/btannenw/Desktop/ML/dihiggsMLProject/higgsReconstruction/')
+sys.path.insert(0, '/uscms_data/d2/benjtann/ML/dihiggsMLProject/higgsReconstruction/')
 from JetCons import JetCons
 
 
@@ -52,6 +52,7 @@ class imageMaker:
         self.photons = [ ]
         self.nJets = [ ]
         self.nBTags = [ ]
+        self.HT = []
 
         # final stored by event and with boost/rotation
         self.final_tracks = [ ]
@@ -61,8 +62,8 @@ class imageMaker:
         ## Objects per dataset
         # images for saving
         self.final_images = [ [], [], [], [], [] ] # tracks, nHadrons, photons, composite (all three), composite >=4j
-        self.final_images_cat = [ [], [], [], [], [], [], [] ] # (all composite), <4j alltag, >=4j =0b, >=4j =1b, >=4j =2b, >=4j =3b, >=4j =4b, >=4j >=4b
-        self.final_eventQuantities = [ [], [] ] # nJets, nBTags
+        self.final_images_cat = [ [], [], [], [], [], [], [], [], [], [], [] ] # (all composite), <4j alltag, >=4j =0b, >=4j =1b, >=4j =2b, >=4j =3b, >=4j =4b, >=4j >=4b, HT > 150, HT > 350, HT > 450
+        self.final_eventQuantities = [ [], [], [] ] # nJets, nBTags, HT
 
 
     ##############################################################
@@ -133,6 +134,8 @@ class imageMaker:
         plt.show()
         plt.hist( self.nBTags, bins=7, range=[0,7], alpha=0.5, density=1)
         plt.show()
+        plt.hist( self.HT, bins=50, range=[0,500], alpha=0.5, density=1)
+        plt.show()
 
         return
         
@@ -146,6 +149,7 @@ class imageMaker:
         self.photons   = []
         self.nJets     = []
         self.nBTags    = []
+        self.HT        = []
 
         # *** 1. Check if file exists and load if yes
         _filename = _inputFile.split('\n')[0]
@@ -332,8 +336,7 @@ class imageMaker:
         # *** Set options for saving (bins, range, etc)
         _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
         _compositeImages = []
-        _compositeImages_4j = []
-        _compositeImages_cat = [ [], [], [], [], [], [], []] #<4j all tag, >=4j 0tag, >=4j 1tag, >=4j 2tag, >=4j 3tag, >=4j 4tag, >=4j >4tag
+        _compositeImages_cat = [ [], [], [], [], [], [], [], [], [], [], []] #<4j all tag, >=4j tag incl, >=4j 0tag, >=4j 1tag, >=4j 2tag, >=4j 3tag, >=4j 4tag, >=4j >4tag, HT > 150, HT >350, HT > 450
         for iEvent in range(0, len(self.final_tracks[0])):
 
             # *** Loosely keep track of events
@@ -352,35 +355,39 @@ class imageMaker:
 
             # *** Make composite image (15, 15, 3)
             _compositeImages.append( _composite_img )
-            # simple
-            if self.nJets[iEvent] >= 4:
-                _compositeImages_4j.append( _composite_img )
-            # complex
+            # images split by njets and nBtags
             if self.nJets[iEvent]< 4:
                 _compositeImages_cat[0].append( _composite_img )
             else: # >= 4jets
+                _compositeImages_cat[1].append( _composite_img )
                 if self.nBTags[iEvent] == 0:
-                    _compositeImages_cat[1].append( _composite_img )
-                elif self.nBTags[iEvent] == 1:
                     _compositeImages_cat[2].append( _composite_img )
-                elif self.nBTags[iEvent] == 2:
+                elif self.nBTags[iEvent] == 1:
                     _compositeImages_cat[3].append( _composite_img )
-                elif self.nBTags[iEvent] == 3:
+                elif self.nBTags[iEvent] == 2:
                     _compositeImages_cat[4].append( _composite_img )
-                elif self.nBTags[iEvent] == 4:
+                elif self.nBTags[iEvent] == 3:
                     _compositeImages_cat[5].append( _composite_img )
-                else: # >= 4jets, >4tags
+                elif self.nBTags[iEvent] == 4:
                     _compositeImages_cat[6].append( _composite_img )
-
+                else: # >= 4jets, >4tags
+                    _compositeImages_cat[7].append( _composite_img )
+            # HT-based
+            if self.HT[iEvent] > 150:
+                _compositeImages_cat[8].append( _composite_img )
+            if self.HT[iEvent] > 300:
+                _compositeImages_cat[9].append( _composite_img )
+            if self.HT[iEvent] > 450:
+                _compositeImages_cat[10].append( _composite_img )
 
         # *** Append to global list
         self.final_images[0] += self.final_tracks[3]
         self.final_images[1] += self.final_nHadrons[3]
         self.final_images[2] += self.final_photons[3]
         self.final_images[3] += _compositeImages
-        self.final_images[4] += _compositeImages_4j
         self.final_eventQuantities[0] += self.nJets
         self.final_eventQuantities[1] += self.nBTags
+        self.final_eventQuantities[2] += self.HT
         for iCategory in range(0, len(_compositeImages_cat)):
             self.final_images_cat[iCategory] += _compositeImages_cat[iCategory]
 
@@ -414,7 +421,7 @@ class imageMaker:
             # *** 3. Set event-level quantities
             self.nJets.append( event['nJets'] )
             self.nBTags.append( event['nBTags'] )
-
+            self.HT.append( event['HT'] )
         return
 
     
@@ -536,18 +543,22 @@ class imageMaker:
         hf.create_dataset('nHadronImgs', data=self.final_images[1], compression="gzip", compression_opts=3)
         hf.create_dataset('photonImgs', data=self.final_images[2], compression="gzip", compression_opts=3)
         hf.create_dataset('compositeImgs', data=self.final_images[3], compression="gzip", compression_opts=3)
-        #hf.create_dataset('compositeImgs_4j', data=self.final_images[4], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_<4j', data=self.final_images_cat[0], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_>=4j0b', data=self.final_images_cat[1], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_>=4j1b', data=self.final_images_cat[2], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_>=4j2b', data=self.final_images_cat[3], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_>=4j3b', data=self.final_images_cat[4], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_>=4j4b', data=self.final_images_cat[5], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_>=4j>=4b', data=self.final_images_cat[6], compression="gzip", compression_opts=3)
+
+        hf.create_dataset('compositeImgs_lessThan4j', data=self.final_images_cat[0], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4jInclb', data=self.final_images_cat[1], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4j0b', data=self.final_images_cat[2], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4j1b', data=self.final_images_cat[3], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4j2b', data=self.final_images_cat[4], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4j3b', data=self.final_images_cat[5], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4j4b', data=self.final_images_cat[6], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_ge4jge4b', data=self.final_images_cat[7], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_HT150', data=self.final_images_cat[8], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_HT300', data=self.final_images_cat[9], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_HT450', data=self.final_images_cat[10], compression="gzip", compression_opts=3)
 
         hf.create_dataset('nJets', data = self.final_eventQuantities[0], compression="gzip", compression_opts=3)
         hf.create_dataset('nBTags', data = self.final_eventQuantities[1], compression="gzip", compression_opts=3)
-
+        hf.create_dataset('HT', data= self.final_eventQuantities[2], compression="gzip", compression_opts=3)
         hf.close()
 
         return
