@@ -160,6 +160,7 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     #plt.text(.1, .1, s1)
 
     # ** X. Add significance and cut if requested
+    sig, cut, err = 0, 0, 0
     if writeSignificance==True:
         _pred_sig = _dict['hh_pred']
         _pred_bkg = _dict['qcd_pred']
@@ -183,7 +184,7 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
         fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
     
     
-    return
+    return sig, cut, err
 
 
 def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, _testingFraction=1.):

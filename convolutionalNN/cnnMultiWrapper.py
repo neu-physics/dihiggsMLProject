@@ -4,18 +4,18 @@ from cnnModelClass import cnnModelClass
 # *** 0. setup parser for command line
 parser = argparse.ArgumentParser()
 parser.add_argument("--outputDir", help="output directory for model training outputs")
-parser.add_argument("--imageCollection", help="image collection")
+#parser.add_argument("--imageCollection", help="image collection")
 parser.add_argument("--inputHHFile", help=".txt file containing input .h5 files for dihiggs")
 parser.add_argument("--inputQCDFile", help=".txt file containing input .h5 files for qcd")
 parser.add_argument('--addClassWeights', dest='addClassWeights', action='store_true')
 parser.add_argument('--testRun', dest='testRun', action='store_true')
 parser.set_defaults(addClassWeights=False)
-parser.set_defaults(addClassWeights=False)
+parser.set_defaults(testRun=False)
 
 args = parser.parse_args()
 
 
-if ( len(vars(args)) != 6 ): # 4/5/6 --> depends on default options
+if ( len(vars(args)) != 5 ): # 4/5/6 --> depends on default options
     os.system('python cnnWrapper.py -h')
     print( vars(args), len(vars(args)))
     quit()
@@ -55,17 +55,18 @@ else:
 
 
 # ** C. Test image collction and exit if DNE
-if(args.imageCollection is None):
-    print( "#### Need to specify input .txt file using --imageCollection <image collection> ####\nEXITING\n")
-    quit()
-else:
-    print( '-- Setting imageCollection = {0}'.format(args.imageCollection))
+#if(args.imageCollection is None):
+#    print( "#### Need to specify input .txt file using --imageCollection <image collection> ####\nEXITING\n")
+#    quit()
+#else:
+#    print( '-- Setting imageCollection = {0}'.format(args.imageCollection))
 
 
 # multi-run
-imageCollections = ['compositeImgs','compositeImgs_<4j','compositeImgs_>=4j0b','compositeImgs_>=4j1b',
-#                    'compositeImgs_>=4j2b','compositeImgs_>=4j3b','compositeImgs_>=4j4b','compositeImgs_>=4j>=4b',
-#                    'trackImgs', 'nHadronImgs', 'photonImgs',
+imageCollections = ['compositeImgs','compositeImgs_lessThan4j','compositeImgs_ge4jInclb',
+                    'compositeImgs_ge4j0b','compositeImgs_ge4j1b','compositeImgs_ge4j2b','compositeImgs_ge4j3b','compositeImgs_ge4j4b',
+                    'compositeImgs_ge4jge4b', 'compositeImgs_HT150', 'compositeImgs_HT300', 'compositeImgs_HT450',
+                    'trackImgs', 'nHadronImgs', 'photonImgs',
 ]
 
 
@@ -76,30 +77,35 @@ modelArgs = dict(
     #2xconv, 2xPool
     _cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
     _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
-    _imageCollection = args.imageCollection,
     _loadSavedModel = False,
+    _useClassWeights=args.addClassWeights,
 )
 
 classArgs = modelArgs.copy()
+classArgs['_topDir'] = args.outputDir
 classArgs['_hhFile'] = args.inputHHFile
 classArgs['_qcdFile'] = args.inputQCDFile
 #classArgs['_datasetPercentage'] = 0.1
 #classArgs['_datasetPercentage'] = 0.2
 classArgs['_datasetPercentage'] = 0.8
 
-for iCollection in range(0, imageCollections):
+weightsTag = 'addClassWeights' if args.addClassWeights else 'noWeights'
+percentTag = '80percent'
+
+for iCollection in range(0, len(imageCollections)):
+    imageCollection = imageCollections[iCollection]
 
     if iCollection == 0: # first model, create class
-        cnn = cnnModelClass('cnnModelClass_{}_2Conv_2MaxPool_2Dense_noWeights_all'.format(args.imageCollection),
+        cnn = cnnModelClass('cnnModelClass_{}_2Conv_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
                             **classArgs,
-                            _testRun = args.testRun,
-                            _useClassWeights=args.addClassWeights,
-                        )
-        cnn.processInputs()
+                            _imageCollection = imageCollection,
+                            _testRun = args.testRun
+        )
 
     else: # reinitialize to create new model
-        cnn.reinitialize('cnnModelClass_{}_2Conv_2MaxPool_2Dense_noWeights_all'.format(args.imageCollection),
-                         **modelArgs
+        cnn.reinitialize('cnnModelClass_{}_2Conv_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
+                         **modelArgs,
+                         _imageCollection = imageCollection,
                      )
 
     cnn.run()

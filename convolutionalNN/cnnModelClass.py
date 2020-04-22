@@ -58,8 +58,9 @@ def auc( y_true, y_pred ) :
 
 class cnnModelClass:
     
-    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False):
+    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False, _topDir=''):
         self.modelName   = _modelName
+        self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
         self.cnnLayers = _cnnLayers
         self.ffnnLayers = _ffnnLayers
         self.hhFile = _hhFile
@@ -97,7 +98,7 @@ class cnnModelClass:
     def run(self):
       ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
           
-      #self.processInputs() # DEPRACATED!! Well, sort of. you should just do it manually beforehand. This enables multi-model use of the same loaded dataset
+      self.processInputs() 
           
       self.makeCNN()
           
@@ -118,6 +119,8 @@ class cnnModelClass:
     def reinitialize(self,  _modelName, _cnnLayers, _ffnnLayers, _imageCollection, _loadSavedModel = False, _useClassWeights=False):
         """ funtion to setup a new model instance while using data and some options from original configuration"""
         self.modelName   = _modelName
+        _topDir = self.topDir.split('/')[0]
+        self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
         self.cnnLayers = _cnnLayers
         self.ffnnLayers = _ffnnLayers
         self.imageCollection = _imageCollection
@@ -143,9 +146,9 @@ class cnnModelClass:
         
         return
     
-    
+
     def processInputs(self):
-        """ open files and load images"""
+        """ load images from files"""
 
         if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
             self.loadSingleFile( self.hhFile, isSignal = True)
@@ -157,23 +160,6 @@ class cnnModelClass:
         elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
             self.loadMultipleFiles( self.qcdFile, isSignal = False)
 
-        """    
-        # Load files
-        hh_h5  = h5.File( self.hhFile, 'r')
-        qcd_h5  = h5.File( self.qcdFile , 'r')
-
-        # Print image collection names
-        print("+++ Available image collections: {}".format( ",".join(hh_h5.keys()) ))
-        
-        # Load user-specified image collection
-        if self.isTestRun:
-            _nEventsForTesting = 1000
-            self.hh  = hh_h5[ self.imageCollection ][:_nEventsForTesting]
-            self.qcd = qcd_h5[ self.imageCollection ][:_nEventsForTesting]
-        else:
-            self.hh = hh_h5[ self.imageCollection ][:]
-            self.qcd = qcd_h5[ self.imageCollection][:]
-        """    
         print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
 
         # Make labels
@@ -182,6 +168,8 @@ class cnnModelClass:
         
         # Make combined dataset
         all_images = np.concatenate ( (self.hh, self.qcd) )
+        if 'composite' not in self.imageCollection:
+              all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
         all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
         print("+ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
 
@@ -273,6 +261,11 @@ class cnnModelClass:
         """ create CNN and return compiled model"""
         print("+++ Make CNN")
 
+        # *** -1. Make directory if needed
+        if (not os.path.exists(self.topDir)):
+              print( "Specified output directory ({0}) DNE.\nCREATING NOW".format(self.topDir))
+              os.system("mkdir {0}".format(self.topDir))
+
         # *** 0. Set general options
         # ** A. General layer options. probably should allow for top-line flexibility here
         l2_reg = tf.keras.regularizers.l2(1e-4)
@@ -301,13 +294,16 @@ class cnnModelClass:
         # *** 1. Define model
         self.model = Sequential()
         pixelWidth = self.images_train.shape[1]
-        
+        #inputShape = self.images_train.shape[1:] if self.images_train.shape[-1] != pixelWidth else (self.images_train.shape[1:] + (1,))
+        inputShape = self.images_train.shape[1:]
+        print('++ input_shape for CNN: {}'.format(inputShape) )
+
         # ** A. Convolutional component
         firstLayer = True
         for layer in self.cnnLayers:
             # layer format example: [ "Conv2D", [16, (3,3)]] or ["MaxPooling2D", [(3, 3)]]
             if layer[0] == "Conv2D" and firstLayer:
-                self.model.add( Conv2D( layer[1][0], layer[1][1], input_shape=(pixelWidth, pixelWidth, 3), **conv_kwargs) )
+                self.model.add( Conv2D( layer[1][0], layer[1][1], input_shape= inputShape, **conv_kwargs) )
                 firstLayer = False
             elif layer[0] == "Conv2D" and not firstLayer:
                 self.model.add( Conv2D( layer[1][0], layer[1][1], **conv_kwargs) )
@@ -348,14 +344,14 @@ class cnnModelClass:
 
         # **G. Load model if appropriate
         if self.loadSavedModel:
-            local_dir = os.path.join(self.modelName, "models")
+            local_dir = os.path.join(self.topDir, "models")
             modelfile = os.path.join(local_dir, self.modelName)+'.hdf5'
             print("++ loading model from {}".format(modelfile))
             if not os.path.isfile(modelfile):
                 print("--- ERROR, Modelfile {} NOT FOUND. No weights initialized".format(modefile))
                 return
         
-            self.model.predict( np.empty( (1, pixelWidth, pixelWidth, 3) ))
+            self.model.predict( np.empty( inputShape ) )
             self.model.load_weights(modelfile)
 
             
@@ -366,15 +362,14 @@ class cnnModelClass:
         print("+++ Train CNN" )
 
         # *** 1. Define output directory
-        topDir = self.modelName
+        topDir = self.topDir
         name = self.modelName
         if not os.path.exists(topDir):
             os.makedirs(topDir)
-            model_dir = os.path.join(topDir, "", "models")
-            if not os.path.exists(model_dir):
-                os.makedirs(model_dir)
         model_dir = os.path.join(topDir, "", "models")
-                
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+      
         # *** 2. Define callbacks for training
         fit_callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
@@ -441,7 +436,7 @@ class cnnModelClass:
         # *** 2. Make history plots
         if not self.loadSavedModel:
             print("++ Training History Plots")
-            makeHistoryPlots( self.model_history, ['acc', 'loss', 'auc'], self.modelName, savePlot=True, saveDir=self.modelName )
+            makeHistoryPlots( self.model_history, ['acc', 'loss', 'auc'], self.modelName, savePlot=True, saveDir=self.topDir )
         
         # *** 3. Make predictions
         #print("++ Calculate scores")
@@ -466,13 +461,12 @@ class cnnModelClass:
         print("++ Output Score Plot")
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh, 'qcd_pred':pred_qcd}
-        compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.modelName, writeSignificance=True, _testingFraction=self.testingFraction )
+        sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction )
         
         # *** 5. Get best cut value for CNN assuming some minimal amount of signal
-        pred_hh_sig = [x[0] for x in pred_hh.copy()]
-        pred_qcd_sig = [x[0] for x in pred_qcd.copy()]
-        
-        sig, cut, sigErr = returnBestCutValue('CNN', pred_hh_sig, pred_qcd_sig, _minBackground=400e3, _testingFraction=self.testingFraction)
+        #pred_hh_sig = [x[0] for x in pred_hh.copy()]
+        #pred_qcd_sig = [x[0] for x in pred_qcd.copy()]
+        #sig, cut, sigErr = returnBestCutValue('CNN', pred_hh_sig, pred_qcd_sig, _minBackground=400e3, _testingFraction=self.testingFraction)
 
         ## *** 5B. Get signifiance for any user-specified NN score cut value
         #testingFraction = 0.1
@@ -497,7 +491,7 @@ class cnnModelClass:
         
         # *** 7. Make ROC curve
         print("++ ROC Curve")
-        makeEfficiencyCurves( dict(label="CNN", labels=self.labels_test, prediction=self.predictions_test, color="blue"), _modelName = self.modelName, savePlot=True, saveDir=self.modelName)
+        makeEfficiencyCurves( dict(label="CNN", labels=self.labels_test, prediction=self.predictions_test, color="blue"), _modelName = self.modelName, savePlot=True, saveDir=self.topDir)
         #utils/commonFunctions.py: def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
 
         return
