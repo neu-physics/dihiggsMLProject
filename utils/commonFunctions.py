@@ -15,8 +15,13 @@ def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True, _nEventsGen=-1 ):
     # *** 0. Set number of events and total HL-LHC lumi
     lumi_HLLHC = 3000 #fb-1
 
-    hh_nEventsGen = 500e3
-    qcd_nEventsGen = 2e6
+    # ** A. First-gen samples
+    #hh_nEventsGen = 500e3
+    #qcd_nEventsGen = 2e6
+
+    # ** B. Second-gen samples
+    hh_nEventsGen = 1e6
+    qcd_nEventsGen = 4e6
 
     if _isDihiggs and _nEventsGen > 0:
         hh_nEvetsGen = _nEventsGen

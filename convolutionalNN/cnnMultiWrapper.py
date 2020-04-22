@@ -63,10 +63,12 @@ else:
 
 
 # multi-run
-#imageCollections = ['compositeImgs','compositeImgs_<4j','compositeImgs_>=4j0b','compositeImgs_>=4j1b',
+imageCollections = ['compositeImgs','compositeImgs_<4j','compositeImgs_>=4j0b','compositeImgs_>=4j1b',
 #                    'compositeImgs_>=4j2b','compositeImgs_>=4j3b','compositeImgs_>=4j4b','compositeImgs_>=4j>=4b',
 #                    'trackImgs', 'nHadronImgs', 'photonImgs',
-#]
+]
+
+
 
 modelArgs = dict(
     #3xconv, 2xPool
@@ -74,21 +76,31 @@ modelArgs = dict(
     #2xconv, 2xPool
     _cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
     _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
-    _hhFile = args.inputHHFile, 
-    _qcdFile = args.inputQCDFile, 
     _imageCollection = args.imageCollection,
     _loadSavedModel = False,
-    #_datasetPercentage = 0.1,
-    _datasetPercentage = 0.8,
-    #_datasetPercentage = 1.0,
 )
 
+classArgs = modelArgs.copy()
+classArgs['_hhFile'] = args.inputHHFile
+classArgs['_qcdFile'] = args.inputQCDFile
+#classArgs['_datasetPercentage'] = 0.1
+#classArgs['_datasetPercentage'] = 0.2
+classArgs['_datasetPercentage'] = 0.8
 
-cnn = cnnModelClass('cnnModelClass_{}_2Conv_2MaxPool_2Dense_noWeights_all'.format(args.imageCollection),
-                    **modelArgs,
-                    _testRun = args.testRun,
-                    _useClassWeights=args.addClassWeights,
-                )
+for iCollection in range(0, imageCollections):
 
-cnn.run()
+    if iCollection == 0: # first model, create class
+        cnn = cnnModelClass('cnnModelClass_{}_2Conv_2MaxPool_2Dense_noWeights_all'.format(args.imageCollection),
+                            **classArgs,
+                            _testRun = args.testRun,
+                            _useClassWeights=args.addClassWeights,
+                        )
+        cnn.processInputs()
+
+    else: # reinitialize to create new model
+        cnn.reinitialize('cnnModelClass_{}_2Conv_2MaxPool_2Dense_noWeights_all'.format(args.imageCollection),
+                         **modelArgs
+                     )
+
+    cnn.run()
 

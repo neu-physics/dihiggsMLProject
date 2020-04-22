@@ -95,25 +95,45 @@ class cnnModelClass:
     ##############################################################
 
     def run(self):
-        ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
-
-        self.processInputs()
-
-        self.makeCNN()
-
-        if not self.loadSavedModel:
+      ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
+          
+      #self.processInputs() # DEPRACATED!! Well, sort of. you should just do it manually beforehand. This enables multi-model use of the same loaded dataset
+          
+      self.makeCNN()
+          
+      if not self.loadSavedModel:
             self.trainCNN()
-
-        self.evaluateModel()
-
-        self.close()
+                
+      self.evaluateModel()
+                
+      self.close()
         
-        return
+      return
 
+      
     ##############################################################
     ##                        functions                         ##
     ##############################################################
 
+    def reinitialize(self,  _modelName, _cnnLayers, _ffnnLayers, _imageCollection, _loadSavedModel = False, _useClassWeights=False):
+        """ funtion to setup a new model instance while using data and some options from original configuration"""
+        self.modelName   = _modelName
+        self.cnnLayers = _cnnLayers
+        self.ffnnLayers = _ffnnLayers
+        self.imageCollection = _imageCollection
+        self.useClassWeights = _useClassWeights
+        self.loadSavedModel = _loadSavedModel
+
+        # Global Variables
+        self.model = []
+        self.class_weights = []
+        self.model_history = []
+        self.predictions_test  = []
+
+        print("+++ Initialized {}".format(self.modelName) )
+
+        return
+        
     def close(self):
         """ close things to save memory"""
 
