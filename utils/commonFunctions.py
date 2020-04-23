@@ -183,7 +183,9 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
             _filename = _filename + '_norm'
         fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
     
-    
+    #close out
+    plt.close(fig)
+        
     return sig, cut, err
 
 
@@ -360,6 +362,9 @@ def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, 
             _filename  = '{}_history_{}'.format(_modelName, curve)
             fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
 
+        #close out
+        plt.close(fig)
+
     return
 
 def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
@@ -406,6 +411,8 @@ def makeEfficiencyCurves(*data, _modelName='', savePlot=False, saveDir=''):
         _filename  = '{}_ROC'.format(_modelName)
         fig.savefig( saveDir + '/' + _filename+'.png', bbox_inches='tight' )
 
+    # close out
+    plt.close(fig)
 
     return
 
