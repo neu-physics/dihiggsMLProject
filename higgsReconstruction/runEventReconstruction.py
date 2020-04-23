@@ -60,7 +60,8 @@ for infile in open(args.inputTXTFile, 'r'):
     # ** A. Make some useful strings
     infile = infile.split('\n')[0]
     outName = args.outputTag
-    isDihiggsSignal = True if 'pp2hh4b' in args.inputTXTFile else False
+    #isDihiggsSignal = True if 'pp2hh4b' in args.inputTXTFile else False
+    isDihiggsSignal = True if 'pp2hh4b' in infile else False
     if not isCondor:
         runSplit = infile.split('/')[-5]
         outName = args.outputTag + '_' + str(runSplit)

@@ -975,10 +975,11 @@ class eventReconstruction:
 
     def getRecoInformation( self, _iEvent ):
         self.returnNumberAndListOfJetIndicesPassingCuts( _iEvent )
+        self.HT = self.l_scalarHT[_iEvent][0]
+
         if(self.saveJetConstituents==True):
             self.outputJetCons( _iEvent )
 
-        self.HT = self.l_scalarHT[_iEvent][0]
         self.HTPerEvent.append( self.HT )
         self.nJetsPerEvent.append( self.nJets  )
         self.nBTagsPerEvent.append( self.nBTags  )

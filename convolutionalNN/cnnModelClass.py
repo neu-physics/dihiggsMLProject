@@ -149,7 +149,9 @@ class cnnModelClass:
 
     def processInputs(self):
         """ load images from files"""
-
+        self.hh = []
+        self.qcd = []
+        
         if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
             self.loadSingleFile( self.hhFile, isSignal = True)
         elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files

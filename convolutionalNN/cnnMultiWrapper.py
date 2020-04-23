@@ -63,10 +63,10 @@ else:
 
 
 # multi-run
-imageCollections = ['compositeImgs','compositeImgs_lessThan4j','compositeImgs_ge4jInclb',
-                    'compositeImgs_ge4j0b','compositeImgs_ge4j1b','compositeImgs_ge4j2b','compositeImgs_ge4j3b','compositeImgs_ge4j4b',
-                    'compositeImgs_ge4jge4b', 'compositeImgs_HT150', 'compositeImgs_HT300', 'compositeImgs_HT450',
-                    'trackImgs', 'nHadronImgs', 'photonImgs',
+imageCollections = ['compositeImgs','compositeImgs_lessThan4j',#'compositeImgs_ge4jInclb','compositeImgs_ge4j0b','compositeImgs_ge4j1b',
+                    #'compositeImgs_ge4j2b','compositeImgs_ge4j3b','compositeImgs_ge4j4b','compositeImgs_ge4jge4b', 
+                    #'compositeImgs_HT150','compositeImgs_HT300', 'compositeImgs_HT450',
+                    #'trackImgs', 'nHadronImgs', 'photonImgs',
 ]
 
 
