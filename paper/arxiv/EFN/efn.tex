@@ -1,33 +1,35 @@
-\documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage{booktabs}
-\usepackage{multirow}
+%\documentclass{article}
+%\usepackage[utf8]{inputenc}
+%\usepackage{booktabs}
+%\usepackage{multirow}
+%
+%\title{EnergyFlowNetwork}
+%\author{}
+%\date{April 2020}
+%
+%\usepackage{natbib}
+%\usepackage{graphicx}
+%
+%\begin{document}
+%
+%\maketitle
+%
+%\section{Introduction}
 
-\title{EnergyFlowNetwork}
-\author{}
-\date{April 2020}
-
-\usepackage{natbib}
-\usepackage{graphicx}
-
-\begin{document}
-
-\maketitle
-
-\section{Introduction}
+\label{sec:EFN}
 Energy Flow Network(EFN) and Particle Flow Network(PFN) are algorithms that take jet constituents information as input. EFN takes the rapidity ${y}$ and azimuthal angle ${\phi}$ of jet constituents as input, while PFN takes the rapidity $y$, azimuthal angle $\phi$ and transverse momentum $p_{T}$ as input. 
 By just feeding those basic information to the algorithm without doing any high level reconstruction, we can try to find out whether the learning algorithm can extract some useful information from the data.
 The EFN and PFN are composed of two networks as shown in Figure \ref{fig:EFNArch}. 
 We used 200 nodes for each hidden layer in network (a), 256 for latent space dimension and 300 nodes for each hidden layer in network (b). 
 
-\begin{figure}[h!]
+\begin{figure}[ht!]
 \centering
-\includegraphics[scale=0.5]{EFNArch.png}
+\includegraphics[scale=0.5]{./EFN/EFNArch.png}
 \caption{Network (a) takes jet constituents information as input and outputs latent space $\Phi$ for each jet constituents. Network (b) takes $\mathcal{O}$, which is the linear combination of $\Phi$, as input and outputs final result}
 \label{fig:EFNArch}
 \end{figure}
 
-\section{Approach}
+%section{Approach}
 To test how the EFN and PFN works on diHiggs signal extraction. We generated 1M diHiggs events as signal and 4M QCD events as background. Also, we devided those events into four categories:
 \begin{itemize}
     \item all events
@@ -40,9 +42,9 @@ We used 60/20/20 data split as train/validation/test set.
 To avoid overfitting, we tuned L2 regularization factor or dropout and applied early stopping.
 To evaluate the performance, we calculated the signal significance for test set by $\frac{S}{\sqrt{B}}$ normalized to $3000fb^{-1}$ luminosity.
 
-\section{Approach}
+%\section{Approach}
 The results of EFN is shown in Table \ref{EFNtab} and the results of PFN is shown in Table \ref{PFNtab}
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
   %\begin{center}
     \begin{tabular}{|l|c|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
@@ -62,7 +64,7 @@ The results of EFN is shown in Table \ref{EFNtab} and the results of PFN is show
 \label{EFNtab}
 \end{table}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 
   %\begin{center}
@@ -85,6 +87,6 @@ The results of EFN is shown in Table \ref{EFNtab} and the results of PFN is show
 
 
 
-\bibliographystyle{plain}
-\bibliography{references}
-\end{document}
+%\bibliographystyle{plain}
+%\bibliography{references}
+%\end{document}
