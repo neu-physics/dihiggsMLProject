@@ -62,7 +62,7 @@ class imageMaker:
         ## Objects per dataset
         # images for saving
         self.final_images = [ [], [], [], [], [] ] # tracks, nHadrons, photons, composite (all three), composite >=4j
-        self.final_images_cat = [ [], [], [], [], [], [], [], [], [], [], [] ] # (all composite), <4j alltag, >=4j =0b, >=4j =1b, >=4j =2b, >=4j =3b, >=4j =4b, >=4j >=4b, HT > 150, HT > 350, HT > 450
+        self.final_images_cat = [ [], [], [], [], [], [], [], [], [], [], [], [], [] ] # (all composite), <4j alltag, >=4j =0b, >=4j =1b, >=4j =2b, >=4j =3b, >=4j =4b, >=4j >=4b, HT > 150, HT > 350, HT > 450, odd nJets, even nJets
         self.final_eventQuantities = [ [], [], [] ] # nJets, nBTags, HT
 
 
@@ -229,9 +229,11 @@ class imageMaker:
             _tracks_scaled_rap   = [ x*y for x,y in zip(_tracks_rap, _tracks_weights)]
             _nHadrons_scaled_rap = [ x*y for x,y in zip(_nHadrons_rap, _nHadrons_weights)]
             _photons_scaled_rap  = [ x*y for x,y in zip(_photons_rap, _photons_weights)]
-            #_phi_centroid = sum( _tracks_scaled_phi + _nHadrons_scaled_phi + _photons_scaled_phi ) / _totalWeights
+            # ** Use momentem centroid
+            _phi_centroid = sum( _tracks_scaled_phi + _nHadrons_scaled_phi + _photons_scaled_phi ) / _totalWeights
             _rap_centroid = sum( _tracks_scaled_rap + _nHadrons_scaled_rap + _photons_scaled_rap ) / _totalWeights
-            _phi_centroid = v_all.phi
+            # ** Use Center-of-mass frame
+            #_phi_centroid = v_all.phi
             #print("nJets: {}, phi centroid: {}, rap centroid: {}".format(event['nJets'], _phi_centroid, _rap_centroid))
             
             # *** Phi Rotation
@@ -336,7 +338,7 @@ class imageMaker:
         # *** Set options for saving (bins, range, etc)
         _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
         _compositeImages = []
-        _compositeImages_cat = [ [], [], [], [], [], [], [], [], [], [], []] #<4j all tag, >=4j tag incl, >=4j 0tag, >=4j 1tag, >=4j 2tag, >=4j 3tag, >=4j 4tag, >=4j >4tag, HT > 150, HT >350, HT > 450
+        _compositeImages_cat = [ [], [], [], [], [], [], [], [], [], [], [], [], []] #<4j all tag, >=4j tag incl, >=4j 0tag, >=4j 1tag, >=4j 2tag, >=4j 3tag, >=4j 4tag, >=4j >4tag, HT > 150, HT >350, HT > 450, odd nJets, even nJets
         for iEvent in range(0, len(self.final_tracks[0])):
 
             # *** Loosely keep track of events
@@ -379,7 +381,11 @@ class imageMaker:
                 _compositeImages_cat[9].append( _composite_img )
             if self.HT[iEvent] > 450:
                 _compositeImages_cat[10].append( _composite_img )
-
+            # images split by odd/even njets (check on hypothesis of peak at origin)
+            if self.nJets[iEvent]%2 != 0: 
+                _compositeImages_cat[11].append( _composite_img )
+            else:
+                _compositeImages_cat[12].append( _composite_img )
         # *** Append to global list
         self.final_images[0] += self.final_tracks[3]
         self.final_images[1] += self.final_nHadrons[3]
@@ -555,6 +561,8 @@ class imageMaker:
         hf.create_dataset('compositeImgs_HT150', data=self.final_images_cat[8], compression="gzip", compression_opts=3)
         hf.create_dataset('compositeImgs_HT300', data=self.final_images_cat[9], compression="gzip", compression_opts=3)
         hf.create_dataset('compositeImgs_HT450', data=self.final_images_cat[10], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_oddNjets', data=self.final_images_cat[11], compression="gzip", compression_opts=3)
+        hf.create_dataset('compositeImgs_evenNjets', data=self.final_images_cat[12], compression="gzip", compression_opts=3)
 
         hf.create_dataset('nJets', data = self.final_eventQuantities[0], compression="gzip", compression_opts=3)
         hf.create_dataset('nBTags', data = self.final_eventQuantities[1], compression="gzip", compression_opts=3)

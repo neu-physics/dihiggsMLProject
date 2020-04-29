@@ -15,7 +15,7 @@ parser.add_argument("--nOutputFiles", help="number of desired output files")
 args = parser.parse_args()
 
 if ( len(vars(args)) != 3 ): # 2 OR 3 --> three for options
-    os.system('python submitSampleToCondor.py -h')
+    os.system('python submitSampleToCondor_imageMaker.py -h')
     quit()
 
 # ** A. Test output directory existence and create if DNE
