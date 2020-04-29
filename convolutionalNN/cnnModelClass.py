@@ -100,14 +100,14 @@ class cnnModelClass:
     def run(self):
       ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
           
-      self.processInputs() 
+      #self.processInputs() 
           
-      self.makeCNN()
+      self.makeCNNPlus()
           
-      if not self.loadSavedModel:
-            self.trainCNN()
+      #if not self.loadSavedModel:
+      #      self.trainCNN()
       
-      self.evaluateModel()
+      #self.evaluateModel()
                 
       self.close()
         
@@ -350,6 +350,131 @@ class cnnModelClass:
         )
 
         # ** G. Load model if appropriate
+        if self.loadSavedModel or loadBestModel:
+            local_dir = os.path.join(self.loadModelDir, "models")
+            modelfile = os.path.join(local_dir, self.modelName)+'.hdf5'
+            print("++ loading model from {}".format(modelfile))
+            if not os.path.isfile(modelfile):
+                print("--- ERROR, Modelfile {} NOT FOUND. No weights initialized".format(modefile))
+                return
+        
+            loadShape = (1,) + inputShape
+            _model.predict( np.empty( loadShape ) )
+            _model.load_weights(modelfile)
+            self.best_model = _model
+        else:
+            self.model = _model
+
+            
+        return
+
+
+    def makeCNNPlus(self, loadBestModel = False):
+        """ create CNN that uses additional inputs after convolution and return compiled model"""
+        print("+++ Make CNN")
+
+        # *** -1. Make directory if needed
+        if (not os.path.exists(self.topDir)):
+              print( "Specified output directory ({0}) DNE.\nCREATING NOW".format(self.topDir))
+              os.system("mkdir {0}".format(self.topDir))
+
+        # *** 0. Set general options
+        # ** A. General layer options. probably should allow for top-line flexibility here
+        l2_reg = tf.keras.regularizers.l2(1e-4)
+        conv_kwargs = dict(
+            activation="relu",
+            #kernel_initializer=tf.keras.initializers.lecun_normal(),
+            #kernel_regularizer=l2_reg,
+        )
+        dense_kwargs = conv_kwargs
+
+        # ** B. Intial output bias. probably should allow for top-line flexibility here
+        initial_bias = np.log([len(self.hh)/len(self.qcd)])
+        output_bias = Constant(initial_bias)
+        print("+ initial bias: {}".format(initial_bias))
+        
+        # ** C. Create class weights for weighted training. probably should allow for top-line flexibility here
+        # Scaling by total/2 helps keep the loss to a similar magnitude. The sum of the weights of all examples stays the same.
+        if self.useClassWeights:
+            total = len(self.qcd) + len(self.hh)
+            weight_for_0 = (1 / len(self.qcd))*(total)/2.0 
+            weight_for_1 = (1 / len(self.hh))*(total)/2.0
+            print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
+            print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
+            self.class_weights = {0: weight_for_0, 1: weight_for_1}        
+
+        # *** 1. Define model
+        _model = []
+        _model = Sequential()
+        pixelWidth = self.images_train.shape[1]
+        #inputShape = self.images_train.shape[1:] if self.images_train.shape[-1] != pixelWidth else (self.images_train.shape[1:] + (1,))
+        inputShape = self.images_train.shape[1:]
+        print('++ input_shape for CNN: {}'.format(inputShape) )
+
+        # ** A. Convolutional component
+        firstLayer = True
+        convLayers = []
+        for layer in self.cnnLayers:
+            # layer format example: [ "Conv2D", [16, (3,3)]] or ["MaxPooling2D", [(3, 3)]]
+            if layer[0] == "Conv2D" and firstLayer:
+                convLayers.append( Conv2D( layer[1][0], layer[1][1], input_shape= inputShape, **conv_kwargs))
+                firstLayer = False
+            elif layer[0] == "Conv2D" and not firstLayer:
+                convLayers.append( Conv2D( layer[1][0], layer[1][1], **conv_kwargs) ))
+            elif layer[0] == "MaxPooling2D":
+                convLayers.append( MaxPooling2D( layer[1][0]))
+        # ** B. Flatten model for input to feed-forward network
+        convLayers.append( Flatten() ) 
+        convNN = Model( convLayers)
+
+        # ** C. Extra information to add to flattened CNN output
+        extra = []
+        extra.append( Activation('linear', input_shape=(3,)))
+        extraVars = Model( extra )
+
+        # ** D. Concatenate extra+CNN as input for FC layers
+        concatenated = concatenate([convLayers[-1], extra[-1]])
+
+        # ** E. Feed-forward components
+        ffLayers = []
+        firstLayer = True
+        for layer in self.ffnnLayers:
+            # layer format example: [ "Dense", [64]] or ["BatchNormalization"], ["Dropout", [0.2]]
+            if layer[0] == "Dense":
+                if firstLayer:
+                      ffLayers.append( Dense( layer[1][0], **dense_kwargs))(concatenated)
+                      firstLayer = False
+                ffLayers.append( Dense( layer[1][0], **dense_kwargs))
+            elif layer[0] == "BatchNormalization":
+                ffLayers.append( BatchNormalization())
+            elif layer[0] == "Dropout":
+                ffLayers.append( Dropout( layer[1][0]))
+
+        # ** F. Output layer
+        ffLayers.append( Dense(1, activation='sigmoid', bias_initializer=output_bias))
+        ffNN = Model( ffLayers)
+
+        # ** G. Put it all together
+        out = Dense(1, activation='softmax', name='output_layer')(concatenated)
+        _model = Model([convNN, extraVars], ffNN)
+
+      
+        # ** H. Print summary
+        print("++ Model Summary\n {}".format(_model.summary()))
+
+        # ** I. Define metrics and compile
+        metrics = [ tf.keras.metrics.categorical_accuracy,
+                    'accuracy',
+                    #tf.keras.metrics.AUC(name='auc'),
+                    auc,
+        ]
+
+        _model.compile(loss='binary_crossentropy',
+                           optimizer='adam',
+                           metrics=metrics,
+        )
+
+        # ** J. Load model if appropriate
         if self.loadSavedModel or loadBestModel:
             local_dir = os.path.join(self.loadModelDir, "models")
             modelfile = os.path.join(local_dir, self.modelName)+'.hdf5'
