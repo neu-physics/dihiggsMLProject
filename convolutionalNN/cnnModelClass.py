@@ -59,7 +59,7 @@ def auc( y_true, y_pred ) :
 
 class cnnModelClass:
     
-    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False, _topDir='', _loadModelDir=''):
+    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False, _extraVariables=[], _topDir='', _loadModelDir=''):
         self.modelName   = _modelName
         self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
         self.cnnLayers = _cnnLayers
@@ -69,6 +69,7 @@ class cnnModelClass:
         self.imageCollection = _imageCollection
         self.isTestRun = _testRun
         self.useClassWeights = _useClassWeights
+        self.extraVariables = _extraVariables
         self.loadSavedModel = _loadSavedModel
         self.loadModelDir = str(_topDir + '/' + _loadModelName + '/') if _loadModelDir != '' else self.topDir
         self.datasetPercentage = _datasetPercentage
@@ -86,8 +87,10 @@ class cnnModelClass:
         self.class_weights = []
         self.model_history = []
         self.images_train = []
+        self.extraVariables_train = []
         self.labels_train = []
         self.images_test  = []
+        self.extraVariables_test  = []
         self.labels_test  = []
         self.predictions_test  = []
 
@@ -105,10 +108,10 @@ class cnnModelClass:
           
       self.makeCNNPlus()
           
-      #if not self.loadSavedModel:
-      #      self.trainCNN()
+      if not self.loadSavedModel:
+            self.trainCNN()
       
-      #self.evaluateModel()
+      self.evaluateModel()
                 
       self.close()
         
@@ -153,41 +156,50 @@ class cnnModelClass:
     
 
     def processInputs(self):
-        """ load images from files"""
-        self.hh = []
-        self.qcd = []
-        
-        if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
+      """ load images from files"""
+      self.hh = [ [] for variable in range(0, len(self.extraVariables)+1) ] # index == 0 for images, 1-X are extra variables
+      self.qcd = [ [] for variable in range(0, len(self.extraVariables)+1) ] # index == 0 for images, 1-X are extra variables
+      
+      if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
             self.loadSingleFile( self.hhFile, isSignal = True)
-        elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
+      elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
             self.loadMultipleFiles( self.hhFile, isSignal = True)
-        
-        if '.h5' in self.qcdFile:    # ** C. User single .h5 file
+                
+      if '.h5' in self.qcdFile:    # ** C. User single .h5 file
             self.loadSingleFile( self.qcdFile, isSignal = False)
-        elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
+      elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
             self.loadMultipleFiles( self.qcdFile, isSignal = False)
+            
+      print("+ {} hh images, {} qcd images".format( len(self.hh[0]), len(self.qcd[0])))
 
-        print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
+      # Make labels
+      hh_labels = np.ones( len(self.hh[0]) )
+      qcd_labels = np.zeros( len(self.qcd[0]) )
+      
+      # Make combined dataset
+      all_images = np.concatenate ( (self.hh[0], self.qcd[0]) )
+      if 'composite' not in self.imageCollection:
+            all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
+            all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
+      print("+ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
 
-        # Make labels
-        hh_labels = np.ones( len(self.hh) )
-        qcd_labels = np.zeros( len(self.qcd) )
-        
-        # Make combined dataset
-        all_images = np.concatenate ( (self.hh, self.qcd) )
-        if 'composite' not in self.imageCollection:
-              all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
-        all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
-        print("+ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
+      # Make extra variables if needed
+      if len(self.extraVariables) != 0:
+            hh_extraVariables = self.hh[1:]
+            qcd_extraVariables = self.qcd[1:]
+            all_extraVariables = np.concatenate( (hh_extraVariables.copy(), qcd_extraVariables.copy()), axis=0)
+      print("+ extra variables shape: {}".format( all_extraVariables.shape))
 
-        # Create training and testing sets
-        self.images_train, self.images_test, self.labels_train, self.labels_test = train_test_split(all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
-
-        return
+      # Create training and testing sets
+      if len(self.extraVariables) == 0: #images only
+            self.images_train, self.images_test, self.labels_train, self.labels_test = train_test_split(all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
+      else: # add extras
+            self.images_train, self.images_test, self.extraVariables_train, self.extraVariables_test, self.labels_train, self.labels_test = train_test_split( all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
+      return
 
     
-    def loadMultipleFiles(self, filename, isSignal):
-        """ function for reading multiple files and adding to dataset"""
+      def loadMultipleFiles(self, filename, isSignal):
+            """ function for reading multiple files and adding to dataset"""
 
         if os.path.isfile(filename):
             # Do something with the file
@@ -211,30 +223,44 @@ class cnnModelClass:
         _h5File = h5.File( filename, 'r' )
 
         # load slice of dataset
-        _dataset = []
+        _dataset = [ [] for variable in range(0, len(self.extraVariables)+1) ] # index == 0 for images, 1-X are extra variables
+
         if self.isTestRun:
-            _dataset = _h5File[ self.imageCollection ][:self.nEventsForTesting]
+            _dataset[0] = _h5File[ self.imageCollection ][:self.nEventsForTesting]
+            for iExtra in range(0, self.extraVariables):
+                  dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
         else:
-            _dataset = _h5File[ self.imageCollection ][:]
+            _dataset[0] = _h5File[ self.imageCollection ][:]
+            for iExtra in range(0, self.extraVariables):
+                  dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
 
         # store if signal
         if isSignal:
             # first file for this dataset
-            if len(self.hh) == 0:  
-                self.hh = _dataset
+            if len(self.hh[0]) == 0:  
+                self.hh[0] = _dataset[0]
+                for iExtra in range(0, self.extraVariables):
+                      self.hh[iExtra+1] = _dataset[iExtra+1]
             # add file to existing dataset
             else:
-                self.hh = np.concatenate( (self.hh, _dataset) )
+                self.hh[0] = np.concatenate( (self.hh[0], _dataset[0]) )
+                for iExtra in range(0, self.extraVariables):
+                      self.hh[iExtra+1] = np.concatenate( (self.hh[iExtra+1], _dataset[iExtra+1]) )
+
         # store if background
         else:
             # first file for this dataset
-            if len(self.qcd) == 0:  
-                self.qcd = _dataset
+            if len(self.qcd[0]) == 0:  
+                self.qcd[0] = _dataset[0]
+                for iExtra in range(0, self.extraVariables):
+                      self.qcd[iExtra+1] = _dataset[iExtra+1]
             # add file to existing dataset
             else:
-                self.qcd = np.concatenate( (self.qcd, _dataset) )
+                self.qcd[0] = np.concatenate( (self.qcd[0], _dataset[0]) )
+                for iExtra in range(0, self.extraVariables):
+                      self.qcd[iExtra+1] = np.concatenate( (self.qcd[iExtra+1], _dataset[iExtra+1]) )
 
-        print( len(_dataset), len(self.hh), len(self.qcd))
+        print( len(_dataset[0]), len(self.hh[0]), len(self.qcd[0]))
 
         # Close files
         _h5File.close()
@@ -246,9 +272,9 @@ class cnnModelClass:
         """ make a few single event images"""
 
         if isSignal:
-            imgs = self.hh
+            imgs = self.hh[0]
         else:
-            imgs = self.qcd
+            imgs = self.qcd[0]
             
         evt = 503
         plt.imshow(imgs[evt], alpha=self.transparency)
@@ -284,16 +310,16 @@ class cnnModelClass:
         dense_kwargs = conv_kwargs
 
         # ** B. Intial output bias. probably should allow for top-line flexibility here
-        initial_bias = np.log([len(self.hh)/len(self.qcd)])
+        initial_bias = np.log([len(self.hh[0])/len(self.qcd[0])])
         output_bias = Constant(initial_bias)
         print("+ initial bias: {}".format(initial_bias))
         
         # ** C. Create class weights for weighted training. probably should allow for top-line flexibility here
         # Scaling by total/2 helps keep the loss to a similar magnitude. The sum of the weights of all examples stays the same.
         if self.useClassWeights:
-            total = len(self.qcd) + len(self.hh)
-            weight_for_0 = (1 / len(self.qcd))*(total)/2.0 
-            weight_for_1 = (1 / len(self.hh))*(total)/2.0
+            total = len(self.qcd[0]) + len(self.hh[0])
+            weight_for_0 = (1 / len(self.qcd[0]))*(total)/2.0 
+            weight_for_1 = (1 / len(self.hh[0]))*(total)/2.0
             print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
             print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
             self.class_weights = {0: weight_for_0, 1: weight_for_1}        
@@ -370,7 +396,7 @@ class cnnModelClass:
         return
 
 
-    def makeCNNPlus(self, extraShape=(3,), loadBestModel = False):
+    def makeCNNPlus(self, loadBestModel = False):
         """ create CNN that uses additional inputs after convolution and return compiled model"""
         print("+++ Make CNN")
 
@@ -390,16 +416,16 @@ class cnnModelClass:
         dense_kwargs = conv_kwargs
 
         # ** B. Intial output bias. probably should allow for top-line flexibility here
-        initial_bias = np.log([len(self.hh)/len(self.qcd)])
+        initial_bias = np.log([len(self.hh[0])/len(self.qcd[0])])
         output_bias = Constant(initial_bias)
         print("+ initial bias: {}".format(initial_bias))
         
         # ** C. Create class weights for weighted training. probably should allow for top-line flexibility here
         # Scaling by total/2 helps keep the loss to a similar magnitude. The sum of the weights of all examples stays the same.
         if self.useClassWeights:
-            total = len(self.qcd) + len(self.hh)
-            weight_for_0 = (1 / len(self.qcd))*(total)/2.0 
-            weight_for_1 = (1 / len(self.hh))*(total)/2.0
+            total = len(self.qcd[0]) + len(self.hh[0])
+            weight_for_0 = (1 / len(self.qcd[0]))*(total)/2.0 
+            weight_for_1 = (1 / len(self.hh[0]))*(total)/2.0
             print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
             print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
             self.class_weights = {0: weight_for_0, 1: weight_for_1}        
@@ -428,7 +454,7 @@ class cnnModelClass:
         convNN = Flatten()( convNN )
         
         # ** C. Extra information to add to flattened CNN output
-        extraInput = Input(shape=extraShape)
+        extraInput = Input(shape=self.extraVariables_train[1:])
         extra = Activation('linear')(extraInput)
 
         # ** D. Concatenate extra+CNN as input for FC layers
@@ -481,6 +507,9 @@ class cnnModelClass:
                 return
         
             loadShape = (1,) + inputShape
+            if len(self.extraVariables) != 0:
+                  loadShape = [ loadShape, np.shape(self.extraVariables) ]
+
             _model.predict( np.empty( loadShape ) )
             _model.load_weights(modelfile)
             self.best_model = _model
@@ -492,58 +521,66 @@ class cnnModelClass:
 
 
     def trainCNN(self):
-        print("+++ Train CNN" )
+      print("+++ Train CNN" )
 
-        # *** 1. Define output directory
-        topDir = self.topDir
-        name = self.modelName
-        if not os.path.exists(topDir):
+      # *** 1. Define output directory
+      topDir = self.topDir
+      name = self.modelName
+      if not os.path.exists(topDir):
             os.makedirs(topDir)
-        model_dir = os.path.join(topDir, "", "models")
-        if not os.path.exists(model_dir):
+      model_dir = os.path.join(topDir, "", "models")
+      if not os.path.exists(model_dir):
             os.makedirs(model_dir)
       
-        # *** 2. Define callbacks for training
-        fit_callbacks = [
+      # *** 2. Define callbacks for training
+      fit_callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(model_dir, name)+'.hdf5',
-                save_best_only=True,
-                save_weights_only=True,
-                monitor="val_auc",
-                mode="max",
-                #monitor="val_loss",
-                #mode="min",
+                  filepath=os.path.join(model_dir, name)+'.hdf5',
+                  save_best_only=True,
+                  save_weights_only=True,
+                  monitor="val_auc",
+                  mode="max",
+                  #monitor="val_loss",
+                  #mode="min",
             ),
             tf.keras.callbacks.EarlyStopping(
-                monitor="val_auc",
-                mode="max",
-                #monitor='val_loss', 
-                #mode='min', 
-                verbose=1, 
-                patience=15,  
-                min_delta=.0025,
+                  monitor="val_auc",
+                  mode="max",
+                  #monitor='val_loss', 
+                  #mode='min', 
+                  verbose=1, 
+                  patience=15,  
+                  min_delta=.0025,
             ),
-        ]
+      ]
         
-        
-        # *** 3. Train model
-        nEpochs = 10 if self.isTestRun else 50
-        trainOpts = dict(shuffle=True,
-                         epochs=nEpochs, 
-                         batch_size=2056, #512,
-                         callbacks=fit_callbacks,
-        )
-        if self.useClassWeights:
+      
+      # *** 3. Train model
+      nEpochs = 10 if self.isTestRun else 50
+      trainOpts = dict(shuffle=True,
+                       epochs=nEpochs, 
+                       batch_size=2056, #512,
+                       callbacks=fit_callbacks,
+                 )
+      if self.useClassWeights:
             trainOpts['class_weight']=self.class_weights
-        
-        self.model_history = self.model.fit(self.images_train, self.labels_train,
-                                            validation_data=(self.images_test, self.labels_test),
-                                            **trainOpts,
-        )
+            
+            
+      if len(self.extraVariables) == 0:
+            self.model_history = self.model.fit(self.images_train, self.labels_train,
+                                                validation_data=(self.images_test, self.labels_test),
+                                                **trainOpts,
+                                          )
+      else:
+            self.model_history = self.model.fit( [self.images_train, self.extraVariables_train], self.labels_train,
+                                                 validation_data=([self.images_test, self.extraVariables_train], self.labels_test),
+                                                 **trainOpts,
+                                           )
 
-        
-        return
+            
+      return
     
+
 
 
     def evaluateModel(self):
@@ -559,16 +596,20 @@ class cnnModelClass:
         labels = []
         if self.loadSavedModel:
             images = np.concatenate ( (self.images_test.copy(), self.images_train.copy()), axis=0)
+            extras = np.concatenate ( (self.extraVariables_test.copy(), self.extraVariables_train.copy()), axis=0)
             labels = np.concatenate ( (self.labels_test.copy(), self.labels_train.copy()), axis=0)
             images, labels = shuffle(images, labels, random_state=0)
         else:
             images = self.images_test
+            extras = self.extraVariables_test
             labels = self.labels_test
         
         # *** 2. Make prediction data
         hh_data_test    = np.asarray([x for x,y in zip( images, labels) if y==1])
+        hh_extras_test  = np.asarray([x for x,y in zip( extras, labels) if y==1])
         hh_labels_test  = np.asarray([y for x,y in zip( images, labels) if y==1])
         qcd_data_test   = np.asarray([x for x,y in zip( images, labels) if y==0])
+        qcd_extras_test = np.asarray([x for x,y in zip( extras, labels) if y==0])
         qcd_labels_test = np.asarray([y for x,y in zip( images, labels) if y==0])
                 
         # *** 3. Make history plots
@@ -587,9 +628,13 @@ class cnnModelClass:
         #score_qcd = [score for score,label in zip(scores, labels) if label==0]
         #print(score_hh, score_qcd)
         print("++ Make predictions")
-        pred_hh = self.best_model.predict(hh_data_test)
-        pred_qcd = self.best_model.predict(qcd_data_test)
-      
+        if len(self.extraVariables)==0:
+              pred_hh = self.best_model.predict(hh_data_test)
+              pred_qcd = self.best_model.predict(qcd_data_test)
+        else:
+              pred_hh = self.best_model.predict( [hh_data_test, hh_extras_test] )
+              pred_qcd = self.best_model.predict( [qcd_data_test, hh_extras_test] )
+
         # *** 5. make output score plot
         print("++ Output Score Plot")
         _nBins = 40
@@ -613,7 +658,10 @@ class cnnModelClass:
 
         # *** 7. Confusion matrix
         print("++ Confusion Matrix")
-        self.predictions_test = self.best_model.predict(self.images_test)
+        if len(self.extraVariables)==0:
+              self.predictions_test = self.best_model.predict(self.images_test)
+        else:
+              self.predictions_test = self.best_model.predict( [self.images_test, self.extraVariables_test] )
         cm = confusion_matrix( self.labels_test, self.predictions_test > cut)
         print(cm)
         print('QCD called QCD (True Negatives): {} ({}%)'.format( cm[0][0], round(100*(cm[0][0]/sum(cm[0]))) ))
