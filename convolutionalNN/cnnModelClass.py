@@ -39,6 +39,8 @@ from keras.initializers import Constant
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
+from sklearn.externals import joblib
+from sklearn.preprocessing import MinMaxScaler
 
 seed = 7
 np.random.seed(seed)
@@ -62,6 +64,9 @@ class cnnModelClass:
     def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False, _extraVariables=[], _topDir='', _loadModelDir=''):
         self.modelName   = _modelName
         self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
+        if not os.path.exists(self.topDir):
+              os.makedirs(self.topDir)
+
         self.cnnLayers = _cnnLayers
         self.ffnnLayers = _ffnnLayers
         self.hhFile = _hhFile
@@ -105,9 +110,12 @@ class cnnModelClass:
       ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
           
       self.processInputs() 
-          
-      self.makeCNNPlus()
-          
+
+      if len(self.extraVariables) == 0:
+            self.makeCNN()
+      else:
+            self.makeCNNPlus()
+
       if not self.loadSavedModel:
             self.trainCNN()
       
@@ -122,11 +130,14 @@ class cnnModelClass:
     ##                        functions                         ##
     ##############################################################
 
-    def reinitialize(self,  _modelName, _cnnLayers, _ffnnLayers, _imageCollection, _loadSavedModel = False, _useClassWeights=False, _loadModelDir=''):
+    def reinitialize(self,  _modelName, _cnnLayers, _ffnnLayers, _imageCollection, _loadSavedModel = False, _useClassWeights=False, _extraVariables=[], _loadModelDir=''):
         """ funtion to setup a new model instance while using data and some options from original configuration"""
         self.modelName   = _modelName
         _topDir = self.topDir.split('/')[0]
         self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
+        if not os.path.exists(self.topDir):
+              os.makedirs(self.topDir)
+
         self.cnnLayers = _cnnLayers
         self.ffnnLayers = _ffnnLayers
         self.imageCollection = _imageCollection
@@ -178,42 +189,56 @@ class cnnModelClass:
       
       # Make combined dataset
       all_images = np.concatenate ( (self.hh[0], self.qcd[0]) )
+      all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
       if 'composite' not in self.imageCollection:
             all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
-            all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
       print("+ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
 
       # Make extra variables if needed
       if len(self.extraVariables) != 0:
-            hh_extraVariables = self.hh[1:]
-            qcd_extraVariables = self.qcd[1:]
-            all_extraVariables = np.concatenate( (hh_extraVariables.copy(), qcd_extraVariables.copy()), axis=0)
-      print("+ extra variables shape: {}".format( all_extraVariables.shape))
+            hh_extraVariables = np.transpose(np.stack( self.hh[1:].copy() ))
+            qcd_extraVariables = np.transpose(np.stack( self.qcd[1:].copy() ))
+
+            all_extraVariables = np.concatenate( (hh_extraVariables, qcd_extraVariables), axis=0)
+            if len(all_extraVariables.shape) == 1:
+                  all_extraVariables = all_extraVariables.reshape( all_extraVariables.shape[0], 1)
+            print("+ extra variables shape: {}".format( all_extraVariables.shape))
+
+            # ** Make output directory for saving scalers
+            scaler_dir = os.path.join(self.topDir, "", "scalers")
+            if not os.path.exists(scaler_dir):
+                  os.makedirs(scaler_dir)
+            # ** Do the scaling + saving
+            scaler = MinMaxScaler()
+            scaler.fit( all_extraVariables )
+            all_extraVariables = scaler.transform( all_extraVariables )
+            joblib.dump( scaler, '{}/mixMaxScaler.save'.format(scaler_dir)) 
+            
 
       # Create training and testing sets
       if len(self.extraVariables) == 0: #images only
             self.images_train, self.images_test, self.labels_train, self.labels_test = train_test_split(all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
       else: # add extras
-            self.images_train, self.images_test, self.extraVariables_train, self.extraVariables_test, self.labels_train, self.labels_test = train_test_split( all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
+            self.images_train, self.images_test, self.extraVariables_train, self.extraVariables_test, self.labels_train, self.labels_test = train_test_split( all_images, all_extraVariables, all_labels, test_size=0.25, shuffle= True, random_state=30)
       return
 
     
-      def loadMultipleFiles(self, filename, isSignal):
-            """ function for reading multiple files and adding to dataset"""
+    def loadMultipleFiles(self, filename, isSignal):
+          """ function for reading multiple files and adding to dataset"""
+          
+          if os.path.isfile(filename):
+                # Do something with the file
+                with open(filename, 'r') as f:
+                      _fileList = f.readlines()
+                      for _file in _fileList:
+                            _singleFile = _file.split('\n')[0]
+                            print( "Opening file: {} ...".format(_singleFile))
+                            self.loadSingleFile( _singleFile, isSignal)          
+          else:
+                print("File not accessible")
+                return
 
-        if os.path.isfile(filename):
-            # Do something with the file
-            with open(filename, 'r') as f:
-                _fileList = f.readlines()
-                for _file in _fileList:
-                    _singleFile = _file.split('\n')[0]
-                    print( "Opening file: {} ...".format(_singleFile))
-                    self.loadSingleFile( _singleFile, isSignal)          
-        else:
-            print("File not accessible")
-            return
-
-        return
+          return
 
     
     def loadSingleFile(self, filename, isSignal):
@@ -227,24 +252,24 @@ class cnnModelClass:
 
         if self.isTestRun:
             _dataset[0] = _h5File[ self.imageCollection ][:self.nEventsForTesting]
-            for iExtra in range(0, self.extraVariables):
-                  dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
+            for iExtra in range(0, len(self.extraVariables)):
+                  _dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
         else:
             _dataset[0] = _h5File[ self.imageCollection ][:]
-            for iExtra in range(0, self.extraVariables):
-                  dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
+            for iExtra in range(0, len(self.extraVariables)):
+                  _dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
 
         # store if signal
         if isSignal:
             # first file for this dataset
             if len(self.hh[0]) == 0:  
                 self.hh[0] = _dataset[0]
-                for iExtra in range(0, self.extraVariables):
+                for iExtra in range(0, len(self.extraVariables)):
                       self.hh[iExtra+1] = _dataset[iExtra+1]
             # add file to existing dataset
             else:
                 self.hh[0] = np.concatenate( (self.hh[0], _dataset[0]) )
-                for iExtra in range(0, self.extraVariables):
+                for iExtra in range(0, len(self.extraVariables)):
                       self.hh[iExtra+1] = np.concatenate( (self.hh[iExtra+1], _dataset[iExtra+1]) )
 
         # store if background
@@ -252,12 +277,12 @@ class cnnModelClass:
             # first file for this dataset
             if len(self.qcd[0]) == 0:  
                 self.qcd[0] = _dataset[0]
-                for iExtra in range(0, self.extraVariables):
+                for iExtra in range(0, len(self.extraVariables)):
                       self.qcd[iExtra+1] = _dataset[iExtra+1]
             # add file to existing dataset
             else:
                 self.qcd[0] = np.concatenate( (self.qcd[0], _dataset[0]) )
-                for iExtra in range(0, self.extraVariables):
+                for iExtra in range(0, len(self.extraVariables)):
                       self.qcd[iExtra+1] = np.concatenate( (self.qcd[iExtra+1], _dataset[iExtra+1]) )
 
         print( len(_dataset[0]), len(self.hh[0]), len(self.qcd[0]))
@@ -330,7 +355,7 @@ class cnnModelClass:
         pixelWidth = self.images_train.shape[1]
         #inputShape = self.images_train.shape[1:] if self.images_train.shape[-1] != pixelWidth else (self.images_train.shape[1:] + (1,))
         inputShape = self.images_train.shape[1:]
-        print('++ input_shape for CNN: {}'.format(inputShape) )
+        print('++ input_shape (image) for CNN: {}'.format(inputShape) )
 
         # ** A. Convolutional component
         firstLayer = True
@@ -434,7 +459,7 @@ class cnnModelClass:
         pixelWidth = self.images_train.shape[1]
         #inputShape = self.images_train.shape[1:] if self.images_train.shape[-1] != pixelWidth else (self.images_train.shape[1:] + (1,))
         inputShape = self.images_train.shape[1:]
-        print('++ input_shape for CNN: {}'.format(inputShape) )
+        print('++ input_shape (image) for CNN: {}'.format(inputShape) )
 
         # ** A. Convolutional component
         firstLayer = True
@@ -454,7 +479,7 @@ class cnnModelClass:
         convNN = Flatten()( convNN )
         
         # ** C. Extra information to add to flattened CNN output
-        extraInput = Input(shape=self.extraVariables_train[1:])
+        extraInput = Input(shape=self.extraVariables_train.shape[1:])
         extra = Activation('linear')(extraInput)
 
         # ** D. Concatenate extra+CNN as input for FC layers
@@ -506,11 +531,10 @@ class cnnModelClass:
                 print("--- ERROR, Modelfile {} NOT FOUND. No weights initialized".format(modefile))
                 return
         
-            loadShape = (1,) + inputShape
-            if len(self.extraVariables) != 0:
-                  loadShape = [ loadShape, np.shape(self.extraVariables) ]
+            loadShape = np.empty( (1,) + inputShape )
+            extraShape = np.empty( (1,) + self.extraVariables_train.shape[1:] )
 
-            _model.predict( np.empty( loadShape ) )
+            _model.predict( [loadShape, extraShape] )
             _model.load_weights(modelfile)
             self.best_model = _model
         else:
@@ -524,18 +548,14 @@ class cnnModelClass:
       print("+++ Train CNN" )
 
       # *** 1. Define output directory
-      topDir = self.topDir
-      name = self.modelName
-      if not os.path.exists(topDir):
-            os.makedirs(topDir)
-      model_dir = os.path.join(topDir, "", "models")
+      model_dir = os.path.join(self.topDir, "", "models")
       if not os.path.exists(model_dir):
             os.makedirs(model_dir)
       
       # *** 2. Define callbacks for training
       fit_callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
-                  filepath=os.path.join(model_dir, name)+'.hdf5',
+                  filepath=os.path.join(model_dir, self.modelName)+'.hdf5',
                   save_best_only=True,
                   save_weights_only=True,
                   monitor="val_auc",
@@ -573,7 +593,7 @@ class cnnModelClass:
                                           )
       else:
             self.model_history = self.model.fit( [self.images_train, self.extraVariables_train], self.labels_train,
-                                                 validation_data=([self.images_test, self.extraVariables_train], self.labels_test),
+                                                 validation_data=([self.images_test, self.extraVariables_test], self.labels_test),
                                                  **trainOpts,
                                            )
 
@@ -589,7 +609,12 @@ class cnnModelClass:
         
         # *** 0. Use best/loaded model for evaluation
         if not self.loadSavedModel:
-            self.makeCNN( loadBestModel = True )
+              if len(self.extraVariables) == 0:
+                    self.makeCNN( loadBestModel = True )
+              else:
+                    self.makeCNNPlus( loadBestModel=True)
+
+                    
 
         # *** 1. set inputs --> special treatment if loading saved model
         images = []
@@ -633,7 +658,7 @@ class cnnModelClass:
               pred_qcd = self.best_model.predict(qcd_data_test)
         else:
               pred_hh = self.best_model.predict( [hh_data_test, hh_extras_test] )
-              pred_qcd = self.best_model.predict( [qcd_data_test, hh_extras_test] )
+              pred_qcd = self.best_model.predict( [qcd_data_test, qcd_extras_test] )
 
         # *** 5. make output score plot
         print("++ Output Score Plot")

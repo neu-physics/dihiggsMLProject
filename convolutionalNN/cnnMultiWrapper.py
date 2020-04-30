@@ -63,8 +63,8 @@ else:
 
 
 # multi-run
-imageCollections = ['compositeImgs','compositeImgs_lessThan4j',
-                    'compositeImgs_ge4jInclb',
+imageCollections = ['compositeImgs',
+                    'compositeImgs_lessThan4j', 'compositeImgs_ge4jInclb',
                     #'compositeImgs_ge4j0b','compositeImgs_ge4j1b','compositeImgs_ge4j2b','compositeImgs_ge4j3b','compositeImgs_ge4j4b','compositeImgs_ge4jge4b', 
                     #'compositeImgs_HT150','compositeImgs_HT300', 'compositeImgs_HT450',
                     #'trackImgs', 'nHadronImgs', 'photonImgs',
@@ -78,10 +78,14 @@ modelArgs = dict(
     #2xconv w/ 16 filters, 2xPool
     #_cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
     #2xconv w/ 32 filters, 2xPool
-    _cnnLayers= [ ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+    #_cnnLayers= [ ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+    #2xconv w/ 16-32 filters, 2xPool
+    _cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
     _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
     _loadSavedModel = False,
     _useClassWeights=args.addClassWeights,
+    _extraVariables=['HT',]
+    #_extraVariables=['HT', 'nJets', 'nBTags']
 )
 
 classArgs = modelArgs.copy()
