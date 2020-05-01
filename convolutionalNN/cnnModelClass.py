@@ -257,7 +257,7 @@ class cnnModelClass:
         else:
             _dataset[0] = _h5File[ self.imageCollection ][:]
             for iExtra in range(0, len(self.extraVariables)):
-                  _dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:self.nEventsForTesting]
+                  _dataset[iExtra+1] = _h5File[ self.extraVariables[iExtra] ][:]
 
         # store if signal
         if isSignal:

@@ -84,8 +84,8 @@ modelArgs = dict(
     _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
     _loadSavedModel = False,
     _useClassWeights=args.addClassWeights,
-    _extraVariables=['HT',]
-    #_extraVariables=['HT', 'nJets', 'nBTags']
+    #_extraVariables=['HT',]
+    _extraVariables=['HT', 'nJets', 'nBTags']
 )
 
 classArgs = modelArgs.copy()
