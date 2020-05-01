@@ -6,14 +6,14 @@
 
 # To-Do
 #X) CM of phi for image?
-#2) bb-center a la photography talk
+#X) bb-center a la photography talk
 #3) slide 9: remake these for diHiggs events that have the Higgs back-to-back ie no ISR. Are the blobs more pronounced than non-back-to-back diHiggs events?
 #X) compare expected yields post-selection from this to other approaches. Much higher signal stats here! But by how much?
 #5) subtract average a la Anna's idea
 # ...
 #X) compare ROC curves for different approaches a la Evan's work
-#7) the pimples are weird in the ensemble QCD events. what causes the pimple?
-#8) look at the per-jet-tag category yields after the macro-sample cut and compare to 4j4t S,B from other approaches
+#X) the pimples are weird in the ensemble QCD events. what causes the pimple?
+#X) look at the per-jet-tag category yields after the macro-sample cut and compare to 4j4t S,B from other approaches
 #9) do other processes matter?
 #10) try those things you wanted
 
@@ -109,7 +109,8 @@ class cnnModelClass:
     def run(self):
       ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
           
-      self.processInputs() 
+      self.processInputs_v2() 
+      #self.processInputs() 
 
       if len(self.extraVariables) == 0:
             self.makeCNN()
@@ -170,6 +171,63 @@ class cnnModelClass:
       """ load images from files"""
       self.hh = [ [] for variable in range(0, len(self.extraVariables)+1) ] # index == 0 for images, 1-X are extra variables
       self.qcd = [ [] for variable in range(0, len(self.extraVariables)+1) ] # index == 0 for images, 1-X are extra variables
+      
+      if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
+            self.loadSingleFile( self.hhFile, isSignal = True)
+      elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
+            self.loadMultipleFiles( self.hhFile, isSignal = True)
+                
+      if '.h5' in self.qcdFile:    # ** C. User single .h5 file
+            self.loadSingleFile( self.qcdFile, isSignal = False)
+      elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
+            self.loadMultipleFiles( self.qcdFile, isSignal = False)
+            
+      print("+ {} hh images, {} qcd images".format( len(self.hh[0]), len(self.qcd[0])))
+
+      # Make labels
+      hh_labels = np.ones( len(self.hh[0]) )
+      qcd_labels = np.zeros( len(self.qcd[0]) )
+      
+      # Make combined dataset
+      all_images = np.concatenate ( (self.hh[0], self.qcd[0]) )
+      all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
+      if 'composite' not in self.imageCollection:
+            all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
+      print("+ images shape: {}, labels shape:{}".format( all_images.shape, all_labels.shape) )
+
+      # Make extra variables if needed
+      if len(self.extraVariables) != 0:
+            hh_extraVariables = np.transpose(np.stack( self.hh[1:].copy() ))
+            qcd_extraVariables = np.transpose(np.stack( self.qcd[1:].copy() ))
+
+            all_extraVariables = np.concatenate( (hh_extraVariables, qcd_extraVariables), axis=0)
+            if len(all_extraVariables.shape) == 1:
+                  all_extraVariables = all_extraVariables.reshape( all_extraVariables.shape[0], 1)
+            print("+ extra variables shape: {}".format( all_extraVariables.shape))
+
+            # ** Make output directory for saving scalers
+            scaler_dir = os.path.join(self.topDir, "", "scalers")
+            if not os.path.exists(scaler_dir):
+                  os.makedirs(scaler_dir)
+            # ** Do the scaling + saving
+            scaler = MinMaxScaler()
+            scaler.fit( all_extraVariables )
+            all_extraVariables = scaler.transform( all_extraVariables )
+            joblib.dump( scaler, '{}/mixMaxScaler.save'.format(scaler_dir)) 
+            
+
+      # Create training and testing sets
+      if len(self.extraVariables) == 0: #images only
+            self.images_train, self.images_test, self.labels_train, self.labels_test = train_test_split(all_images, all_labels, test_size=0.25, shuffle= True, random_state=30)
+      else: # add extras
+            self.images_train, self.images_test, self.extraVariables_train, self.extraVariables_test, self.labels_train, self.labels_test = train_test_split( all_images, all_extraVariables, all_labels, test_size=0.25, shuffle= True, random_state=30)
+      return
+
+
+    def processInputs_v2(self):
+      """ load images from files"""
+      self.hh = []  # index == 0 for images, 1-X are extra variables
+      self.qcd = [] # index == 0 for images, 1-X are extra variables
       
       if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
             self.loadSingleFile( self.hhFile, isSignal = True)
@@ -292,7 +350,107 @@ class cnnModelClass:
 
         return
 
-    
+    def loadSingleFile_v2(self, filename, isSignal):
+        """ function for reading single file and adding to dataset"""
+
+        # open file
+        _h5File = h5.File( filename, 'r' )
+
+        # load dataset (all or slice)
+        _dataset = []
+
+        if self.isTestRun:
+            _dataset = _h5File['events'][:self.nEventsForTesting]
+        else:
+            _dataset = _h5File['events'][:]
+
+        # create event mask
+        _eventMask = self.returnEventMask(_dataset)
+        _dataset = _dataset[eventMask]
+
+        # *** 05-01-20 [BBT] FIXME: stopping point. event mask exists, now just need to figure out how to propagate all the information forward. v1 collection inside self.hh/self.qcd no longer efficient
+        # store if signal
+        if isSignal:
+            # first file for this dataset
+            if len(self.hh[0]) == 0:  
+                self.hh[0] = _dataset[0]
+                for iExtra in range(0, len(self.extraVariables)):
+                      self.hh[iExtra+1] = _dataset[iExtra+1]
+            # add file to existing dataset
+            else:
+                self.hh[0] = np.concatenate( (self.hh[0], _dataset[0]) )
+                for iExtra in range(0, len(self.extraVariables)):
+                      self.hh[iExtra+1] = np.concatenate( (self.hh[iExtra+1], _dataset[iExtra+1]) )
+
+        # store if background
+        else:
+            # first file for this dataset
+            if len(self.qcd[0]) == 0:  
+                self.qcd[0] = _dataset[0]
+                for iExtra in range(0, len(self.extraVariables)):
+                      self.qcd[iExtra+1] = _dataset[iExtra+1]
+            # add file to existing dataset
+            else:
+                self.qcd[0] = np.concatenate( (self.qcd[0], _dataset[0]) )
+                for iExtra in range(0, len(self.extraVariables)):
+                      self.qcd[iExtra+1] = np.concatenate( (self.qcd[iExtra+1], _dataset[iExtra+1]) )
+
+        print( len(_dataset[0]), len(self.hh[0]), len(self.qcd[0]))
+
+        # Close files
+        _h5File.close()
+
+        return
+
+    def returnEventMask(self, _dataset):
+          """return a mask for the dataset using case statement to determine criteria"""
+          _jetMask = []
+          _tagMask = []
+          _HTMask  = []
+
+          # *** A. Mask for nJets
+          if 'lessThan4j' in self.imageCollection:
+                _jetMask = _dataset['nJets']<4
+          elif 'ge4j' in self.imageCollection:
+                _jetMask = _dataset['nJets']>=4
+          else:
+                _jetMask = np.full( (len(_dataset)), True)  
+
+          # *** B. Mask for nBTags
+          if '0b' in self.imageCollection:
+                _tagMask = _dataset['nBTags']==0
+          elif 'ge1b' in self.imageCollection:
+                _tagMask = _dataset['nBTags']>=1
+          elif '1b' in self.imageCollection:
+                _jetMask = _dataset['nJets']==1
+          elif 'ge2b' in self.imageCollection:
+                _tagMask = _dataset['nBTags']>=2
+          elif '2b' in self.imageCollection:
+                _tagMask = _dataset['nJets']==2
+          elif 'ge3b' in self.imageCollection:
+                _tagMask = _dataset['nBTags']>=3
+          elif '3b' in self.imageCollection:
+                _tagMask = _dataset['nJets']==3
+          elif 'ge4b' in self.imageCollection:
+                _tagMask = _dataset['nBTags']>=4
+          elif '4b' in self.imageCollection:
+                _tagMask = _dataset['nJets']==4
+          else:
+                _tagMask = np.full( (len(_dataset)), True)  
+
+          # *** B. Mask for HT
+          if 'HT150' in self.imageCollection:
+                _HTMask = _dataset['HT']>=150
+          elif 'ge1b' in self.imageCollection:
+                _HTMask = _dataset['HT']>=300
+          elif '1b' in self.imageCollection:
+                _HTMask = _dataset['HT']>=450
+          else:
+                _HTMask = np.full( (len(_dataset)), True)  
+
+          return np.logical_and( _HTMask, _tagMask, _jetMask)
+
+
     def singleEventImages(self, isSignal = False):
         """ make a few single event images"""
 
