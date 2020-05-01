@@ -19,6 +19,7 @@ import uproot_methods.classes.TVector3 as TVector3
 
 import sys
 sys.path.insert(0, '/uscms_data/d2/benjtann/ML/dihiggsMLProject/higgsReconstruction/')
+sys.path.insert(0, '/home/btannenw/Desktop/ML/dihiggsMLProject/higgsReconstruction/')
 from JetCons import JetCons
 
 
@@ -26,7 +27,8 @@ class imageMaker:
 
     def __init__ (self, _datasetName, _inputFileList, _isSignal=None, _pixelWidth=15, _isTestRun=False):
         self.datasetName = _datasetName
-
+        self.inputFileList = []
+        
         if os.path.isfile(_inputFileList):
             with open(_inputFileList, 'r') as f:
                 self.inputFileList = f.readlines()
@@ -87,11 +89,13 @@ class imageMaker:
             self.rotateAndBoostConstituents()
 
             # *** 3. Make images
-            self.makeEventImages()
+            #self.makeEventImages()
+            self.makeEventImages_v2()
 
 
         # *** 4. Save images from all processed files
-        self.saveFilesToH5()
+        #self.saveFilesToH5()
+        self.saveFilesToH5_v2()
 
         
         return
@@ -398,7 +402,45 @@ class imageMaker:
             self.final_images_cat[iCategory] += _compositeImages_cat[iCategory]
 
         return
-    
+
+
+    def makeEventImages_v2(self):
+        """ construct the event images """
+
+        # *** Set options for saving (bins, range, etc)
+        _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
+        _compositeImages = []
+
+        for iEvent in range(0, len(self.final_tracks[0])):
+
+            # *** Loosely keep track of events
+            if 100*((iEvent+1)/len(self.allEvents))%10 == 0:
+                print('{}% Imaged'.format(100*((iEvent+1)/len(self.allEvents))))
+
+            # *** Make event images
+            _tracks_img = self.function_hist2d( self.final_tracks[0][iEvent], self.final_tracks[1][iEvent], self.final_tracks[2][iEvent], **_imgOpts)
+            _nHadrons_img = self.function_hist2d( self.final_nHadrons[0][iEvent], self.final_nHadrons[1][iEvent], self.final_nHadrons[2][iEvent], **_imgOpts)
+            _photons_img = self.function_hist2d( self.final_photons[0][iEvent], self.final_photons[1][iEvent], self.final_photons[2][iEvent], **_imgOpts)
+            _composite_img = np.stack( (_tracks_img, _nHadrons_img, _photons_img), axis = -1)
+            
+            self.final_tracks[3].append( _tracks_img )
+            self.final_nHadrons[3].append( _nHadrons_img )
+            self.final_photons[3].append( _photons_img )
+
+            # *** Make composite image (15, 15, 3)
+            _compositeImages.append( _composite_img )
+        
+        # *** Append to global list
+        self.final_images[0] += self.final_tracks[3]
+        self.final_images[1] += self.final_nHadrons[3]
+        self.final_images[2] += self.final_photons[3]
+        self.final_images[3] += _compositeImages
+        self.final_eventQuantities[0] += self.nJets
+        self.final_eventQuantities[1] += self.nBTags
+        self.final_eventQuantities[2] += self.HT
+
+        return
+
 
     def setPhiRapidityPtLists(self):
         """ return three lists of phi, rapidity, pt for later plotting """
@@ -567,6 +609,46 @@ class imageMaker:
         hf.create_dataset('nJets', data = self.final_eventQuantities[0], compression="gzip", compression_opts=3)
         hf.create_dataset('nBTags', data = self.final_eventQuantities[1], compression="gzip", compression_opts=3)
         hf.create_dataset('HT', data= self.final_eventQuantities[2], compression="gzip", compression_opts=3)
+        hf.close()
+
+        return
+
+    def saveFilesToH5_v2(self):
+        """ save all image files in hdf5 format"""
+
+        _imgDir = self.datasetName+'/images/'
+        if os.path.isdir( _imgDir )==False:
+            os.mkdir( _imgDir )
+
+        if len(self.final_images[0]) != len(self.final_eventQuantities[0]):
+            print("event quantity mismatch with number of images!!! imgs:{} quantities:{}".format(len(self.final_images[0]) , len(self.final_eventQuantities[0])))
+                
+
+        hf = h5.File( '{}/{}_allImages.h5'.format(_imgDir, self.datasetName), 'w')
+
+        dt_HT=np.dtype('float64')
+        dt_nJets=np.dtype('uint8')
+        dt_nBTags=np.dtype('uint8')
+        dt_compImage=np.dtype('(15,15,3)f')
+        dt=np.dtype( [('compositeImages',dt_compImage), ('HT',dt_HT), ('nJets',dt_nJets), ('nBTags',dt_nBTags)] )
+        dt_2=np.dtype( [('HT',dt_HT), ('nJets',dt_nJets), ('nBTags',dt_nBTags)] )
+
+        print("type: {}, shape: {}".format( type(self.final_images[3]), np.shape(self.final_images[3])))
+        print("type: {}, shape: {}".format( type(self.final_eventQuantities[0]), np.shape(self.final_eventQuantities[0])))
+
+        #x= np.array( np.empty( np.shape(self.final_eventQuantities[0]), dtype=dt_2))
+        #x['HT'] = np.asarray(self.final_eventQuantities[2])
+        #x['nBTags'] = np.asarray(self.final_eventQuantities[1])
+        #x['nJets'] = np.asarray(self.final_eventQuantities[0])
+        #dset = hf.create_dataset('events', data=x, compression="gzip", compression_opts=3)
+        
+        y= np.array( np.empty( np.shape(self.final_eventQuantities[0]), dtype=dt))
+        y['compositeImages']=np.asarray(self.final_images[3])
+        y['HT'] = np.asarray(self.final_eventQuantities[2])
+        y['nBTags'] = np.asarray(self.final_eventQuantities[1])
+        y['nJets'] = np.asarray(self.final_eventQuantities[0])
+        dset = hf.create_dataset('events', data=y, compression="gzip", compression_opts=3)
+
         hf.close()
 
         return
