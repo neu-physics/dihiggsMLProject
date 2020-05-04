@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-##  Author:  Ben Tannenwald
+#  Author:  Ben Tannenwald
 ##  Date:    April 16, 2020
 ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
 
@@ -230,23 +230,31 @@ class cnnModelClass:
       self.qcd = [] # index == 0 for images, 1-X are extra variables
       
       if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
-            self.loadSingleFile( self.hhFile, isSignal = True)
+            self.loadSingleFile_v2( self.hhFile, isSignal = True)
       elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
-            self.loadMultipleFiles( self.hhFile, isSignal = True)
+            self.loadMultipleFiles_v2( self.hhFile, isSignal = True)
                 
       if '.h5' in self.qcdFile:    # ** C. User single .h5 file
-            self.loadSingleFile( self.qcdFile, isSignal = False)
+            self.loadSingleFile_v2( self.qcdFile, isSignal = False)
       elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
-            self.loadMultipleFiles( self.qcdFile, isSignal = False)
+            self.loadMultipleFiles_v2( self.qcdFile, isSignal = False)
             
-      print("+ {} hh images, {} qcd images".format( len(self.hh[0]), len(self.qcd[0])))
+      print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
 
       # Make labels
       hh_labels = np.ones( len(self.hh[0]) )
       qcd_labels = np.zeros( len(self.qcd[0]) )
       
       # Make combined dataset
-      all_images = np.concatenate ( (self.hh[0], self.qcd[0]) )
+      all_images = np.concatenate ( (self.hh['compositeImages'], self.qcd['compositeImages']) )
+      # -- reduction if only track/ecal/hcal images
+      if 'trackImgs' in self.imageCollection:
+            all_images = all_imagesa[:,:,:,0]
+      elif 'nHadronImgs' in self.imageCollection:
+            all_images = all_imagesa[:,:,:,1]
+      elif 'photonImgs' in self.imageCollection:
+            all_images = all_imagesa[:,:,:,2]
+
       all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
       if 'composite' not in self.imageCollection:
             all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
@@ -254,8 +262,8 @@ class cnnModelClass:
 
       # Make extra variables if needed
       if len(self.extraVariables) != 0:
-            hh_extraVariables = np.transpose(np.stack( self.hh[1:].copy() ))
-            qcd_extraVariables = np.transpose(np.stack( self.qcd[1:].copy() ))
+            hh_extraVariables = np.transpose( np.array([ self.hh[(var)] for var in self.extraVariables ].copy()) )
+            qcd_extraVariables = np.transpose( np.array([ self.qcd[(var)] for var in self.extraVariables ].copy()) )
 
             all_extraVariables = np.concatenate( (hh_extraVariables, qcd_extraVariables), axis=0)
             if len(all_extraVariables.shape) == 1:
@@ -350,6 +358,24 @@ class cnnModelClass:
 
         return
 
+    def loadMultipleFiles_v2(self, filename, isSignal):
+          """ function for reading multiple files and adding to dataset"""
+          
+          if os.path.isfile(filename):
+                # Do something with the file
+                with open(filename, 'r') as f:
+                      _fileList = f.readlines()
+                      for _file in _fileList:
+                            _singleFile = _file.split('\n')[0]
+                            print( "Opening file: {} ...".format(_singleFile))
+                            self.loadSingleFile_v2( _singleFile, isSignal)          
+          else:
+                print("File not accessible")
+                return
+
+          return
+
+
     def loadSingleFile_v2(self, filename, isSignal):
         """ function for reading single file and adding to dataset"""
 
@@ -368,34 +394,26 @@ class cnnModelClass:
         _eventMask = self.returnEventMask(_dataset)
         _dataset = _dataset[eventMask]
 
-        # *** 05-01-20 [BBT] FIXME: stopping point. event mask exists, now just need to figure out how to propagate all the information forward. v1 collection inside self.hh/self.qcd no longer efficient
         # store if signal
         if isSignal:
             # first file for this dataset
             if len(self.hh[0]) == 0:  
-                self.hh[0] = _dataset[0]
-                for iExtra in range(0, len(self.extraVariables)):
-                      self.hh[iExtra+1] = _dataset[iExtra+1]
+                self.hh = _dataset
             # add file to existing dataset
             else:
-                self.hh[0] = np.concatenate( (self.hh[0], _dataset[0]) )
-                for iExtra in range(0, len(self.extraVariables)):
-                      self.hh[iExtra+1] = np.concatenate( (self.hh[iExtra+1], _dataset[iExtra+1]) )
+                self.hh = np.concatenate( (self.hh, _dataset)
+
 
         # store if background
         else:
             # first file for this dataset
             if len(self.qcd[0]) == 0:  
-                self.qcd[0] = _dataset[0]
-                for iExtra in range(0, len(self.extraVariables)):
-                      self.qcd[iExtra+1] = _dataset[iExtra+1]
+                self.qcd = _dataset
             # add file to existing dataset
             else:
-                self.qcd[0] = np.concatenate( (self.qcd[0], _dataset[0]) )
-                for iExtra in range(0, len(self.extraVariables)):
-                      self.qcd[iExtra+1] = np.concatenate( (self.qcd[iExtra+1], _dataset[iExtra+1]) )
+                self.qcd = np.concatenate( (self.qcd, _dataset) )
 
-        print( len(_dataset[0]), len(self.hh[0]), len(self.qcd[0]))
+        print( len(_dataset), len(self.hh), len(self.qcd))
 
         # Close files
         _h5File.close()
@@ -631,7 +649,7 @@ class cnnModelClass:
             elif layer[0] == "Conv2D" and not firstLayer:
                   convNN = Conv2D( layer[1][0], layer[1][1], **conv_kwargs)(convNN)
             elif layer[0] == "MaxPooling2D":
-                  convNN = MaxPooling2D( layer[1][0])(convNN)
+                  ocnvNN = MaxPooling2D( layer[1][0])(convNN)
         # ** B. Flatten model for input to feed-forward network
         flattenInput = Input(shape=convNN.shape)
         convNN = Flatten()( convNN )
