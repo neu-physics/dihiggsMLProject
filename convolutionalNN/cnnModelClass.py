@@ -422,51 +422,59 @@ class cnnModelClass:
 
     def returnEventMask(self, _dataset):
           """return a mask for the dataset using case statement to determine criteria"""
-          _jetMask = []
-          _tagMask = []
+          _nJetsMask = []
+          _nBTagsMask = []
           _HTMask  = []
 
           # *** A. Mask for nJets
           if 'lessThan4j' in self.imageCollection:
-                _jetMask = _dataset['nJets']<4
+                _nJetsMask = _dataset['nJets']<4
+                print("**++ less than 4 jets")
           elif 'ge4j' in self.imageCollection:
-                _jetMask = _dataset['nJets']>=4
+                _nJetsMask = _dataset['nJets']>=4
+                print("**++ greater than / equal to 4 jets")
           else:
-                _jetMask = np.full( (len(_dataset)), True)  
+                _nJetsMask = np.full( (len(_dataset)), True)  
+                print("**++ no statement on Njets")
 
           # *** B. Mask for nBTags
           if '0b' in self.imageCollection:
-                _tagMask = _dataset['nBTags']==0
+                _nBTagsMask = _dataset['nBTags']==0
           elif 'ge1b' in self.imageCollection:
-                _tagMask = _dataset['nBTags']>=1
+                _nBTagsMask = _dataset['nBTags']>=1
           elif '1b' in self.imageCollection:
-                _jetMask = _dataset['nJets']==1
+                _nBTagsMask = _dataset['nBTags']==1
           elif 'ge2b' in self.imageCollection:
-                _tagMask = _dataset['nBTags']>=2
+                _nBTagsMask = _dataset['nBTags']>=2
           elif '2b' in self.imageCollection:
-                _tagMask = _dataset['nJets']==2
+                _nBTagsMask = _dataset['nBTags']==2
           elif 'ge3b' in self.imageCollection:
-                _tagMask = _dataset['nBTags']>=3
+                _nBTagsMask = _dataset['nBTags']>=3
           elif '3b' in self.imageCollection:
-                _tagMask = _dataset['nJets']==3
+                _nBTagsMask = _dataset['nBTags']==3
           elif 'ge4b' in self.imageCollection:
-                _tagMask = _dataset['nBTags']>=4
+                _nBTagsMask = _dataset['nBTags']>=4
           elif '4b' in self.imageCollection:
-                _tagMask = _dataset['nJets']==4
+                _nBTagsMask = _dataset['nBTags']==4
           else:
-                _tagMask = np.full( (len(_dataset)), True)  
+                _nBTagsMask = np.full( (len(_dataset)), True)  
 
           # *** B. Mask for HT
           if 'HT150' in self.imageCollection:
                 _HTMask = _dataset['HT']>=150
-          elif 'ge1b' in self.imageCollection:
+          elif 'HT300' in self.imageCollection:
                 _HTMask = _dataset['HT']>=300
-          elif '1b' in self.imageCollection:
+          elif 'HT450' in self.imageCollection:
                 _HTMask = _dataset['HT']>=450
           else:
                 _HTMask = np.full( (len(_dataset)), True)  
 
-          return np.logical_and( _HTMask, _tagMask, _jetMask)
+          print("++** image collection: {}".format(self.imageCollection))
+          print("++** Events passing HT mask: {}, events passing nJets mask: {}, events passing nBTags mask: {}".format( np.count_nonzero(_HTMask==True), np.count_nonzero(_nJetsMask==True), np.count_nonzero(_nBTagsMask==True)))
+          _totalMask = np.logical_and.reduce( (_HTMask, _nBTagsMask, _nJetsMask) )
+          print("++** Events all masks: {}".format( np.count_nonzero(_totalMask==True)))
+
+          return _totalMask
 
 
     def singleEventImages(self, isSignal = False):
