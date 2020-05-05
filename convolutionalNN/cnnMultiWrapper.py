@@ -85,7 +85,9 @@ modelArgs = dict(
     _loadSavedModel = False,
     _useClassWeights=args.addClassWeights,
     #_extraVariables=['HT',]
-    _extraVariables=['HT', 'nJets', 'nBTags']
+    #_extraVariables=['nJets'],
+    _extraVariables=['nBTags'],
+    #_extraVariables=['HT', 'nJets', 'nBTags'],
 )
 
 classArgs = modelArgs.copy()

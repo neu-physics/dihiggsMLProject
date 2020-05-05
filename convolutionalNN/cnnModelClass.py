@@ -241,11 +241,8 @@ class cnnModelClass:
             
       print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
 
-      # Make labels
-      hh_labels = np.ones( len(self.hh[0]) )
-      qcd_labels = np.zeros( len(self.qcd[0]) )
-      
-      # Make combined dataset
+
+      # Make combined image dataset
       all_images = np.concatenate ( (self.hh['compositeImages'], self.qcd['compositeImages']) )
       # -- reduction if only track/ecal/hcal images
       if 'trackImgs' in self.imageCollection:
@@ -255,6 +252,9 @@ class cnnModelClass:
       elif 'photonImgs' in self.imageCollection:
             all_images = all_imagesa[:,:,:,2]
 
+      # Make labels
+      hh_labels = np.ones( len(self.hh) )
+      qcd_labels = np.zeros( len(self.qcd) )
       all_labels = np.concatenate ( (hh_labels.copy(), qcd_labels.copy()), axis=0)
       if 'composite' not in self.imageCollection:
             all_images = all_images.reshape( all_images.shape[0], all_images.shape[1], all_images.shape[2], 1)
@@ -392,22 +392,22 @@ class cnnModelClass:
 
         # create event mask
         _eventMask = self.returnEventMask(_dataset)
-        _dataset = _dataset[eventMask]
+        _dataset = _dataset[_eventMask]
 
         # store if signal
         if isSignal:
             # first file for this dataset
-            if len(self.hh[0]) == 0:  
+            if len(self.hh) == 0:  
                 self.hh = _dataset
             # add file to existing dataset
             else:
-                self.hh = np.concatenate( (self.hh, _dataset)
+                self.hh = np.concatenate( (self.hh, _dataset))
 
 
         # store if background
         else:
             # first file for this dataset
-            if len(self.qcd[0]) == 0:  
+            if len(self.qcd) == 0:  
                 self.qcd = _dataset
             # add file to existing dataset
             else:
@@ -649,7 +649,8 @@ class cnnModelClass:
             elif layer[0] == "Conv2D" and not firstLayer:
                   convNN = Conv2D( layer[1][0], layer[1][1], **conv_kwargs)(convNN)
             elif layer[0] == "MaxPooling2D":
-                  ocnvNN = MaxPooling2D( layer[1][0])(convNN)
+                  convNN = MaxPooling2D( layer[1][0])(convNN)
+
         # ** B. Flatten model for input to feed-forward network
         flattenInput = Input(shape=convNN.shape)
         convNN = Flatten()( convNN )
