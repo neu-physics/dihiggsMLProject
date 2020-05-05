@@ -8,10 +8,17 @@
 \usepackage[T1]{fontenc} % if needed
 \usepackage{multirow}
 \usepackage{graphicx}
+\usepackage{xspace} %load xspace
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Custom Commands/Environments %%%%%%%%%%%%%%%%%%%%%%%%%
+% Put your favorite custom commands here
+\include{latex/shortcuts} %load list of shortcuts shortcuts.tex
+\newcommand{\tab}{\hspace*{2em}}
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Start paper %%%%%%%%%%%%%%%%%%%%%%%%%
 \title{\boldmath Learning About Machine Learning With Dihiggs Production at the LHC}
-
 
 %% %simple case: 2 authors, same institution
 %% \author{A. Uthor}
@@ -56,7 +63,7 @@
 %\input{defaultContent_1.tex}
 %\input{defaultContent_2.tex}
 
-\input{dihiggs_physics.tex}
+\input{dihiggsPhys/dihiggs_physics.tex}
 
 \input{supervised_ml.tex}
 
