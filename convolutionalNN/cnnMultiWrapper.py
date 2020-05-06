@@ -7,6 +7,8 @@ parser.add_argument("--outputDir", help="output directory for model training out
 #parser.add_argument("--imageCollection", help="image collection")
 parser.add_argument("--inputHHFile", help=".txt file containing input .h5 files for dihiggs")
 parser.add_argument("--inputQCDFile", help=".txt file containing input .h5 files for qcd")
+parser.add_argument('-l','--extraVariables', nargs='+', help='add extra variables to concatenate with convolutional outputs')
+parser.add_argument('-l','--imageCollections', nargs='+', help='imageCollections to process')
 parser.add_argument('--addClassWeights', dest='addClassWeights', action='store_true')
 parser.add_argument('--testRun', dest='testRun', action='store_true')
 parser.set_defaults(addClassWeights=False)
@@ -15,7 +17,7 @@ parser.set_defaults(testRun=False)
 args = parser.parse_args()
 
 
-if ( len(vars(args)) != 5 ): # 4/5/6 --> depends on default options
+if ( len(vars(args)) != 6 ): # 4/5/6 --> depends on default options
     os.system('python cnnWrapper.py -h')
     print( vars(args), len(vars(args)))
     quit()
@@ -54,22 +56,29 @@ else:
         print( '-- Setting inputQCDFile = {0}'.format(args.inputQCDFile))
 
 
-# ** C. Test image collction and exit if DNE
-#if(args.imageCollection is None):
-#    print( "#### Need to specify input .txt file using --imageCollection <image collection> ####\nEXITING\n")
-#    quit()
-#else:
-#    print( '-- Setting imageCollection = {0}'.format(args.imageCollection))
-
+# ** D. Test image collections and quit if empty
+if(args.imageCollections is None):
+    print( "#### Need to specify at least one image collection using --imageCollections  <collections separated by spaces> ####\nEXITING")
+    quit()
+else:
+    print( '-- Setting imageCollections = {0}'.format(args.imageCollections))
 
 # multi-run
-imageCollections = ['compositeImgs',
-                    'compositeImgs_lessThan4j', 'compositeImgs_ge4jInclb',
+#imageCollections = ['compositeImgs',
+#                    'compositeImgs_lessThan4j', 'compositeImgs_ge4jInclb',
                     #'compositeImgs_ge4j0b', 'compositeImgs_ge4j1b','compositeImgs_ge4j2b','compositeImgs_ge4j3b','compositeImgs_ge4j4b','compositeImgs_ge4jge4b', 
                     #'compositeImgs_HT150','compositeImgs_HT300', 'compositeImgs_HT450',
                     #'trackImgs', 'nHadronImgs', 'photonImgs',
-]
+#]
 
+
+# ** E. Test output directory existence and create if DNE
+if(args.extraVariables is None):
+    print( "#### No extra variables specified. Next time add variables (if desired) using --extraVariables <extra vars separated by spaces> ####\n")
+    print( '-- Setting extraVariables = {0}'.format(args.extraVariables))
+    args.extraVariables = []
+else:
+    print( '-- Setting extraVariables = {0}'.format(args.extraVariables))
 
 
 modelArgs = dict(
@@ -84,6 +93,7 @@ modelArgs = dict(
     _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
     _loadSavedModel = False,
     _useClassWeights=args.addClassWeights,
+    _extraVariables = args.extraVariables,
     #_extraVariables=['HT',]
     #_extraVariables=['nJets'],
     #_extraVariables=['nBTags'],
