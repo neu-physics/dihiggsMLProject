@@ -4,11 +4,10 @@ from cnnModelClass import cnnModelClass
 # *** 0. setup parser for command line
 parser = argparse.ArgumentParser()
 parser.add_argument("--outputDir", help="output directory for model training outputs")
-#parser.add_argument("--imageCollection", help="image collection")
 parser.add_argument("--inputHHFile", help=".txt file containing input .h5 files for dihiggs")
 parser.add_argument("--inputQCDFile", help=".txt file containing input .h5 files for qcd")
-parser.add_argument('-l','--extraVariables', nargs='+', help='add extra variables to concatenate with convolutional outputs')
-parser.add_argument('-l','--imageCollections', nargs='+', help='imageCollections to process')
+parser.add_argument('-x','--extraVariables', nargs='+', help='add extra variables to concatenate with convolutional outputs')
+parser.add_argument('-i','--imageCollections', nargs='+', help='imageCollections to process', required=True)
 parser.add_argument('--addClassWeights', dest='addClassWeights', action='store_true')
 parser.add_argument('--testRun', dest='testRun', action='store_true')
 parser.set_defaults(addClassWeights=False)
@@ -17,7 +16,7 @@ parser.set_defaults(testRun=False)
 args = parser.parse_args()
 
 
-if ( len(vars(args)) != 6 ): # 4/5/6 --> depends on default options
+if ( len(vars(args)) != 7 ): # --> depends on default options
     os.system('python cnnWrapper.py -h')
     print( vars(args), len(vars(args)))
     quit()
@@ -111,18 +110,18 @@ classArgs['_datasetPercentage'] = 0.8
 weightsTag = 'addClassWeights' if args.addClassWeights else 'noWeights'
 percentTag = '80percent'
 
-for iCollection in range(0, len(imageCollections)):
-    imageCollection = imageCollections[iCollection]
+for iCollection in range(0, len(args.imageCollections)):
+    imageCollection = args.imageCollections[iCollection]
 
     if iCollection == 0: # first model, create class
-        cnn = cnnModelClass('cnnModelClass_{}_2Conv-32filter_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
+        cnn = cnnModelClass('{}_2Conv-16-32filter_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
                             **classArgs,
                             _imageCollection = imageCollection,
                             _testRun = args.testRun
         )
 
     else: # reinitialize to create new model
-        cnn.reinitialize('cnnModelClass_{}_2Conv-32filter_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
+        cnn.reinitialize('{}_2Conv-16-32filter_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
                          **modelArgs,
                          _imageCollection = imageCollection,
                      )
