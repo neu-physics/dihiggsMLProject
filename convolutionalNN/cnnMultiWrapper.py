@@ -10,13 +10,15 @@ parser.add_argument('-x','--extraVariables', nargs='+', help='add extra variable
 parser.add_argument('-i','--imageCollections', nargs='+', help='imageCollections to process', required=True)
 parser.add_argument('--addClassWeights', dest='addClassWeights', action='store_true')
 parser.add_argument('--testRun', dest='testRun', action='store_true')
+parser.add_argument('--condorRun', dest='condorRun', action='store_true')
 parser.set_defaults(addClassWeights=False)
 parser.set_defaults(testRun=False)
+parser.set_defaults(condorRun=False)
 
 args = parser.parse_args()
 
 
-if ( len(vars(args)) != 7 ): # --> depends on default options
+if ( len(vars(args)) != 8 ): # --> depends on default options
     os.system('python cnnWrapper.py -h')
     print( vars(args), len(vars(args)))
     quit()
@@ -114,14 +116,15 @@ for iCollection in range(0, len(args.imageCollections)):
     imageCollection = args.imageCollections[iCollection]
 
     if iCollection == 0: # first model, create class
-        cnn = cnnModelClass('{}_2Conv-16-32filter_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
+        cnn = cnnModelClass('{}_{}_{}'.format(imageCollection, weightsTag, percentTag),
                             **classArgs,
                             _imageCollection = imageCollection,
                             _testRun = args.testRun
+                            _condorRun = args.condorRun
         )
 
     else: # reinitialize to create new model
-        cnn.reinitialize('{}_2Conv-16-32filter_2MaxPool_2Dense_{}_{}'.format(imageCollection, weightsTag, percentTag),
+        cnn.reinitialize('{}_{}_{}'.format(imageCollection, weightsTag, percentTag),
                          **modelArgs,
                          _imageCollection = imageCollection,
                      )

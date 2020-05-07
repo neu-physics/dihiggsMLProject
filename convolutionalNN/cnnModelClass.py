@@ -61,7 +61,7 @@ def auc( y_true, y_pred ) :
 
 class cnnModelClass:
     
-    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False, _extraVariables=[], _topDir='', _loadModelDir=''):
+    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _condorRun=False, _useClassWeights=False, _extraVariables=[], _topDir='', _loadModelDir=''):
         self.modelName   = _modelName
         self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
         if not os.path.exists(self.topDir):
@@ -73,6 +73,7 @@ class cnnModelClass:
         self.qcdFile = _qcdFile
         self.imageCollection = _imageCollection
         self.isTestRun = _testRun
+        self.isCondorRun = _condorRun
         self.useClassWeights = _useClassWeights
         self.extraVariables = _extraVariables
         self.loadSavedModel = _loadSavedModel
@@ -230,12 +231,14 @@ class cnnModelClass:
       self.qcd = [] # index == 0 for images, 1-X are extra variables
       
       if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
-            self.loadSingleFile_v2( self.hhFile, isSignal = True)
+            _singleFile = self.hhFile.replace('/eos/uscms', 'root://cmseos.fnal.gov/') if self.isCondorRun else self.hhFile
+            self.loadSingleFile_v2( _singeFile, isSignal = True)
       elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
             self.loadMultipleFiles_v2( self.hhFile, isSignal = True)
                 
       if '.h5' in self.qcdFile:    # ** C. User single .h5 file
-            self.loadSingleFile_v2( self.qcdFile, isSignal = False)
+            _singleFile = self.qcdFile.replace('/eos/uscms', 'root://cmseos.fnal.gov/') if self.isCondorRun else self.qcdFile
+            self.loadSingleFile_v2( _singleFile, isSignal = False)
       elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
             self.loadMultipleFiles_v2( self.qcdFile, isSignal = False)
             
@@ -367,6 +370,8 @@ class cnnModelClass:
                       _fileList = f.readlines()
                       for _file in _fileList:
                             _singleFile = _file.split('\n')[0]
+                            _singleFile = _singleFile.replace('/eos/uscms', 'root://cmseos.fnal.gov/') if self.isCondorRun else _singleFile
+
                             print( "Opening file: {} ...".format(_singleFile))
                             self.loadSingleFile_v2( _singleFile, isSignal)          
           else:
