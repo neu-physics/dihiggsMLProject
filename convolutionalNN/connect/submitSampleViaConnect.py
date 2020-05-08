@@ -81,7 +81,6 @@ else:
 
 # ** E. Test output directory existence and create if DNE
 if(args.extraVariables is None):
-    print( "#### No extra variables specified. Next time add variables (if desired) using --extraVariables <extra vars separated by spaces> ####\n")
     print( '-- Setting extraVariables = {0}'.format(args.extraVariables))
     args.extraVariables = []
 else:
@@ -89,7 +88,7 @@ else:
 
 
 # *** 1. Reformat passed lists to fit with BASH
-_extraVariables = ["'{}'".format(var) for var in self.extraVariables]
+_extraVariables = ["'{0}'".format(var) for var in args.extraVariables]
 _extraVariables = " ".join( _extraVariables ) 
 
 
@@ -113,21 +112,23 @@ for iCollection in range(0, len(args.imageCollections)):
     os.system("echo Log = {0}/logs/job_{1}.log >> {2}".format(args.outputDir, imageCollection, jdl_filename))
     
     os.system("""echo Arguments = {0} {1} {2} "{3}" {4} {5} {6} {7} >> {8}""".format( args.outputDir, args.inputHHFile, args.inputQCDFile, _extraVariables, imageCollection, args.addClassWeights, args.testRun, args.condorRun, jdl_filename)) 
-    os.system("echo Queue 1 >> {0}".format(jdl_filename))       
 
     #os.system("""echo +DesiredOS="SL7" >> {}""".format(jdl_filename))
     #os.system("""echo +ProjectName="cms-org-cern" >> {}""".format(jdl_filename))
     #os.system("echo x509userproxy = ${{X509_USER_PROXY}} >> {0}".format(jdl_filename))
 
     # Request GPUs for CNN jobs
-    #os.system("echo Requirements = HAS_SINGULARITY == True && CUDACapability >= 3 >> {0}".format(jdl_filename))
-    #os.system("echo request_gpus = 1 >> {0}".format(jdl_filename))
-    #os.system("echo request_memory = 2 GB >> {0}".format(jdl_filename))
-    #os.system("""echo +SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/tensorflow-gpu:latest" >> {}""".format(jdl_filename))
+    #os.system("""echo Requirements = HAS_SINGULARITY == True && CUDACapability >= 3 >> {0}""".format(jdl_filename))
+    os.system("""echo "requirements = CUDACapability >= 3" >> {0}""".format(jdl_filename))
+    os.system("echo request_memory = 4 Gb >> {0}".format(jdl_filename))
+    os.system("echo request_cpus = 1 >> {0}".format(jdl_filename))
+    os.system("echo request_gpus = 1 >> {0}".format(jdl_filename))
+    os.system('''echo +SingularityImage = \\"/cvmfs/singularity.opensciencegrid.org/opensciencegrid/tensorflow-gpu:latest\\" >> {0}'''.format(jdl_filename))
 
     # Request CPUs for normal jobs
     #os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
     
+    os.system("echo Queue 1 >> {0}".format(jdl_filename))       
     os.system("condor_submit {0}".format(jdl_filename))
 
 

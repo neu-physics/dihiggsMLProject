@@ -17,7 +17,8 @@ echo "----> Copy input signal file(s) locally"
 mkdir signal
 while IFS="" read -r p || [ -n "$p" ]
 do
-  filepath='root://cmseos.fnal.gov/'
+  filepath='root://stash.osgconnect.net:1094/'
+  #filepath='root://cmseos.fnal.gov/'
   filepath+=$p
   echo $filepath
   xrdcp -s $filepath .
