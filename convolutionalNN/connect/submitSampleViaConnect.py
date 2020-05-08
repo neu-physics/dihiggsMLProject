@@ -88,42 +88,17 @@ else:
     print( '-- Setting extraVariables = {0}'.format(args.extraVariables))
 
 
-modelArgs = dict(
-    #3xconv, 2xPool
-    #_cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[16, (2, 2)]] ],
-    #2xconv w/ 16 filters, 2xPool
-    #_cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
-    #2xconv w/ 32 filters, 2xPool
-    #_cnnLayers= [ ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
-    #2xconv w/ 16-32 filters, 2xPool
-    _cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
-    _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
-    _loadSavedModel = False,
-    _useClassWeights=args.addClassWeights,
-    _extraVariables = args.extraVariables,
-    #_extraVariables=['HT',]
-    #_extraVariables=['nJets'],
-    #_extraVariables=['nBTags'],
-    #_extraVariables=['HT', 'nJets', 'nBTags'],
-)
+# *** 1. Reformat passed lists to fit with BASH
+_extraVariables = ["'{}'".format(var) for var in self.extraVariables]
+_extraVariables = " ".join( _extraVariables ) 
 
-classArgs = modelArgs.copy()
-classArgs['_topDir'] = args.outputDir
-classArgs['_hhFile'] = args.inputHHFile
-classArgs['_qcdFile'] = args.inputQCDFile
-#classArgs['_datasetPercentage'] = 0.1
-#classArgs['_datasetPercentage'] = 0.2
-classArgs['_datasetPercentage'] = 0.8
 
-weightsTag = 'addClassWeights' if args.addClassWeights else 'noWeights'
-percentTag = '80percent'
-
-# *** 1. Loop over collections to submit
+# *** 2. Loop over collections to submit
 for iCollection in range(0, len(args.imageCollections)):
     imageCollection = args.imageCollections[iCollection]
 
     # ** A. Create temp bash script to process job
-    tempBashScript = "short.sh"
+    tempBashScript = "trainModel.sh" # this should actually be globally flex
 
     # ** B. Create condor submission .jdl
     jdl_filename = "processOneModel_{0}_{1}.jdl".format(args.outputDir, imageCollection)
@@ -131,13 +106,13 @@ for iCollection in range(0, len(args.imageCollections)):
     os.system("touch {0}".format(jdl_filename))
     os.system("echo universe = vanilla > {0}".format(jdl_filename))
     os.system("echo should_transfer_files = YES >> {0}".format(jdl_filename))
-    os.system("echo transfer_input_files = ../cnnModelClass.py, ../../utils/commonFunctions.py, ../cnnMultiWrapper.py, {0} >> {1}".format(tempBashScript, jdl_filename))
+    os.system("echo transfer_input_files = ../cnnModelClass.py, ../../utils/commonFunctions.py, ../cnnMultiWrapper.py, {0} {1} {2} >> {3}".format(tempBashScript, args.inputHHFile, args.inputQCDFile, jdl_filename))
     os.system("echo Executable = {0} >> {1}".format(tempBashScript, jdl_filename))
     os.system("echo Output = {0}/logs/job_{1}.out  >> {2}".format( args.outputDir, imageCollection, jdl_filename))
     os.system("echo Error = {0}/logs/job_{1}.err >> {2}".format(args.outputDir, imageCollection, jdl_filename))
     os.system("echo Log = {0}/logs/job_{1}.log >> {2}".format(args.outputDir, imageCollection, jdl_filename))
     
-    os.system("echo Arguments = {0} {1} {2} {3} {4} {5} {6} {7} >> {8}".format( args.outputDir, args.inputHHFile, args.inputQCDFile, args.extraVariables, imageCollection, args.addClassWeights, args.testRun, args.condorRun, jdl_filename)) 
+    os.system("""echo Arguments = {0} {1} {2} "{3}" {4} {5} {6} {7} >> {8}""".format( args.outputDir, args.inputHHFile, args.inputQCDFile, _extraVariables, imageCollection, args.addClassWeights, args.testRun, args.condorRun, jdl_filename)) 
     os.system("echo Queue 1 >> {0}".format(jdl_filename))       
 
     #os.system("""echo +DesiredOS="SL7" >> {}""".format(jdl_filename))
@@ -157,6 +132,6 @@ for iCollection in range(0, len(args.imageCollections)):
 
 
 
-# *** 2. Cleanup submission directory
+# *** 3. Cleanup submission directory
 print( "\n##########     Cleanup submission directory     ##########\n")
 #os.system("rm *.jdl") # remove temp condor submission scripts

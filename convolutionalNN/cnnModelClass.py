@@ -3,7 +3,6 @@
 ##  Date:    April 16, 2020
 ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
 
-
 # To-Do
 #X) CM of phi for image?
 #X) bb-center a la photography talk
@@ -16,7 +15,6 @@
 #X) look at the per-jet-tag category yields after the macro-sample cut and compare to 4j4t S,B from other approaches
 #9) do other processes matter?
 #10) try those things you wanted
-
 
 
 # Import the needed libraries
@@ -118,10 +116,10 @@ class cnnModelClass:
       else:
             self.makeCNNPlus()
 
-      #if not self.loadSavedModel:
-      #      self.trainCNN()
+      if not self.loadSavedModel:
+            self.trainCNN()
       
-      #self.evaluateModel()
+      self.evaluateModel()
                 
       self.close()
         

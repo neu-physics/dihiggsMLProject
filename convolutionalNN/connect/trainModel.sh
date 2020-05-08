@@ -47,7 +47,22 @@ cat tempBackgroundFiles.txt
 
 echo "----> run cnn wrapper"
 echo $PWD
-python cnnMultiWrapper.py --outputDir $1 --inputHHFile tempSignalFiles.txt  --inputQCDFile tempBackgroundFiles.txt --extraVariables $4 --imageCollections $5 --addClassWeights $6 --testRun -7
+pythonCMD="python cnnMultiWrapper.py --outputDir ${1} --inputHHFile tempSignalFiles.txt  --inputQCDFile tempBackgroundFiles.txt --imageCollections ${5}"
+if [ "$4" != "[]" ]; then 
+    pythonCMD+=" --extraVariables ${4}"
+fi
+if [ $6 == "True" ]; then 
+    pythonCMD+=" --addClassWeights"
+fi
+if [ $7 == "True" ]; then 
+    pythonCMD+=" --testRun"
+fi
+if [ $8 == "True" ]; then 
+    pythonCMD+=" --condorRun"
+fi
+
+echo $pythonCMD
+eval $pythonCMD
 
 echo "----> Post imaging"
 
@@ -68,9 +83,9 @@ xrdcp -r -p $1 $OUTDIR/
 
 echo " >> cleanup and close"
 source deactivate
-cd ${_CONDOR_SCRATCH_DIR}
+#cd ${_CONDOR_SCRATCH_DIR}
 rm signal -rf
 rm background -rf
-rm *.py
-rm *.txt
+#rm *.py
+#rm *.txt
 

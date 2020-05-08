@@ -119,7 +119,7 @@ for iCollection in range(0, len(args.imageCollections)):
         cnn = cnnModelClass('{}_{}_{}'.format(imageCollection, weightsTag, percentTag),
                             **classArgs,
                             _imageCollection = imageCollection,
-                            _testRun = args.testRun
+                            _testRun = args.testRun,
                             _condorRun = args.condorRun
         )
 
