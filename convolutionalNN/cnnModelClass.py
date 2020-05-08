@@ -118,10 +118,10 @@ class cnnModelClass:
       else:
             self.makeCNNPlus()
 
-      if not self.loadSavedModel:
-            self.trainCNN()
+      #if not self.loadSavedModel:
+      #      self.trainCNN()
       
-      self.evaluateModel()
+      #self.evaluateModel()
                 
       self.close()
         
