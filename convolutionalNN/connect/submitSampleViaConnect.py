@@ -105,7 +105,7 @@ for iCollection in range(0, len(args.imageCollections)):
     os.system("touch {0}".format(jdl_filename))
     os.system("echo universe = vanilla > {0}".format(jdl_filename))
     os.system("echo should_transfer_files = YES >> {0}".format(jdl_filename))
-    os.system("echo transfer_input_files = ../cnnModelClass.py, ../../utils/commonFunctions.py, ../cnnMultiWrapper.py, {0} {1} {2} >> {3}".format(tempBashScript, args.inputHHFile, args.inputQCDFile, jdl_filename))
+    os.system("echo transfer_input_files = ../cnnModelClass.py, ../../utils/commonFunctions.py, ../cnnMultiWrapper.py, {0}, {1}, {2}, >> {3}".format(tempBashScript, args.inputHHFile, args.inputQCDFile, jdl_filename))
     os.system("echo Executable = {0} >> {1}".format(tempBashScript, jdl_filename))
     os.system("echo Output = {0}/logs/job_{1}.out  >> {2}".format( args.outputDir, imageCollection, jdl_filename))
     os.system("echo Error = {0}/logs/job_{1}.err >> {2}".format(args.outputDir, imageCollection, jdl_filename))
