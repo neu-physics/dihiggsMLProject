@@ -105,15 +105,15 @@ for iCollection in range(0, len(args.imageCollections)):
     os.system("touch {0}".format(jdl_filename))
     os.system("echo universe = vanilla > {0}".format(jdl_filename))
     os.system("echo should_transfer_files = YES >> {0}".format(jdl_filename))
-    os.system("echo transfer_input_files = ../cnnModelClass.py, ../../utils/commonFunctions.py, ../cnnMultiWrapper.py, {0}, {1}, {2}, >> {3}".format(tempBashScript, args.inputHHFile, args.inputQCDFile, jdl_filename))
+    os.system("echo transfer_input_files = /etc/ciconnect/templates/cmssw_setup.sh, transferFiles.sh, ../cnnModelClass.py, ../../utils/commonFunctions.py, ../cnnMultiWrapper.py, {0}, {1}, {2}, >> {3}".format(tempBashScript, args.inputHHFile, args.inputQCDFile, jdl_filename))
     os.system("echo Executable = {0} >> {1}".format(tempBashScript, jdl_filename))
     os.system("echo Output = {0}/logs/job_{1}.out  >> {2}".format( args.outputDir, imageCollection, jdl_filename))
     os.system("echo Error = {0}/logs/job_{1}.err >> {2}".format(args.outputDir, imageCollection, jdl_filename))
     os.system("echo Log = {0}/logs/job_{1}.log >> {2}".format(args.outputDir, imageCollection, jdl_filename))
     
-    os.system("""echo Arguments = {0} {1} {2} "{3}" {4} {5} {6} {7} >> {8}""".format( args.outputDir, args.inputHHFile, args.inputQCDFile, _extraVariables, imageCollection, args.addClassWeights, args.testRun, args.condorRun, jdl_filename)) 
+    os.system("""echo Arguments = {0} {1} {2} "{3}" {4} {5} {6} {7} >> {8}""".format( args.outputDir, args.inputHHFile.split('/')[-1], args.inputQCDFile.split('/')[-1], _extraVariables, imageCollection, args.addClassWeights, args.testRun, args.condorRun, jdl_filename)) 
 
-    #os.system("""echo +DesiredOS="SL7" >> {}""".format(jdl_filename))
+    os.system("""echo +DesiredOS="SL7" >> {0}""".format(jdl_filename))
     #os.system("""echo +ProjectName="cms-org-cern" >> {}""".format(jdl_filename))
     #os.system("echo x509userproxy = ${{X509_USER_PROXY}} >> {0}".format(jdl_filename))
 
@@ -135,4 +135,4 @@ for iCollection in range(0, len(args.imageCollections)):
 
 # *** 3. Cleanup submission directory
 print( "\n##########     Cleanup submission directory     ##########\n")
-#os.system("rm *.jdl") # remove temp condor submission scripts
+os.system("rm *.jdl") # remove temp condor submission scripts
