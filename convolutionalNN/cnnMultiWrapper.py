@@ -116,18 +116,18 @@ for iCollection in range(0, len(args.imageCollections)):
     imageCollection = args.imageCollections[iCollection]
 
     if iCollection == 0: # first model, create class
-        cnn = cnnModelClass('{}_{}_{}'.format(imageCollection, weightsTag, percentTag),
+        cnn = cnnModelClass('{}_{}_{}'.format(imageCollection, weightsTag, percentTag), 
                             **classArgs,
-                            _imageCollection = imageCollection,
+                             _imageCollection = imageCollection,
                             _testRun = args.testRun,
                             _condorRun = args.condorRun
-        )
+                            )
 
     else: # reinitialize to create new model
-        cnn.reinitialize('{}_{}_{}'.format(imageCollection, weightsTag, percentTag),
+        cnn.reinitialize('{}_{}_{}'.format(imageCollection, weightsTag, percentTag), 
                          **modelArgs,
                          _imageCollection = imageCollection,
-                     )
+                         )
 
     cnn.run()
 
