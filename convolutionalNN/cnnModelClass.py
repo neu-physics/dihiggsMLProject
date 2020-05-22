@@ -27,18 +27,19 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import h5py as h5
 
-
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Dropout, BatchNormalization, Flatten, Conv2D, MaxPooling2D, Input
 from keras.layers.merge import concatenate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.regularizers import l2, l1
 from keras.initializers import Constant
-from sklearn.metrics import confusion_matrix, roc_curve, auc
+from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
+
+#tf.logging.set_verbosity(tf.logging.FATAL) #where last text can be any of DEBUG, INFO, WARN, ERROR, or FATAL
 
 seed = 7
 np.random.seed(seed)
@@ -734,6 +735,21 @@ class cnnModelClass:
 
     def trainCNN(self):
       print("+++ Train CNN" )
+      
+      # *** 0. Set GPU limit
+      #gpus = tf.config.experimental.list_physical_devices('GPU')
+      #if gpus:
+      #      # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
+      #      try:
+      #            tf.config.experimental.set_virtual_device_configuration(
+      #                  gpus[0],
+      #                  [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)]
+      #                 )
+      #            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+      #            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+      #      except RuntimeError as e:
+      #            # Virtual devices must be set before GPUs have been initialized
+      #            print(e)
 
       # *** 1. Define output directory
       model_dir = os.path.join(self.topDir, "", "models")

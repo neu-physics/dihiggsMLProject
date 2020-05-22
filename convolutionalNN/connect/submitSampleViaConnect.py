@@ -111,30 +111,30 @@ for iCollection in range(0, len(args.imageCollections)):
     os.system("echo Executable = {0} >> {1}".format(tempBashScript, jdl_filename))
     os.system("echo Output = {0}/logs/job_{1}.out  >> {2}".format( args.outputDir, imageCollection, jdl_filename))
     os.system("echo Error = {0}/logs/job_{1}.err >> {2}".format(args.outputDir, imageCollection, jdl_filename))
-    os.system("echo Log = {0}/logs/job_{1}.log >> {2}".format(args.outputDir, imageCollection, jdl_filename))
+    os.system("echo Log = {0}/logs/job_{1}.log >> {2}".format(args.outputDir, imageCollection, jdl_filename))    
+    os.system("echo stream_output = True >> {0}".format(jdl_filename))
     
     os.system("""echo Arguments = {0} {1} {2} {3} {4} {5} {6} {7} >> {8}""".format( args.outputDir, args.inputHHFile.split('/')[-1], args.inputQCDFile.split('/')[-1], extraVariablesTxt.split('/')[-1], imageCollection, args.addClassWeights, args.testRun, args.condorRun, jdl_filename)) 
-
+    
     os.system("""echo +DesiredOS="SL7" >> {0}""".format(jdl_filename))
     #os.system("""echo +ProjectName="cms-org-cern" >> {}""".format(jdl_filename))
     #os.system("echo x509userproxy = ${{X509_USER_PROXY}} >> {0}".format(jdl_filename))
-
+    
     # Request GPUs for CNN jobs
-    #os.system("""echo Requirements = HAS_SINGULARITY == True && CUDACapability >= 3 >> {0}""".format(jdl_filename))
-    os.system("""echo "requirements = CUDACapability >= 3" >> {0}""".format(jdl_filename))
-    os.system("echo request_memory = 8 Gb >> {0}".format(jdl_filename))
+    os.system("""echo "requirements = HAS_SINGULARITY == True && CUDACapability >= 3" >> {0}""".format(jdl_filename))
+    #os.system("""echo "requirements = CUDACapability >= 3" >> {0}""".format(jdl_filename))
+    #os.system("echo request_memory = 8 GB >> {0}".format(jdl_filename))
+    os.system("echo request_memory = 8 GB >> {0}".format(jdl_filename))
     #os.system("echo request_cpus = 1 >> {0}".format(jdl_filename))
     os.system("echo request_gpus = 1 >> {0}".format(jdl_filename))
     os.system('''echo +SingularityImage = \\"/cvmfs/singularity.opensciencegrid.org/opensciencegrid/tensorflow-gpu:latest\\" >> {0}'''.format(jdl_filename))
-
+    
     # Request CPUs for normal jobs
     #os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
     
     os.system("echo Queue 1 >> {0}".format(jdl_filename))       
     os.system("condor_submit {0}".format(jdl_filename))
-
-
-
+    
 # *** 3. Cleanup submission directory
 print( "\n##########     Cleanup submission directory     ##########\n")
 os.system("rm *.jdl") # remove temp condor submission scripts

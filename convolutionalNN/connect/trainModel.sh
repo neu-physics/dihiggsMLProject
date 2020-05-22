@@ -84,6 +84,7 @@ pyVer=$(python --version)
 echo "----> make utils subdir"
 mkdir utils
 mv commonFunctions.py utils/
+ls $PWD/utils
 
 echo "----> run cnn wrapper"
 echo $PWD
@@ -104,7 +105,22 @@ if [ "$8" == "True" ]; then
 fi
 
 echo $pythonCMD
-eval $pythonCMD
+
+
+# Execute in background
+#python myScript.py <script options> &
+eval $pythonCMD #&
+## Store pid
+#mypid=$!
+# Wait for process to finish
+#wait $pid
+#exitcode=$?
+#
+#if [ $exitcode != 0 ]; then
+#    echo "Python script error code: $exitcode"
+#    # Try to print information from dmesg"
+#    dmesg | grep $pid 2>&1
+#fi
 
 echo "----> Post imaging"
 
