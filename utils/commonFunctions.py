@@ -169,11 +169,11 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     return
 
 
-def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, _testingFraction=1., hh_nEventsGen = 500e3, qcd_nEventsGen = 2e6):
+def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, hh_nEventsGen = 500e3, qcd_nEventsGen = 2e6):
     """find best cut according to user-specified significance metric"""
 
-    _signalLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = True, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
-    _bkgLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = False, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
+    _signalLumiscale = getLumiScaleFactor( 1.0, _isDihiggs = True, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
+    _bkgLumiscale = getLumiScaleFactor( 1.0, _isDihiggs = False, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
     
     _bestSignificance = -1
     _bestCutValue = -1
