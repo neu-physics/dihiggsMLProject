@@ -127,7 +127,7 @@ for iCollection in range(0, len(args.imageCollections)):
     os.system("echo request_memory = 4 GB >> {0}".format(jdl_filename))
     #os.system("echo request_gpus = 2 >> {0}".format(jdl_filename))
     os.system("echo request_gpus = 1 >> {0}".format(jdl_filename))
-    #os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
+    os.system("echo request_cpus = 2 >> {0}".format(jdl_filename))
     os.system('''echo +SingularityImage = \\"/cvmfs/singularity.opensciencegrid.org/opensciencegrid/tensorflow-gpu:latest\\" >> {0}'''.format(jdl_filename))
     
     # Request CPUs for normal jobs

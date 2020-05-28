@@ -137,7 +137,9 @@ ls ./$1/models/*.hdf5
 echo "*******************************************"
 OUTDIR=root://cmseos.fnal.gov//store/user/benjtann/upgrade/cnn/
 
-xrdcp -r -p $1 $OUTDIR/
+xrdcpCMD="xrdcp -r -p ${1} ${OUTDIR}/${1}/"
+echo $xrdcpCMD
+eval $xrdcpCMD
 
 echo " >> cleanup and close"
 source /cvmfs/cms-lpc.opensciencegrid.org/sl7/gpu/anaconda3/bin/deactivate
