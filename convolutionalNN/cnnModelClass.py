@@ -28,7 +28,7 @@ from matplotlib import pyplot as plt
 import h5py as h5
 
 from keras.models import Sequential, Model
-from keras.layers import Dense, Activation, Dropout, BatchNormalization, Flatten, Conv2D, MaxPooling2D, Input
+from keras.layers import Dense, Activation, Dropout, BatchNormalization, Flatten, Conv2D, MaxPooling2D, AveragePooling2D, Input
 from keras.layers.merge import concatenate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.regularizers import l2, l1
@@ -78,7 +78,7 @@ class cnnModelClass:
         self.loadSavedModel = _loadSavedModel
         self.loadModelDir = str(_topDir + '/' + _loadModelName + '/') if _loadModelDir != '' else self.topDir
         self.datasetPercentage = _datasetPercentage
-        self.runUNet = True #FIXME                
+        self.runUNet = False #FIXME                
 
         # Class Defaults
         self.transparency = 0.88  # transparency of plots
@@ -805,19 +805,22 @@ class cnnModelClass:
         # ** C1. Parallel convolutional components (the "U")
         wholeImageUinput = Input(shape=inputShape)
         #wholeImageU = Conv2D( 16, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
-        wholeImageU = Conv2D( 1, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
+        #wholeImageU = Conv2D( 1, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
         #wholeImageU = Conv2D( 3, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
+        
+        #wholeImageU = MaxPooling2D( (pixelWidth, pixelWidth))(convInput)
+        wholeImageU = AveragePooling2D( (pixelWidth, pixelWidth))(convInput)
         wholeImageU = Flatten()( wholeImageU )
 
         # ** C2. Parallel convolutional components (the "U")
-        halfSize = int( np.ceil( pixelWidth/2) )
-        quadrantImageU = Conv2D( 4, (halfSize, halfSize), **conv_kwargs)(convInput)
+        #halfSize = int( np.ceil( pixelWidth/2) )
+        #quadrantImageU = Conv2D( 4, (halfSize, halfSize), **conv_kwargs)(convInput)
         ##quadrantImageU = Conv2D( 16, (halfSize, halfSize), **conv_kwargs)(convInput)
-        quadrantImageU = Flatten()( quadrantImageU )
+        #quadrantImageU = Flatten()( quadrantImageU )
 
         # ** D. Concatenate extra+CNN as input for FC layers
-        #concatenated = concatenate([convNN, wholeImageU])
-        concatenated = concatenate([convNN, wholeImageU, quadrantImageU])
+        concatenated = concatenate([convNN, wholeImageU])
+        #concatenated = concatenate([convNN, wholeImageU, quadrantImageU])
 
 
         # ** E. Feed-forward components

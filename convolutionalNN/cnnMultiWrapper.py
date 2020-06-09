@@ -90,14 +90,18 @@ modelArgs = dict(
     #2xconv w/ 32 filters, 2xPool
     #_cnnLayers= [ ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
     #2xconv w/ 16-32 filters, 2xPool
-    _cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+    #_cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+    #2xconv w/ 16-32 filters, 1xPool
+    #_cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['Conv2D',[32, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+    #2xconv w/ 16-16 filters, 1xPool
+    _cnnLayers= [ ['Conv2D',[16, (3, 3)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+    #2xconv w/ 8-16 filters, 1xPool
+    #_cnnLayers= [ ['Conv2D',[8, (3, 3)]], ['Conv2D',[16, (3, 3)]], ['MaxPooling2D', [(2,2)]] ],
+
     _ffnnLayers= [ ['Dense', [64]], ['BatchNormalization'], ['Dense', [64]] ],
     _loadSavedModel = False,
     _useClassWeights=args.addClassWeights,
     _extraVariables = args.extraVariables,
-    #_extraVariables=['HT',]
-    #_extraVariables=['nJets'],
-    #_extraVariables=['nBTags'],
     #_extraVariables=['HT', 'nJets', 'nBTags'],
 )
 
