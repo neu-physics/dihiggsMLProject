@@ -1,2 +1,28 @@
 \label{sec:CNN}
-images rule
+images rule. Convolutional Neural Networks (CNNs) use assumptions about the local relationships between neigboring pixels in order to predict the content of an input image. For this paper, content prediction is simplified to a general classification of whether the image comes from a dihiggs or QCD event. The fundamental elements of any convolutional network are convolutional layers and pooling layers. 
+
+Many previous papers have explored the use of convolutional networks for high energy physics in the context of object identification [CITATION NEEDED]. This paper extends the application to event-level identification. The performance of two convolutional networks is studied here in the context of dihiggs identification. The first network uses just the image information as described in Section~\ref{sec:cnn_imageMaing} and will be referred to as the `nominal` network. The second network (referred to as the `hybrid` approach) combines the convoluted and pooled image information with global level variables before being fed through the fully connected layers at the end of the network.
+
+\subsubsection{Image Pre-Processing}
+\label{sec:cnn_imageMaking}
+
+This is where we talk about image creation and pre-processing.
+
+\subsubsection{Network Structures}
+The nominal network is presented here.
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {CNN/figures/nominalCNN.png}
+\caption{Structure of the nominal convolutional neural network. The input images are fed through two convolutional layers and a single max-pooling layer before being flattened into a one-dimensional vector. The flattened vector is then fed through one fully connected layer, a batch normalization layer, and a final fully connected layer before a final prediction is made.}
+  \label{fig:cnn_nominal}
+\end{center}
+\end{figure}
+
+The hybrid network is presented here.
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {CNN/figures/hybridCNN.png}
+\caption{Structure of the hybrid convolutional neural network. The input images are fed through two convolutional layers and a single max-pooling layer before being flattened into a one-dimensional vector. Scaled user-specified variables (e.g. $H_{T}$) are then concatenated with the flattened image vector. The concatenated vector is then fed through one fully connected layer, a batch normalization layer, and a final fully connected layer before a final prediction is made.}
+  \label{fig:cnn_hybrid}
+\end{center}
+\end{figure}
