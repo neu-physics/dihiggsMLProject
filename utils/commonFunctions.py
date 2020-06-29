@@ -2,6 +2,7 @@
 ##  Date:    Nov 8 2019
 ##  Purpose: Class to hold common functions for dihiggs work, e.g. lumi-scaling
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,24 +10,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, roc_auc_score
 
 
-def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True, _nEventsGen=-1 ):
+def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True, hh_nEventsGen = 1e6, qcd_nEventsGen = 4e6 ):
     """ function to return lumi-scale for events used in testing and significance calculations """
 
     # *** 0. Set number of events and total HL-LHC lumi
     lumi_HLLHC = 3000 #fb-1
-
-    # ** A. First-gen samples
-    #hh_nEventsGen = 500e3
-    #qcd_nEventsGen = 2e6
-
-    # ** B. Second-gen samples
-    hh_nEventsGen = 1e6
-    qcd_nEventsGen = 4e6
-
-    if _isDihiggs and _nEventsGen > 0:
-        hh_nEvetsGen = _nEventsGen
-    if _isDihiggs==False and _nEventsGen > 0:
-        qcd_nEvetsGen = _nEventsGen
+    #hh_nEventsGen = 1e6
+    #qcd_nEventsGen = 4e6
 
     nEventsGen = hh_nEventsGen if _isDihiggs else qcd_nEventsGen
     
@@ -45,7 +35,6 @@ def getLumiScaleFactor( _testingFraction=1., _isDihiggs=True, _nEventsGen=-1 ):
 
     #lumiscale = lumi_HLLHC if not _isDihiggs else lumi_HLLHC*4.116970394139372e-05
     return lumiscale
-
 
 
 def makeEqualSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, nEventsForXGB):
@@ -114,8 +103,8 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
 
     # *** 3. Make test/train split
     data_train, data_test, labels_train, labels_test = train_test_split(all_dataForSplit, all_labelsForSplit, test_size=_fractionEventsForTesting, shuffle= True, random_state=30)
-    
-    # *** 3. Sanity check
+
+    # *** 4. Sanity check
     print(len(all_dataForSplit), 'rows of total data with ', len(all_labelsForSplit), 'labels [Train+Test]')
     print(len(data_train), 'rows of training data with ', len(labels_train), 'labels [Train]')
     print(len(data_test), 'rows of testing data with ', len(labels_test), 'labels [Test]')
@@ -124,7 +113,7 @@ def makeTestTrainSamplesWithUserVariables(signal_raw, bkg_raw, userVariables, _f
     return data_train, data_test, labels_train, labels_test
 
 
-def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir='', writeSignificance=False, _testingFraction=1.0):
+def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax, _nBins, _yMax = 4000, _normed=False, savePlot=False, saveDir='', writeSignificance=False, _testingFraction=1.0, nQCD=-1, nDihiggs=-1):
        
     if len(_dict.keys()) < len(_labels):
         print ("!!! Unequal number of arrays and labels. Learn to count better.")
@@ -151,23 +140,25 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
                     
 
     # set max y-value of histogram so there's room for legend
-    _yMax = 0.15 if _normed else _yMax
+    _yMax = 0.20 if _normed else _yMax
     axes = plt.gca()
     axes.set_ylim([0,_yMax])
         
     #draw legend
     plt.legend(loc='upper left')
     #plt.text(.1, .1, s1)
-
+    
     # ** X. Add significance and cut if requested
     sig, cut, err = 0, 0, 0
     if writeSignificance==True:
         _pred_sig = _dict['hh_pred']
         _pred_bkg = _dict['qcd_pred']
-
-        sig, cut, err = returnBestCutValue(_xtitle, _pred_sig.copy(), _pred_bkg.copy(), _minBackground=200, _testingFraction=_testingFraction)
+        if nDihiggs==-1 and nQCD==-1:
+            sig, cut, err = returnBestCutValue(_xtitle, _pred_sig.copy(), _pred_bkg.copy(), _minBackground=200, _testingFraction=_testingFraction)
+        else:
+            sig, cut, err = returnBestCutValue(_xtitle, _pred_sig.copy(), _pred_bkg.copy(), _minBackground=200, _testingFraction=_testingFraction, hh_nEventsGen= nDihiggs, qcd_nEventsGen= nQCD)
         plt.text(x=0.6, y=0.12, s= '$\sigma$ = {} $\pm$ {}\n (score > {})'.format(round(sig, 2), round(err, 2), round(cut, 3)), fontsize=13 )
-            
+
     # store figure copy for later saving
     fig = plt.gcf()
     
@@ -189,11 +180,11 @@ def compareManyHistograms( _dict, _labels, _nPlot, _title, _xtitle, _xMin, _xMax
     return sig, cut, err
 
 
-def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, _testingFraction=1.):
+def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _minBackground=500, _testingFraction=1., hh_nEventsGen = 1e6, qcd_nEventsGen = 4e6):
     """find best cut according to user-specified significance metric"""
 
-    _signalLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = True)
-    _bkgLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = False)
+    _signalLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = True, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
+    _bkgLumiscale = getLumiScaleFactor( _testingFraction, _isDihiggs = False, hh_nEventsGen = hh_nEventsGen, qcd_nEventsGen = qcd_nEventsGen )
     
     _bestSignificance = -1
     _bestCutValue = -1
@@ -220,9 +211,16 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
         _nSignal = float(sum( value > iCutValue for value in _signal) * _signalLumiscale)
         _nBackground = float(sum( value > iCutValue for value in _background) * _bkgLumiscale)
         
+        #print(_nSignal/_signalLumiscale, _nBackground/_bkgLumiscale)
         # safety check to avoid division by 0
         if _nBackground < _minBackground: # 500 is semi-random choice.. it's where one series started to oscillate
             #print("continued on {0}".format(iCutValue))
+            continue
+
+        if _nSignal <= 0:
+          continue
+
+        if (np.sqrt( 1/(_nSignal/_signalLumiscale) + 1/(4*_nBackground/_bkgLumiscale) ) > 0.12 ):
             continue
         
         #if _method == 'S/sqrt(B)':
@@ -261,32 +259,67 @@ def returnBestCutValue( _variable, _signal, _background, _method='S/sqrt(B)', _m
 def importDatasets( _hhLabel = '500k', _qcdLabel = '2M', _pileup='0PU', _btags='4'):
     """ function to import datasets from .csv files"""
 
-    #_qcd_csv_files = ['/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
-    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
-    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
-    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
-    #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
-    #]
-    #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
-
-    # reconstruction opts: >= 4 tags, store 10 jets, use top4 tagged then highest in pt
-    qcd_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_200PU_v2-05__top4inPt-'+_btags+'tags-10jets_combined_csv.csv'
-    hh_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_200PU_v2-05__top4inPt-'+_btags+'tags-10jets_combined_csv.csv'
-
-    print("Dihiggs file: ", hh_string)
-    print("QCD file: ", qcd_string)
+    user = os.path.expanduser("~").split('/')[-1]
+    if user == 'benjtan' or user=='btannenw': # BEN IMPORT
+        #_qcd_csv_files = ['/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
+        #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
+        #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
+        #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
+        #                 '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
+        #]
+        #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
+        
+        # reconstruction opts: >= 4 tags, store 10 jets, use top4 tagged then highest in pt
+        qcd_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_2MEvents_200PU_v2-05__top4inPt-'+_btags+'tags-10jets_combined_csv.csv'
+        hh_string = '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv' if _pileup=='0PU' else '/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_500kEvents_200PU_v2-05__top4inPt-'+_btags+'tags-10jets_combined_csv.csv'
+        
+        print("Dihiggs file: ", hh_string)
+        print("QCD file: ", qcd_string)
+        
+        _qcd_raw = pd.read_csv( qcd_string )
+        _qcd_raw['isSignal'] = 0
+        _qcd_raw = _qcd_raw[_qcd_raw.columns.drop(list(_qcd_raw.filter(regex='gen')))] # drop truth quark info
+        
+        _hh_raw = pd.read_csv( hh_string )
+        _hh_raw['isSignal'] = 1
+        _hh_raw = _hh_raw.drop('isMatchable', 1)
+        _hh_raw = _hh_raw[_hh_raw.columns.drop(list(_hh_raw.filter(regex='gen')))] # drop truth quark info
+        
+        
+        return _hh_raw, _qcd_raw
     
-    _qcd_raw = pd.read_csv( qcd_string )
-    _qcd_raw['isSignal'] = 0
-    _qcd_raw = _qcd_raw[_qcd_raw.columns.drop(list(_qcd_raw.filter(regex='gen')))] # drop truth quark info
-    
-    _hh_raw = pd.read_csv( hh_string )
-    _hh_raw['isSignal'] = 1
-    _hh_raw = _hh_raw.drop('isMatchable', 1)
-    _hh_raw = _hh_raw[_hh_raw.columns.drop(list(_hh_raw.filter(regex='gen')))] # drop truth quark info
-
-
-    return _hh_raw, _qcd_raw
+    else: # ANG IMPORT
+        #_qcd_csv_files = [
+        #'/Users/flywire/Desktop/sci/dihiggsMLProject/data/qcd_2M_training.csv'
+        #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_1of5.csv',
+        #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_2of5.csv',
+        #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_3of5.csv',
+        #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_4of5.csv',
+        #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5/qcd_outputDataForLearning_ppTo4b_CMSPhaseII_0PU_top4Tags_store8jets_5of5.csv'
+        #]
+        
+        #_qcd_raw = pd.concat(map(pd.read_csv, _qcd_csv_files))
+        _qcd_raw = pd.read_csv(
+            '/eos/user/l/lian/diHiggs/data/ppTo4b_2MEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+        #'/Users/flywire/Desktop/sci/dihiggsMLProject/data/qcd_2M_training.csv'
+            )
+        _qcd_raw['isSignal'] = 0
+        
+        
+        _hh_raw = pd.read_csv(
+            '/eos/user/l/lian/diHiggs/data/pp2hh4b_500kEvents_0PU_v2-05__top4inPt-4tags-10jets_combined_csv.csv'
+            #'/Users/flywire/Desktop/sci/dihiggsMLProject/higgsReconstruction/diHiggs_reco/dihiggs_outputDataForLearning_diHiggs_reco.csv'
+            #'/home/btannenw/Desktop/ML/dihiggsMLProject/data/pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets/dihiggs_outputDataForLearning_pp2hh4b_CMSPhaseII_0PU_top4Tags_store8jets.csv'
+            )
+        #_hh_raw = pd.read_csv('../samples_500k/dihiggs_outputDataForLearning.csv')
+        _hh_raw['isSignal'] = 1
+        _hh_raw = _hh_raw.drop('isMatchable', 1)
+        
+        
+        #_qcd_raw.drop("jet*)
+        #_hh_raw = _hh_raw[:len(_qcd_raw)]
+        
+        return _hh_raw, _qcd_raw
 
 def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
     
@@ -320,9 +353,8 @@ def returnTestSamplesSplitIntoSignalAndBackground(_test_data, _test_labels):
             _test_signal_labels = [ _signalEncoding[0] for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 1]
             _test_bkg_labels    = [ _signalEncoding[0] for _eventVectors,_signalEncoding in zip(_test_data, _test_labels) if _signalEncoding[0] == 0]
 
-            
+        
     return _test_signal_data.copy(), _test_signal_labels.copy(), _test_bkg_data.copy(), _test_bkg_labels.copy()
-
 
 def makeHistoryPlots(_history, _curves=['loss'], _modelName='', savePlot=False, saveDir=''):
     """ make history curves for user-specified training parameters"""
@@ -458,4 +490,3 @@ def overlayROCCurves(data, savePlot=False, saveDir=''):
 
 
     return 
-

@@ -3,7 +3,6 @@
 ##  Date:    April 16, 2020
 ##  Purpose: Class to load data, create user-defined CNN model, train CNN, evaluate performance, and save the trained model
 
-
 # To-Do
 #X) CM of phi for image?
 #X) bb-center a la photography talk
@@ -18,7 +17,6 @@
 #10) try those things you wanted
 
 
-
 # Import the needed libraries
 import os
 import tensorflow as tf
@@ -29,18 +27,19 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import h5py as h5
 
-
 from keras.models import Sequential, Model
-from keras.layers import Dense, Activation, Dropout, BatchNormalization, Flatten, Conv2D, MaxPooling2D, Input
+from keras.layers import Dense, Activation, Dropout, BatchNormalization, Flatten, Conv2D, MaxPooling2D, AveragePooling2D, Input
 from keras.layers.merge import concatenate
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.regularizers import l2, l1
 from keras.initializers import Constant
-from sklearn.metrics import confusion_matrix, roc_curve, auc
+from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
+
+#tf.logging.set_verbosity(tf.logging.FATAL) #where last text can be any of DEBUG, INFO, WARN, ERROR, or FATAL
 
 seed = 7
 np.random.seed(seed)
@@ -61,7 +60,7 @@ def auc( y_true, y_pred ) :
 
 class cnnModelClass:
     
-    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _useClassWeights=False, _extraVariables=[], _topDir='', _loadModelDir=''):
+    def __init__ (self, _modelName, _cnnLayers, _ffnnLayers, _hhFile, _qcdFile, _imageCollection, _datasetPercentage, _loadSavedModel = False, _testRun = False, _condorRun=False, _useClassWeights=False, _extraVariables=[], _topDir='', _loadModelDir=''):
         self.modelName   = _modelName
         self.topDir = str(_topDir + '/' + _modelName + '/') if _topDir != '' else (_modelName + '/') 
         if not os.path.exists(self.topDir):
@@ -73,17 +72,19 @@ class cnnModelClass:
         self.qcdFile = _qcdFile
         self.imageCollection = _imageCollection
         self.isTestRun = _testRun
+        self.isCondorRun = _condorRun
         self.useClassWeights = _useClassWeights
         self.extraVariables = _extraVariables
         self.loadSavedModel = _loadSavedModel
         self.loadModelDir = str(_topDir + '/' + _loadModelName + '/') if _loadModelDir != '' else self.topDir
         self.datasetPercentage = _datasetPercentage
-        
+        self.runUNet = False #FIXME                
+
         # Class Defaults
         self.transparency = 0.88  # transparency of plots
         self.testingFraction = self.datasetPercentage/4
-        self.nEventsForTesting = 1000
-        
+        self.nEventsForTesting = 1000        
+
         # Global Variables 
         self.hh = []
         self.qcd = []
@@ -98,6 +99,8 @@ class cnnModelClass:
         self.extraVariables_test  = []
         self.labels_test  = []
         self.predictions_test  = []
+        self.nQCD = -1
+        self.nDihiggs = -1
 
 
         print("+++ Initialized {}".format(self.modelName) )
@@ -112,11 +115,14 @@ class cnnModelClass:
       self.processInputs_v2() 
       #self.processInputs() 
 
-      if len(self.extraVariables) == 0:
-            self.makeCNN()
+      if self.runUNet:
+            self.makeUNet() 
       else:
-            self.makeCNNPlus()
-
+            if len(self.extraVariables) == 0:
+                  self.makeCNN()
+            else:
+                  self.makeCNNPlus()
+      
       if not self.loadSavedModel:
             self.trainCNN()
       
@@ -230,17 +236,24 @@ class cnnModelClass:
       self.qcd = [] # index == 0 for images, 1-X are extra variables
       
       if '.h5' in self.hhFile:     # ** A. User passed single .h5 file
-            self.loadSingleFile_v2( self.hhFile, isSignal = True)
+            _singleFile = self.hhFile.replace('/eos/uscms', 'root://cmseos.fnal.gov/') if self.isCondorRun else self.hhFile
+            self.loadSingleFile_v2( _singeFile, isSignal = True)
       elif '.txt' in self.hhFile:  # ** B. User passed .txt with list of .h5 files
             self.loadMultipleFiles_v2( self.hhFile, isSignal = True)
                 
       if '.h5' in self.qcdFile:    # ** C. User single .h5 file
-            self.loadSingleFile_v2( self.qcdFile, isSignal = False)
+            _singleFile = self.qcdFile.replace('/eos/uscms', 'root://cmseos.fnal.gov/') if self.isCondorRun else self.qcdFile
+            self.loadSingleFile_v2( _singleFile, isSignal = False)
       elif '.txt' in self.qcdFile: # ** D. User passed .txt with list of .h5 files
             self.loadMultipleFiles_v2( self.qcdFile, isSignal = False)
             
       print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
-
+      maxEventsPerSample = min( len(self.hh), len(self.qcd))
+      self.hh = self.hh[:maxEventsPerSample]
+      self.qcd = self.qcd[:maxEventsPerSample]
+      self.nDihiggs = len( self.hh )
+      self.nQCD = len( self.qcd )
+      print("+ {} hh images, {} qcd images".format( len(self.hh), len(self.qcd)))
 
       # Make combined image dataset
       all_images = np.concatenate ( (self.hh['compositeImages'], self.qcd['compositeImages']) )
@@ -367,6 +380,8 @@ class cnnModelClass:
                       _fileList = f.readlines()
                       for _file in _fileList:
                             _singleFile = _file.split('\n')[0]
+                            _singleFile = _singleFile.replace('/eos/uscms', 'root://cmseos.fnal.gov/') if self.isCondorRun else _singleFile
+
                             print( "Opening file: {} ...".format(_singleFile))
                             self.loadSingleFile_v2( _singleFile, isSignal)          
           else:
@@ -729,8 +744,161 @@ class cnnModelClass:
         return
 
 
+    def makeUNet(self, loadBestModel = False):
+        """ create U-Net that makes runs over multiple uses additional inputs after convolution and return compiled model"""
+        print("+++ Make CNN")
+
+        # *** -1. Make directory if needed
+        if (not os.path.exists(self.topDir)):
+              print( "Specified output directory ({0}) DNE.\nCREATING NOW".format(self.topDir))
+              os.system("mkdir {0}".format(self.topDir))
+
+        # *** 0. Set general options
+        # ** A. General layer options. probably should allow for top-line flexibility here
+        l2_reg = tf.keras.regularizers.l2(1e-4)
+        conv_kwargs = dict(
+            activation="relu",
+            #kernel_initializer=tf.keras.initializers.lecun_normal(),
+            #kernel_regularizer=l2_reg,
+        )
+        dense_kwargs = conv_kwargs
+
+        # ** B. Intial output bias. probably should allow for top-line flexibility here
+        initial_bias = np.log([len(self.hh[0])/len(self.qcd[0])])
+        output_bias = Constant(initial_bias)
+        print("+ initial bias: {}".format(initial_bias))
+        
+        # ** C. Create class weights for weighted training. probably should allow for top-line flexibility here
+        # Scaling by total/2 helps keep the loss to a similar magnitude. The sum of the weights of all examples stays the same.
+        if self.useClassWeights:
+            total = len(self.qcd[0]) + len(self.hh[0])
+            weight_for_0 = (1 / len(self.qcd[0]))*(total)/2.0 
+            weight_for_1 = (1 / len(self.hh[0]))*(total)/2.0
+            print('+ Weight for class 0: {:.2f}'.format(weight_for_0))
+            print('+ Weight for class 1: {:.2f}'.format(weight_for_1))
+            self.class_weights = {0: weight_for_0, 1: weight_for_1}        
+
+        # *** 1. Define model
+        pixelWidth = self.images_train.shape[1]
+        #inputShape = self.images_train.shape[1:] if self.images_train.shape[-1] != pixelWidth else (self.images_train.shape[1:] + (1,))
+        inputShape = self.images_train.shape[1:]
+        print('++ input_shape (image) for CNN: {}'.format(inputShape) )
+
+        # ** A. "Usual" Convolutional component
+        firstLayer = True
+        convInput  = Input(shape=inputShape)
+        convNN = []
+        for layer in self.cnnLayers:
+            # layer format example: [ "Conv2D", [16, (3,3)]] or ["MaxPooling2D", [(3, 3)]]
+            if layer[0] == "Conv2D" and firstLayer:
+                  convNN = Conv2D( layer[1][0], layer[1][1], **conv_kwargs)(convInput)
+                  firstLayer = False
+            elif layer[0] == "Conv2D" and not firstLayer:
+                  convNN = Conv2D( layer[1][0], layer[1][1], **conv_kwargs)(convNN)
+            elif layer[0] == "MaxPooling2D":
+                  convNN = MaxPooling2D( layer[1][0])(convNN)
+
+        # ** B. Flatten model for input to feed-forward network
+        flattenInput = Input(shape=convNN.shape)
+        convNN = Flatten()( convNN )
+        
+        # ** C1. Parallel convolutional components (the "U")
+        wholeImageUinput = Input(shape=inputShape)
+        #wholeImageU = Conv2D( 16, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
+        #wholeImageU = Conv2D( 1, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
+        #wholeImageU = Conv2D( 3, (pixelWidth, pixelWidth), **conv_kwargs)(convInput)
+        
+        #wholeImageU = MaxPooling2D( (pixelWidth, pixelWidth))(convInput)
+        wholeImageU = AveragePooling2D( (pixelWidth, pixelWidth))(convInput)
+        wholeImageU = Flatten()( wholeImageU )
+
+        # ** C2. Parallel convolutional components (the "U")
+        #halfSize = int( np.ceil( pixelWidth/2) )
+        #quadrantImageU = Conv2D( 4, (halfSize, halfSize), **conv_kwargs)(convInput)
+        ##quadrantImageU = Conv2D( 16, (halfSize, halfSize), **conv_kwargs)(convInput)
+        #quadrantImageU = Flatten()( quadrantImageU )
+
+        # ** D. Concatenate extra+CNN as input for FC layers
+        concatenated = concatenate([convNN, wholeImageU])
+        #concatenated = concatenate([convNN, wholeImageU, quadrantImageU])
+
+
+        # ** E. Feed-forward components
+        ffNN = []
+        firstLayer = True
+        for layer in self.ffnnLayers:
+            # layer format example: [ "Dense", [64]] or ["BatchNormalization"], ["Dropout", [0.2]]
+            if layer[0] == "Dense":
+                  if firstLayer:
+                        ffNN = Dense( layer[1][0], **dense_kwargs)(concatenated)
+                        firstLayer = False
+                  else:
+                        ffNN = Dense( layer[1][0], **dense_kwargs)(ffNN)
+            elif layer[0] == "BatchNormalization":
+                  ffNN = BatchNormalization()(ffNN)
+            elif layer[0] == "Dropout":
+                  ffNN = Dropout( layer[1][0])(ffNN)
+
+        # ** F. Output layer
+        ffNN = Dense(1, activation='sigmoid', bias_initializer=output_bias)(ffNN)
+
+        # ** G. Put it all together
+        #_model = Model([convInput, extraInput], ffNN)
+        _model = Model(convInput, ffNN)
+      
+        # ** H. Print summary
+        print("++ Model Summary\n {}".format(_model.summary()))
+
+        # ** I. Define metrics and compile
+        metrics = [ tf.keras.metrics.categorical_accuracy,
+                    'accuracy',
+                    #tf.keras.metrics.AUC(name='auc'),
+                    auc,
+        ]
+
+        _model.compile(loss='binary_crossentropy',
+                           optimizer='adam',
+                           metrics=metrics,
+        )
+
+        # ** J. Load model if appropriate
+        if self.loadSavedModel or loadBestModel:
+            local_dir = os.path.join(self.loadModelDir, "models")
+            modelfile = os.path.join(local_dir, self.modelName)+'.hdf5'
+            print("++ loading model from {}".format(modelfile))
+            if not os.path.isfile(modelfile):
+                print("--- ERROR, Modelfile {} NOT FOUND. No weights initialized".format(modefile))
+                return
+        
+            loadShape = np.empty( (1,) + inputShape )
+
+            _model.predict( [loadShape] )
+            _model.load_weights(modelfile)
+            self.best_model = _model
+        else:
+            self.model = _model
+
+            
+        return
+
+
     def trainCNN(self):
       print("+++ Train CNN" )
+      
+      # *** 0. Set GPU limit
+      #gpus = tf.config.experimental.list_physical_devices('GPU')
+      #if gpus:
+      #      # Restrict TensorFlow to only allocate 2GB of memory on the first GPU
+      #      try:
+      #            tf.config.experimental.set_virtual_device_configuration(
+      #                  gpus[0],
+      #                  [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)]
+      #                 )
+      #            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+      #            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+      #      except RuntimeError as e:
+      #            # Virtual devices must be set before GPUs have been initialized
+      #            print(e)
 
       # *** 1. Define output directory
       model_dir = os.path.join(self.topDir, "", "models")
@@ -794,10 +962,13 @@ class cnnModelClass:
         
         # *** 0. Use best/loaded model for evaluation
         if not self.loadSavedModel:
-              if len(self.extraVariables) == 0:
-                    self.makeCNN( loadBestModel = True )
+              if self.runUNet:
+                    self.makeUNet( loadBestModel= True)
               else:
-                    self.makeCNNPlus( loadBestModel=True)
+                    if len(self.extraVariables) == 0:
+                          self.makeCNN( loadBestModel = True )
+                    else:
+                          self.makeCNNPlus( loadBestModel=True)
 
                     
 
@@ -849,7 +1020,9 @@ class cnnModelClass:
         print("++ Output Score Plot")
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh, 'qcd_pred':pred_qcd}
-        sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction )
+        #sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction )
+#sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, nDihiggs=self.nDihiggs, nQCD=self.nQCD )       
+        sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction, nDihiggs=self.nDihiggs, nQCD=self.nQCD )
       
         # *** 6. Get best cut value for CNN assuming some minimal amount of signal
         #pred_hh_sig = [x[0] for x in pred_hh.copy()]

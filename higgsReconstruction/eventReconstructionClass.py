@@ -977,7 +977,7 @@ class eventReconstruction:
         self.returnNumberAndListOfJetIndicesPassingCuts( _iEvent )
         self.HT = self.l_scalarHT[_iEvent][0]
 
-        if(self.saveJetConstituents==True):
+        if self.saveJetConstituents:
             self.outputJetCons( _iEvent )
 
         self.HTPerEvent.append( self.HT )
@@ -1110,7 +1110,9 @@ class eventReconstruction:
             self.l_missingET_met  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.MET']).tolist()
             self.l_missingET_phi  = uproot.tree.TBranchMethods.array(self.delphesFile['MissingET']['MissingET.Phi']).tolist()
             self.l_scalarHT       = uproot.tree.TBranchMethods.array(self.delphesFile['ScalarHT']['ScalarHT.HT']).tolist()
-            self.jetConsCand      = self.getJetConsCand()
+            if self.saveJetConstituents:
+                self.jetConsCand      = self.getJetConsCand()
+
             print("Finished loading branches...")
 
         elif '.csv' in self.inputFileName:
