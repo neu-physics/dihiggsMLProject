@@ -50,6 +50,8 @@ history = autoencoder.fit(qcd_train_set, qcd_train_set, validation_data=(qcd_val
 
 autoencoder.summary()
 AE_utils.epoch_history(history)
-qcdlosshistory, higgslosshistory = AE_utils.AE_statistics(autoencoder, qcd_train_set, qcd_test_set, higgs_test_set)
+qcdlosshistory, higgslosshistory = AE_utils.AE_statistics(autoencoder, qcd_train_set, qcd_test_set, higgs_test_set, logarithmic=False)
+qcdlosshistory = AE_utils.get_outliers(qcdlosshistory, m=5, keep_outliers=1)
+higgslosshistory = AE_utils.get_outliers(higgslosshistory, m=5, keep_outliers=1)
 AE_utils.significacne(qcdlosshistory, higgslosshistory, testing_fraction)
-AE_utils.loss_plot(qcdlosshistory, higgslosshistory, remove_Outliers=False)
+AE_utils.loss_plot(qcdlosshistory, higgslosshistory, remove_Outliers=True)
