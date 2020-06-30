@@ -198,16 +198,7 @@ def epoch_history(history):
     plt.show()
 
 
-def remove_outliers(input_set, m=5):
-    data = np.array(input_set)
-    d = np.abs(data - np.median(data))
-    mdev = np.median(d)
-    s = d / mdev if mdev else 0.
-
-    return data[s < m]
-
-
-def AE_statistics(model, qcd_train, qcd_test, higgs_test): #Get loss distributions
+def AE_statistics(model, qcd_train, qcd_test, higgs_test, logarithmic=False): #Get loss distributions
     if len(qcd_train) >= len(higgs_test):
         n = qcd_train.sample(n=len(qcd_test)) #Comparison set
         m = qcd_train.sample(n=len(higgs_test)) #Comparison set
@@ -229,7 +220,32 @@ def AE_statistics(model, qcd_train, qcd_test, higgs_test): #Get loss distributio
         model.evaluate(m, qcd_train, batch_size=1, callbacks=[loss_history])  # Evaluate the model on signal
         higgslosshistory = loss_history.losses
 
+    #Converts losshistory lists to log scale
+    if logarithmic == True:
+        qcdlosshistory = np.log(qcdlosshistory)
+        higgslosshistory = np.log(higgslosshistory)
+        print("Converted loss values to logarithmic numbers")
+    else:
+        pass
+
     return qcdlosshistory, higgslosshistory
+
+
+def get_outliers(input_set, m=5, keep_outliers=0):
+    data = np.array(input_set)
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d / mdev if mdev else 0.
+
+    if keep_outliers == 0:
+        print("Removed outliers from dataset, shape = " + str(data[s < m].shape))
+        return data[s < m]
+    elif keep_outliers == 1:
+        print("Removed values that weren't outliers from dataset, shape = " + str(data[s > m].shape))
+        return data[s > m]
+    else:
+        print('Error: keep_outliers should = 0 or 1. 0 to return values < outlier, 1 to return values > outlier.')
+        sys.exit()
 
 
 def Pca(dfhiggs, vars):
@@ -258,14 +274,13 @@ def significacne(qcdlosshistory, higgslosshistory, testing_fraction): #Plot pred
 def loss_plot(qcdlosshistory, higgslosshistory, remove_Outliers=True):
     #Remove outliers to fix the graph
     if remove_Outliers == True:
-        qcdlossnew = remove_outliers(qcdlosshistory)
-        higgslossnew = remove_outliers(higgslosshistory)
+        qcdlossnew = get_outliers(qcdlosshistory)
+        higgslossnew = get_outliers(higgslosshistory)
     else:
         qcdlossnew = qcdlosshistory
         higgslossnew = higgslosshistory
-    plt.hist(qcdlossnew, color='orange', alpha=0.4, density=True, label='Background', bins=1000)
-    plt.hist(higgslossnew, color='cornflowerblue', alpha=0.4, density=True, label='Signal', bins=1000)
-    plt.xscale('log')
+    plt.hist(qcdlossnew, color='orange', alpha=0.4, density=True, label='Background', bins=100)
+    plt.hist(higgslossnew, color='cornflowerblue', alpha=0.4, density=True, label='Signal', bins=100)
     plt.xlabel('Loss')
     plt.ylabel('Proportion')
     plt.suptitle('QCD vs Signal Loss Plot', fontweight='bold')
