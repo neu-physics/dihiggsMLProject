@@ -2,7 +2,7 @@
 
 INSTALLPATH=$PWD/HEPTools/pythia8/
 MG5PATH=$PWD/
-PYTHIA8DATA=$MG5PATH/HEPTools/pythia8/share/Pythia8/xmldoc
+export PYTHIA8DATA=$MG5PATH/HEPTools/pythia8/share/Pythia8/xmldoc
 
 echo " >> Download PYTHIA8"
 wget http://home.thep.lu.se/~torbjorn/pythia8/pythia82.tgz
@@ -15,7 +15,7 @@ cd pythia8244
 
 echo " >> Configure PYTHIA8"
 make distclean
-./configure --prefix=$INSTALLPATH --with-hepmc2=$MG5PATH/HEPTools/hepmc --with-hepmc2-include=$MG5PATH/HEPTools/hepmc/include --with-gzip=$MG5PATH/HEPTools/zlib --with-lhapdf5=$MG5PATH/HEPTools/lhapdf5 --with-boost=/cvmfs/sft.cern.ch/lcg/releases/Boost/1.62.0-c1b05/x86_64-slc6-gcc62-opt --cxx-common='-ldl -fPIC -lstdc++ -DHEPMC2HACK'
+./configure --prefix=$INSTALLPATH --with-hepmc2=$MG5PATH/HEPTools/hepmc --with-hepmc2-include=$MG5PATH/HEPTools/hepmc/include --with-gzip=$MG5PATH/HEPTools/zlib --with-lhapdf6=$MG5PATH/HEPTools/lhapdf6 --with-boost=/cvmfs/sft.cern.ch/lcg/releases/Boost/1.62.0-c1b05/x86_64-slc6-gcc62-opt --cxx-common='-ldl -fPIC -lstdc++ -DHEPMC2HACK'
 
 # Small fix for Pythia8.2 version. This is harmless to subsequent versions
 unamestr=`uname`

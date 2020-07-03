@@ -1,0 +1,1 @@
+python submitSampleToCondor.py --outputDir ppTo4b_1M_200PU_eventReconstruction_06-08-20 --inputTXTFile ppTo4b_1M_200PU_delphesFileList.txt

@@ -46,8 +46,10 @@ class eventReconstruction:
         
         # Jet constituents information
         self.jetConsCand_Names = ["EFlowTrack", "EFlowNeutralHadron", "EFlowPhoton"]
-        self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
-        self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type"]
+        #self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
+        #self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type"]
+        self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P", "D0", "DZ"]
+        self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type", "D0", "D0"]
         self.outputJetConsInfo = []
 
         self.cutflowDict = { 'All':0, 'Matchable':0, 'Fully Matched':0, '>= 1 Pair Matched':0}
@@ -1012,12 +1014,21 @@ class eventReconstruction:
             #print(obj)
             obj_values = []
             for key in self.jetConsCand_Keys:
+
+                # skip impact parameter if object is not track
+                if ((key=="D0" or key=="DZ") and obj != "EFlowTrack"): 
+                    continue
+
+                # change momentum/energy key depending on track/calo
                 if(not obj=="EFlowTrack"):
                     if( key=="PT"):
                         key = "ET"
                     elif(key=="P"):
                         key = "E"
+
+                # push file values to object holder
                 obj_values.append(self.delphesFile[obj]["{0}.{1}".format(obj,key)].array())
+
             Cons_list.append(obj_values)
         return Cons_list
 
@@ -1043,6 +1054,14 @@ class eventReconstruction:
                         )
                     )
                     ConsList[-1].property['type'] = iObj_t # 0 == EFlowTrack, 1 == EFlowNeutralHadron, 2 == EFlowPhoton
+                    if iObj_t == 0: # EFlowTrack
+                        d0_array = self.jetConsCand[iObj_t][5][_iEvent][mask]
+                        dz_array = self.jetConsCand[iObj_t][6][_iEvent][mask]
+                        ConsList[-1].property['D0'] = d0_array[iObj]   #D0, transverse impact parameter
+                        ConsList[-1].property['DZ'] = dz_array[iObj]   #DZ, longitudinal impact parameter
+                    else:
+                        ConsList[-1].property['D0'] = -99   #D0, transverse impact parameter
+                        ConsList[-1].property['DZ'] = -99   #DZ, longitudinal impact parameter
 
                 #print("UID: {0}  PT: {1}  Eta: {2}  Phi: {3}".format(self.jetConsCand[iObj_t][0][_iEvent][iObj],self.jetConsCand[iObj_t][1][_iEvent][iObj],self.jetConsCand[iObj_t][2][_iEvent][iObj],self.jetConsCand[iObj_t][3][_iEvent][iObj]))
         #self.JetConsList.append(ConsList)
