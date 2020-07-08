@@ -25,7 +25,7 @@ from JetCons import JetCons
 
 class imageMaker:
 
-    def __init__ (self, _datasetName, _inputFileList, _isSignal=None, _pixelWidth=15, _isTestRun=False):
+    def __init__ (self, _datasetName, _inputFileList, _isSignal=None, _pixelWidth=31, _isTestRun=False, _addImpactVariables=False):
         self.datasetName = _datasetName
         self.inputFileList = []
         
@@ -40,10 +40,13 @@ class imageMaker:
             self.isSignal = True if 'pp2hh4b' in self.datasetName else False
 
         self.isTestRun = _isTestRun
+        self.addImpactVariables = _addImpactVariables
+
         if os.path.isdir( self.datasetName )==False:
             os.mkdir( self.datasetName )
         self.pixelWidth = _pixelWidth
-            
+
+        
         ## Objects per file
         # input file
         self.allEvents = []
@@ -89,14 +92,10 @@ class imageMaker:
             self.rotateAndBoostConstituents()
 
             # *** 3. Make images
-            #self.makeEventImages()
-            self.makeEventImages_v2()
-
+            self.makeEventImages()
 
         # *** 4. Save images from all processed files
-        #self.saveFilesToH5()
-        self.saveFilesToH5_v2()
-
+        self.saveFilesToH5()
         
         return
     
@@ -109,7 +108,10 @@ class imageMaker:
         _allTracks_phi   = [ track_phi for event in self.tracks for track_phi in event[0] ]
         _allTracks_rap   = [ track_rap for event in self.tracks for track_rap in event[1] ]
         _allTracks_pt    = [ track_pt for event in self.tracks for track_pt in event[2] ]
-
+        if self.addImpactParameters:
+            _allTracks_d0    = [ track_d0 for event in self.tracks for track_d0 in event[4] ]
+            _allTracks_dz    = [ track_dz for event in self.tracks for track_dz in event[5] ]
+        
         _allNHadrons_phi = [ nHadron_phi for event in self.nHadrons for nHadron_phi in event[0] ]
         _allNHadrons_rap = [ nHadron_rap for event in self.nHadrons for nHadron_rap in event[1] ]
         _allNHadrons_pt  = [ nHadron_pt for event in self.nHadrons for nHadron_pt in event[2] ]
@@ -176,10 +178,14 @@ class imageMaker:
         """ Make some event-by-event image plots and also do translation to unified frame """
 
         self.final_tracks   = [ [], [], [], [] ] # phi, rap, pt, image 
+        if self.addImpactVariables:
+            self.final_tracks   = [ [], [], [], [], [], [] ] # phi, rap, pt, image, d0, dz
         self.final_nHadrons = [ [], [], [], [] ]
         self.final_photons  = [ [], [], [], [] ]
 
         _final_tracks   = [ [], [], [] ] # phi, rap, pt
+        if self.addImpactVariables:
+            _final_tracks   = [ [], [], [], [], [] ] # phi, rap, pt, d0, dz
         _final_nHadrons = [ [], [], [] ]
         _final_photons  = [ [], [], [] ]
 
@@ -194,6 +200,11 @@ class imageMaker:
             _tracks_rap = [ track_rap for track_rap in self.tracks[iEvent][1] ]
             _tracks_pt  = [ track_pt for track_pt in self.tracks[iEvent][2] ]
             _tracks_tlv = [ track_tlv for track_tlv in self.tracks[iEvent][3] ]
+            if self.addImpactParameters:
+                _tracks_d0    = [ track_d0 for event in self.tracks for track_d0 in event[4] ]
+                _tracks_dz    = [ track_dz for event in self.tracks for track_dz in event[5] ]
+
+            # FIXME: 7-7-20, stopped edits here. pick up tomorrow. need to propagate d0/dz in image making. also re-run event reconstruction after fixing typo in jetConst output keys
 
             _nHadrons_phi = [ nHadron_phi for nHadron_phi in self.nHadrons[iEvent][0] ]
             _nHadrons_rap = [ nHadron_rap for nHadron_rap in self.nHadrons[iEvent][1] ]
@@ -342,74 +353,6 @@ class imageMaker:
         # *** Set options for saving (bins, range, etc)
         _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
         _compositeImages = []
-        _compositeImages_cat = [ [], [], [], [], [], [], [], [], [], [], [], [], []] #<4j all tag, >=4j tag incl, >=4j 0tag, >=4j 1tag, >=4j 2tag, >=4j 3tag, >=4j 4tag, >=4j >4tag, HT > 150, HT >350, HT > 450, odd nJets, even nJets
-        for iEvent in range(0, len(self.final_tracks[0])):
-
-            # *** Loosely keep track of events
-            if 100*((iEvent+1)/len(self.allEvents))%10 == 0:
-                print('{}% Imaged'.format(100*((iEvent+1)/len(self.allEvents))))
-
-            # *** Make event images
-            _tracks_img = self.function_hist2d( self.final_tracks[0][iEvent], self.final_tracks[1][iEvent], self.final_tracks[2][iEvent], **_imgOpts)
-            _nHadrons_img = self.function_hist2d( self.final_nHadrons[0][iEvent], self.final_nHadrons[1][iEvent], self.final_nHadrons[2][iEvent], **_imgOpts)
-            _photons_img = self.function_hist2d( self.final_photons[0][iEvent], self.final_photons[1][iEvent], self.final_photons[2][iEvent], **_imgOpts)
-            _composite_img = np.stack( (_tracks_img, _nHadrons_img, _photons_img), axis = -1)
-            
-            self.final_tracks[3].append( _tracks_img )
-            self.final_nHadrons[3].append( _nHadrons_img )
-            self.final_photons[3].append( _photons_img )
-
-            # *** Make composite image (15, 15, 3)
-            _compositeImages.append( _composite_img )
-            # images split by njets and nBtags
-            if self.nJets[iEvent]< 4:
-                _compositeImages_cat[0].append( _composite_img )
-            else: # >= 4jets
-                _compositeImages_cat[1].append( _composite_img )
-                if self.nBTags[iEvent] == 0:
-                    _compositeImages_cat[2].append( _composite_img )
-                elif self.nBTags[iEvent] == 1:
-                    _compositeImages_cat[3].append( _composite_img )
-                elif self.nBTags[iEvent] == 2:
-                    _compositeImages_cat[4].append( _composite_img )
-                elif self.nBTags[iEvent] == 3:
-                    _compositeImages_cat[5].append( _composite_img )
-                elif self.nBTags[iEvent] == 4:
-                    _compositeImages_cat[6].append( _composite_img )
-                else: # >= 4jets, >4tags
-                    _compositeImages_cat[7].append( _composite_img )
-            # HT-based
-            if self.HT[iEvent] > 150:
-                _compositeImages_cat[8].append( _composite_img )
-            if self.HT[iEvent] > 300:
-                _compositeImages_cat[9].append( _composite_img )
-            if self.HT[iEvent] > 450:
-                _compositeImages_cat[10].append( _composite_img )
-            # images split by odd/even njets (check on hypothesis of peak at origin)
-            if self.nJets[iEvent]%2 != 0: 
-                _compositeImages_cat[11].append( _composite_img )
-            else:
-                _compositeImages_cat[12].append( _composite_img )
-        # *** Append to global list
-        self.final_images[0] += self.final_tracks[3]
-        self.final_images[1] += self.final_nHadrons[3]
-        self.final_images[2] += self.final_photons[3]
-        self.final_images[3] += _compositeImages
-        self.final_eventQuantities[0] += self.nJets
-        self.final_eventQuantities[1] += self.nBTags
-        self.final_eventQuantities[2] += self.HT
-        for iCategory in range(0, len(_compositeImages_cat)):
-            self.final_images_cat[iCategory] += _compositeImages_cat[iCategory]
-
-        return
-
-
-    def makeEventImages_v2(self):
-        """ construct the event images """
-
-        # *** Set options for saving (bins, range, etc)
-        _imgOpts = dict( _nbins_phi=self.pixelWidth, _range_phi=[-1*np.pi-0.5, np.pi+0.5], _nbins_rap=self.pixelWidth, _range_rap=[-3.0, 3.0] )
-        _compositeImages = []
 
         for iEvent in range(0, len(self.final_tracks[0])):
 
@@ -545,11 +488,19 @@ class imageMaker:
         elif _consLabel == 'Photons':
             _consCode = 2
     
-        # *** 1. Get the phi/pt/rapidity from the stored constituents
+        # *** 1a. Get the phi/pt/rapidity from the stored constituents
         _rap = [ constituent[5] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
         _phi = [ constituent[3] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
         _pt  = [ constituent[1] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
-        
+
+        # *** 1b. Get track impact parameter data if requested
+        _d0 = []
+        _dz = []
+        if _consLabel == 'Tracks' and self.addImpactParameters:
+            _d0  = [ constituent[7] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
+            _dz  = [ constituent[8] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
+
+
         # *** 2. Get TLorentzVectors
         _tlv = [JetCons(jc[0], jc[1], jc[2], jc[3], jc[4]).cons_LVec for jc in _event['Constituents']  if jc[6]==_consCode ]
         #v_all = TLorentzVector.PtEtaPhiMassLorentzVector(0,0,0,0)
@@ -558,6 +509,8 @@ class imageMaker:
         #print("pt: {}, eta: {}, phi: {}, E: {}".format(v_all.pt, v_all.eta, v_all.phi, v_all.E))
         
         _all = [_phi, _rap, _pt, _tlv]
+        if self.addImpactParameters:
+            _all = [_phi, _rap, _pt, _tlv, _d0, _dz]
         
         return _all
     
@@ -576,44 +529,8 @@ class imageMaker:
         
         return H
 
+
     def saveFilesToH5(self):
-        """ save all image files in hdf5 format"""
-
-        _imgDir = self.datasetName+'/images/'
-        if os.path.isdir( _imgDir )==False:
-            os.mkdir( _imgDir )
-
-        if len(self.final_images[0]) != len(self.final_eventQuantities[0]):
-            print("event quantity mismatch with number of images!!! imgs:{} quantities:{}".format(len(self.final_images[0]) , len(self.final_eventQuantities[0])))
-                
-        hf = h5.File( '{}/{}_allImages.h5'.format(_imgDir, self.datasetName), 'w')
-        hf.create_dataset('trackImgs', data=self.final_images[0], compression="gzip", compression_opts=3)
-        hf.create_dataset('nHadronImgs', data=self.final_images[1], compression="gzip", compression_opts=3)
-        hf.create_dataset('photonImgs', data=self.final_images[2], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs', data=self.final_images[3], compression="gzip", compression_opts=3)
-
-        hf.create_dataset('compositeImgs_lessThan4j', data=self.final_images_cat[0], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4jInclb', data=self.final_images_cat[1], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4j0b', data=self.final_images_cat[2], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4j1b', data=self.final_images_cat[3], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4j2b', data=self.final_images_cat[4], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4j3b', data=self.final_images_cat[5], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4j4b', data=self.final_images_cat[6], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_ge4jge4b', data=self.final_images_cat[7], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_HT150', data=self.final_images_cat[8], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_HT300', data=self.final_images_cat[9], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_HT450', data=self.final_images_cat[10], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_oddNjets', data=self.final_images_cat[11], compression="gzip", compression_opts=3)
-        hf.create_dataset('compositeImgs_evenNjets', data=self.final_images_cat[12], compression="gzip", compression_opts=3)
-
-        hf.create_dataset('nJets', data = self.final_eventQuantities[0], compression="gzip", compression_opts=3)
-        hf.create_dataset('nBTags', data = self.final_eventQuantities[1], compression="gzip", compression_opts=3)
-        hf.create_dataset('HT', data= self.final_eventQuantities[2], compression="gzip", compression_opts=3)
-        hf.close()
-
-        return
-
-    def saveFilesToH5_v2(self):
         """ save all image files in hdf5 format"""
 
         _imgDir = self.datasetName+'/images/'
