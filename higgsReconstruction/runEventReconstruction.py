@@ -4,7 +4,7 @@
 #Date: December 13th, 2019
 #Purpose: Script to run event reconstruction on condor-split .root output files
 
-import os,sys, argparse
+import os, sys, argparse
 import pandas as pd
 import glob
 
@@ -40,6 +40,9 @@ if(args.outputTag is None):
 else:
     print ('-- Setting outputTag = {0}'.format(args.outputTag))
 
+# ** C. Set condor flag
+isCondor = True if "_CONDOR_SCRATCH_DIR" in os.environ else False
+
 
 # *** 1. Create dummy instance of reco class
 #eventReconstructor = eventReconstruction('dummy', 'dummy', True)
@@ -56,41 +59,47 @@ for infile in open(args.inputTXTFile, 'r'):
 
     # ** A. Make some useful strings
     infile = infile.split('\n')[0]
-    runSplit = infile.split('/')[-5]
-    outName = args.outputTag + '_' + str(runSplit)
-    workDir = '/'.join(infile.split('/')[:-4])
-    isDihiggsSignal = True if 'pp2hh4b' in args.inputTXTFile else False
+    outName = args.outputTag
+    #isDihiggsSignal = True if 'pp2hh4b' in args.inputTXTFile else False
+    isDihiggsSignal = True if 'pp2hh4b' in infile else False
+    if not isCondor:
+        runSplit = infile.split('/')[-5]
+        outName = args.outputTag + '_' + str(runSplit)
+        workDir = '/'.join(infile.split('/')[:-4])
 
 
-    os.system('cd {}'.format(workDir))
+        os.system('cd {}'.format(workDir))
 
     # ** B. Run recontstruction
     eventReconstructor = eventReconstruction(outName, infile, isDihiggsSignal)
     eventReconstructor.setConsiderFirstNjetsInPT(4)
     eventReconstructor.setNJetsToStore(10)
-    eventReconstructor.setRequireNTags(4)
+    eventReconstructor.setRequireNTags(2)
+    eventReconstructor.setSaveJetConstituents(True)
     eventReconstructor.runReconstruction()
 
-    print(workDir, outName)
+    #print(workDir, outName)
 
-
+    
     # ** C. Move output to runSplit directory for .csv organization
-    os.system('cp -r {} {}'.format(outName, workDir))
-    os.system('rm -rf {}'.format(outName))
+    if not isCondor:
+        os.system('cp -r {} {}'.format(outName, workDir))
+        os.system('rm -rf {}'.format(outName))
     
     #passedFirstFile = True
 
 
 # *** 3. Create combined .csv file?
-print("######## Creating combined {} csv file".format(args.outputTag))
-# ** A. Get list of all csv files
-extension = 'csv'
-sampleName = args.outputTag.split('__')[0]
-all_filenames = [i for i in glob.glob('{}/*/{}*/*.{}'.format(sampleName, args.outputTag, extension))]
+if not isCondor:
+    print("######## Creating combined {} csv file".format(args.outputTag))
+    # ** A. Get list of all csv files
+    extension = 'csv'
+    sampleName = args.outputTag.split('__')[0]
+    all_filenames = [i for i in glob.glob('{}/*/{}*/*.{}'.format(sampleName, args.outputTag, extension))]
 
-# ** B. Combine all files in the list
-combined_csv = pd.concat([pd.read_csv(f) for f in all_filenames ])
+    # ** B. Combine all files in the list
+    combined_csv = pd.concat([pd.read_csv(f) for f in all_filenames ])
 
-# **C. Export to csv
-combined_csv.to_csv( "{}_combined_csv.csv".format(args.outputTag), index=False, encoding='utf-8-sig')
-
+    # **C. Export to csv
+    combined_csv.to_csv( "{}_combined_csv.csv".format(args.outputTag), index=False, encoding='utf-8-sig')
+    

@@ -1,0 +1,3 @@
+python3.6 cnnWrapper.py --outputDir test_lpc --imageCollection compositeImgs --inputHHFile condor/imageList_pp2hh4b_1M_pix15_phiCM_jetTagCat_r2.txt --inputQCDFile condor/imageList_ppTo4b_4M_pix15_phiCM_jetTagCat_r5.txt
+
+python3.6 cnnMultiWrapper.py --outputDir test_multi --inputHHFile condor/imageList_pp2hh4b_r2_80percent.txt --inputQCDFile condor/imageList_ppTo4b_r5_80percent.txt

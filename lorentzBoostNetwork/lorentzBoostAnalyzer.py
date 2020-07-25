@@ -16,16 +16,18 @@ from sklearn.model_selection import StratifiedKFold
 from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, ReduceLROnPlateau
 from keras.regularizers import l1, l2
 from keras.backend import manual_variable_initialization 
-import json
-
 manual_variable_initialization(True)
+
+import json
+import multiprocessing as mp
+from time import sleep
 
 from lbn import LBN, LBNLayer
 
 # Fix random seed for reproducibility
 seed = 7
 np.random.seed(seed)
-tf.random.set_seed(seed)
+#tf.random.set_seed(seed)
 
 import sys, os
 sys.path.insert(0, '/home/btannenw/Desktop/ML/dihiggsMLProject/')
@@ -187,7 +189,7 @@ class lorentzBoostAnalyzer:
         return _model
 
 
-    def fit_model( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100, modelName=''):
+    def fit_model( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100, modelName='', verbose=1):
            
         # *** 0. Create model
         _model = self.createModelLBN(model_hyperparams)
@@ -231,10 +233,11 @@ class lorentzBoostAnalyzer:
         # *** 4. Fit!!
         print('++ Begin model training\n')
         self.history = _model.fit(data[0], data[1],
-                              validation_data=validation_data,
-                              epochs=epochs,
-                              batch_size=batch_size,
-                              callbacks=fit_callbacks,
+                                  validation_data=validation_data,
+                                  epochs=epochs,
+                                  batch_size=batch_size,
+                                  callbacks=fit_callbacks,
+                                  verbose=verbose,
         )
         self.model = _model
     
@@ -251,6 +254,39 @@ class lorentzBoostAnalyzer:
         self.load_model( modelName, best_model=True )
 
         #return self.model, self.history
+
+
+    def fit_swarm( self, epochs=10, batch_size=512, model_hyperparams={}, patience=100):
+        """ some fitting with particle swarm"""
+
+        # *** 0. Figure out what step we're on ... I worry about this when running in parallel
+        model_dir = self.getModelDir('')
+        _modelStem = self.modelName + '_step'
+        _previousRuns = []
+        _currentProcess = mp.current_process()
+        _swarmID = int(str(_currentProcess).split('-')[1].split(',')[0])
+
+        print(_currentProcess, _currentProcess.pid, _swarmID)
+
+        for d, s, f in os.walk(model_dir):
+            for dd in d.split('\n'):
+                if _modelStem in dd:
+                    _previousRuns.append(int(dd.split(_modelStem)[1]))
+
+        _nextRun = (max(_previousRuns) if len(_previousRuns)>0 else 0) + _swarmID
+        
+        # *** 1. Fit Xth iteration of model
+        modelName = '{}_step{}'.format(self.modelName, _nextRun)
+        self.fit_model(epochs=epochs, batch_size=batch_size, model_hyperparams=model_hyperparams, patience=patience, modelName = modelName, verbose=0)
+
+        # *** 2. Evaluate best_model and return AUC?
+        evals = self.best_model.evaluate(self.testVectorsByEvent, self.testLabelsByEvent, verbose=0) # reutnrs list of [loss, accuracy, auc]
+
+        # ** 3. Make Test model
+        sig, cut, err = self.test_model( self.best_model, modelName=modelName, savePlots=True )
+
+        
+        return (1-evals[2]) # FIXME... figure out how to get PSO to try to maximize instead of minimize
 
 
     def load_model(self, modelDirectory, best_model=False):
@@ -291,13 +327,18 @@ class lorentzBoostAnalyzer:
         pred_qcd = _model.predict(np.array(qcd_data_test))
 
         # *** 3. Make plot of prediction results
+        print("++ Plotting test sample prediction results")
         _nBins = 40
         predictionResults = {'hh_pred':pred_hh[:,0], 'qcd_pred':pred_qcd[:,0]}
         compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'LBN Signal Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=savePlots, saveDir=model_dir, writeSignificance=True, _testingFraction=self.testingFraction)
 
-        # *** 4. Get best cut value for ff-NN assuming some minimal amount of signal
-        print("++ Calculating best significance")
+        # *** 4. Make ROC curve
+        print("++ Making ROC curve")
+        testPredsByEvent = _model.predict(self.testVectorsByEvent.copy())
+        makeEfficiencyCurves( dict(label="LBN+DNN", labels=self.testLabelsByEvent, prediction=testPredsByEvent, color="blue"), saveDir=model_dir, _modelName=modelName, savePlot=savePlots)
 
+        # *** 5. Get best cut value for model assuming some minimal amount of signal
+        print("++ Calculating best significance")
         sig, cut, err = returnBestCutValue('ff-NN', pred_hh[:,0].copy(), pred_qcd[:,0].copy(), _minBackground=200, _testingFraction=self.testingFraction)
 
         return sig, cut, err

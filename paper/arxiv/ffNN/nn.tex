@@ -1,0 +1,14 @@
+\label{sec:NN}
+Fully connected or feed-forward neural networks (ffNN or NN) have a long history in high energy physics. One of the earliest applications of this type of approach was in a search for top quark production using the CDF experiment at the Tevatron. The fundamental element of a feed-forward neural network is called a `layer`, and these layers connect some input variables to an predicted outcome which can be evaluated against some truth value. The hidden layers between input and output vectors are composed of a series of trainable activation functions and weights that allow the network to identify and iteratively combine important features of the input space. A vector of relevant physics-level information (e.g. mass of two highest \pt jets, angle between measured objects, etc) is constructed for each event, and these vectors are then `fed forward` through multiple layers in order to predict whether the event comes from a signal dihiggs process or a background QCD process.
+
+The neural network framework used for dihiggs classification is composed of an input layer of twelve variables, two hidden layers with 175 and 90 nodes respectively, and finally a two-dimensional output layer. A schematic flowchart of the network structure is shown in Figure~\ref{fig:nn}. The input variables were selected by calculating the KS-score between signal and background distributions and then keeping the variables with the largest one-dimensional separation. The distributions for all variables used in training are shown in Figure~\ref{fig:inputVariables}.
+
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {ffNN/figures/flowchart_ffNN.png}
+\caption{Structure of the feed-forward neural network. The input variables are fed through two fully connected dense layers to classify events. One dropout layer and one batch normalization layer help mitigate over-fitting during training.}
+  \label{fig:nn}
+\end{center}
+\end{figure}
+
+The hyperparameters of the feed-forward NN ($N_{nodes}$ in each hidden layer, learning rate, regularization, etc) were optimized by something more rigorous than trial and error. Describe the process semi in-depth and talk about what effect different parameters had on the overall performance.

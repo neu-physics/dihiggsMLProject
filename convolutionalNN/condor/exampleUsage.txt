@@ -1,0 +1,2 @@
+python submitSampleToCondor_imageMaker.py --outputDir images_pp2hh4b_1M_pix51_phiCentroid_jetTagCat_v6 --inputTXTFile pp2hh4b_1M_v3_pklFileList.txt --nOutputFiles 20
+python submitSampleToCondor_imageMaker.py --outputDir images_ppTo4b_4M_pix51_phiCentroid_jetTagCat_v6 --inputTXTFile ppTo4b_4M_v3_pklFileList.txt --nOutputFiles 80

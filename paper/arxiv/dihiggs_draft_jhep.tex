@@ -1,0 +1,109 @@
+\documentclass[a4paper,11pt]{article}
+\pdfoutput=1 % if your are submitting a pdflatex (i.e. if you have
+             % images in pdf, png or jpg format)
+
+\usepackage{jheppub} % for details on the use of the package, please
+                     % see the JHEP-author-manual
+
+\usepackage[T1]{fontenc} % if needed
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{xspace} %load xspace
+
+\usepackage{bookmark} % helps booksmarks look better in PDF
+%hypersetup option 'breaklinks' is reguired for line wrapping in the table of contents during latex compilation, and can be removed if you use pdflatex
+\hypersetup{colorlinks=true,linkcolor=blue, breaklinks} %internal links in blue, citations in green
+%\hypersetup{colorlinks=true,linkcolor=black, citecolor=black, breaklinks} %all links in black
+\usepackage[all]{hypcap}
+
+%Use of natbib is STRONGLY recommended to sort and compress your references within each citation
+%With these options, natbib will convert i.e. [5,3,9,4] to [3-5, 9]
+%\usepackage[sort&compress]{natbib}
+%\usepackage[nottoc,numbib]{tocbibind}
+%\usepackage{cite}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Custom Commands/Environments %%%%%%%%%%%%%%%%%%%%%%%%%
+% Put your favorite custom commands here
+\include{latex/shortcuts} %load list of shortcuts shortcuts.tex
+\newcommand{\tab}{\hspace*{2em}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Start paper %%%%%%%%%%%%%%%%%%%%%%%%%
+\title{\boldmath Learning About Machine Learning With Dihiggs Production at the LHC}
+
+%% %simple case: 2 authors, same institution
+%% \author{A. Uthor}
+%% \author{and A. Nother Author}
+%% \affiliation{Institution,\\Address, Country}
+
+% more complex case: 4 authors, 3 institutions, 2 footnotes
+\author[a]{B. Tannenwald}
+\author[a]{C. Neu,}
+\author[a]{A. Li,}
+\author[a]{G. Buehlmann,}
+\author[a]{A. Cuddeback,}
+\author[a]{R. Parvatam,}
+\author[a]{C. Thompson}
+
+
+% The "\note" macro will give a warning: "Ignoring empty anchor..."
+% you can safely ignore it.
+
+\affiliation[a]{University of Virginia, 248 McCormick Road, Charlottesville, VA, USA}
+
+% e-mail addresses: one for each author, in the same order as the authors
+\emailAdd{benjamin.tannenwald@cern.sh}
+%\emailAdd{christopher.neud@cern.sh}
+%\emailAdd{al8fm@virginia.edu}
+%\emailAdd{gmb8nj@virginia.edu}
+%\emailAdd{atc4yk@virginia.edu}
+%\emailAdd{rp5cf@virginia.edu}
+%\emailAdd{crt9ag@virginia.edu}
+
+
+\input{abstract.tex}
+
+
+\begin{document} 
+\maketitle
+\flushbottom
+
+%%% Main body of paper
+\input{intro.tex}
+
+%\input{defaultContent_1.tex}
+%\input{defaultContent_2.tex}
+
+\input{dihiggsPhys/dihiggs_physics.tex}
+
+\input{supervised_ml.tex}
+
+\input{semi-supervised_ml.tex}
+
+\input{results.tex}
+
+\input{conclusions.tex}
+
+
+% Extra stuff
+\input{acknowledgements.tex}
+
+%\backmatter
+% We use BIBTeX for the bibliography---you don't have to
+%\input{bibliography.tex}
+
+% \nocite{*} % To display all refs, even uncited refs (useful when editting)
+%\bibliography
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{bibliography}
+\bibliographystyle{ieeetr}
+%\bibliographystyle{unsrt} % use your favorite BIBTeX style
+
+% APPENDICES IF NEEDED
+%\input{appendices/appendixA.tex}
+
+
+\end{document}
