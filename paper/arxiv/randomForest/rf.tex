@@ -1,0 +1,21 @@
+\label{sec:RandomForest}
+
+\subsubsection{Reconstruction \& Selected Variables}
+From the ‘closestDijetMasses’ reconstruction algorithm 17 of some of the most important physical variables for dihiggs reconstruction were used for training. These variables were also highly distinguishable from QCD when comparing diHiggs to QCD.
+
+\subsubsection{Forest Structure}
+The RF is a machine learning architecture that distinguishes signals from backgrounds via a large forest of independent decision trees which make decisions individually based on variables and data. After the forest finishes testing, the majority of the trees’ prediction outputs is the forest’s output (Fig. 1). There are many parameters to tune for RFs such as number of trees, max tree depth, and variable sub samples, all of these parameter values will be showcased later.
+
+Data preprocessing had to be done on the Delphes data before using it to train the RF. The dihiggs and QCD data were labeled separately, appended together, scaled, and then split into training and testing data 70\%/30\% respectively. Once the data has been preprocessed, the data is trained on the RF using XGBoost’s ‘XGBRFClassifier’ function. After which predictions are made on the testing data to generate an array of signal predictions for a S/B best cut. Below is a list of all of the parameter values used for the RF.
+
+\subsubsection{Results}
+Using the aforementioned parameters, the RF predicted on the testing set generating the following array of predictions (Fig.~\ref{fig:rf_score}). Using a $S/\sqrt{B}$ best cut > 0.81, the significance of the RF was 2.17$\pm$0.22.
+
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {randomForest/figures/rf_score.png}
+\caption{Output score on the testing dataset with the fully trained random forest classifier.}
+  \label{fig:rf_score}
+\end{center}
+\end{figure}
+

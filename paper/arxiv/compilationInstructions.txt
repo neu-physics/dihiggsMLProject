@@ -1,0 +1,4 @@
+pdflatex dihiggs_draft_jhep.tex
+bibtex dihiggs_draft_jhep
+bibtex dihiggs_draft_jhep
+pdflatex dihiggs_draft_jhep.tex
