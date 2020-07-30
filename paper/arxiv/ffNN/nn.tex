@@ -1,2 +1,43 @@
 \label{sec:NN}
-There's a lot to talk about here
+Fully connected or feed-forward neural networks (ffNN or NN) have a long history in high energy physics. One of the earliest applications of this type of approach was in a search for top quark production using the CDF experiment at the Tevatron. The fundamental element of a feed-forward neural network is called a `layer`, and these layers connect some input variables to an predicted outcome which can be evaluated against some truth value. The hidden layers between input and output vectors are composed of a series of trainable activation functions and weights that allow the network to identify and iteratively combine important features of the input space. A vector of relevant physics-level information (e.g. mass of two highest \pt jets, angle between measured objects, etc) is constructed for each event, and these vectors are then `fed forward` through multiple layers in order to predict whether the event comes from a signal dihiggs process or a background QCD process.
+
+The neural network framework used for dihiggs classification is composed of an input layer of twelve variables, two hidden layers with 175 and 90 nodes respectively, and finally a two-dimensional output layer. A schematic flowchart of the network structure is shown in Figure~\ref{fig:nn}. The input variables were selected by calculating the KS-score between signal and background distributions and then keeping the variables with the largest one-dimensional separation. The distributions for all variables used in training are shown in Figure~\ref{fig:inputVariables}.
+
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {ffNN/figures/flowchart_ffNN.png}
+\caption{Structure of the feed-forward neural network. The input variables are fed through two fully connected dense layers to classify events. One dropout layer and one batch normalization layer help mitigate over-fitting during training.}
+  \label{fig:nn}
+\end{center}
+\end{figure}
+
+The hyperparameters of the feed-forward NN ($N_{nodes}$ in each hidden layer, learning rate, regularization, etc) were optimized by something more rigorous than trial and error. Describe the process semi in-depth and talk about what effect different parameters had on the overall performance.
+
+\subsubsection{Variable Selection}
+The Kolmogorov-Smirnov (KS) test is a statistical test applied to two different datasets, i.e. signal and background. The test will return a statistical value that represents the variance between the two datasets in question, the greater the value the more likely that the two datasets are from different sources. This test can be done for each physical variable in the signal/background data. Afterwards information will be returned on the best variables to use to discriminate signal from background during training. Using the KS test method, the 22 best variables for the ‘equalDijetMass’ reconstruction algorithm were chosen to be the input variables for the feed forward neural network (FFNN). 
+
+\subsubsection{Network Structure}
+Data preprocessing had to be done on the Delphes data before using it to train the FFNN. The ‘equalDijetMass’ dihiggs and QCD datasets were labeled accordingly, appended together, and scaled before being split into training, validation, and testing data. The dataset was first randomly split 80\%/20\% into training and testing data respectively. Then the training set was randomly split 80\%/20\% into training and validation data respectively. If necessary, various combinations of nJets and nBTags could be filtered out of the data sets during preprocessing for testing, something that was tested and will be showcased later.
+
+The FFNN was built on Keras’s ‘Sequential’ function using ‘Dense’ layers. The FFNN consisted of an input layer, two hidden layers, and an output layer. The input layer node size was the length of the input dimension space--22. The first hidden layer contained 175 nodes and an L2 kernel regularizer = 10-4. In between the first and second hidden layers were 2 overfitting prevention functions provided by Keras--‘BatchNormalization’ and ‘Dropout’ (dropout = 0.2). The second hidden layer contained 90 nodes with no kernel regularizer. Both hidden layers used ‘relu’ activation. The output layer contained 1 node per usual and used a ‘sigmoid’ activation. The sequential model was compiled using the ‘adam’ optimizer along with the ‘binary\_crossentropy’ loss method. Finally, the model was fit on the training data along with the validation data for 100 epochs. The ‘EarlyStopping’ function was used to shorten training time by stopping training after the validation accuracy didn’t increase by 0.001 for 10 epochs. 
+
+\subsubsection{Results}
+The model trained on the data for 25 epochs before prematurely stopping, reaching a training and validation accuracy near 0.8 (Fig.~\ref{fig:acc_nn}). Testing the FFNN model on the 20\% testing data generated an array of predictions (Fig.~\ref{fig:score_nn}). Using a $S/\sqrt{B}$ best cut on the predictions resulted in a significance = 1.9$\pm$0.09. 
+
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {ffNN/figures/acc_ffnn}
+\caption{Accuracy of the feed-forward network in trainig and testing datasets as a function of training epoch.}
+  \label{fig:acc_nn}
+\end{center}
+\end{figure}
+
+\begin{figure}[!h] 
+\begin{center}
+\includegraphics*[width=0.75\textwidth] {ffNN/figures/score_ffnn}
+\caption{Signal prediction of the independent testing sets after training of the feed-forward network.}
+  \label{fig:score_nn}
+\end{center}
+\end{figure}
+
+Changing the requirements for the number of nJets or nBTags per event during preprocessing did not improve the significance of the FFNN.

@@ -5,6 +5,12 @@
 
 *.root
 *.png
+*.toc
+*.log
+*.out
+*.aux
+*.tar.gz
+test*
 *.pyc
 __pycache__/
 .ipynb_checkpoints/
