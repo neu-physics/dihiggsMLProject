@@ -204,7 +204,7 @@ class imageMaker:
                 _tracks_d0    = [ track_d0 for event in self.tracks for track_d0 in event[4] ]
                 _tracks_dz    = [ track_dz for event in self.tracks for track_dz in event[5] ]
 
-            # FIXME: 7-7-20, stopped edits here. pick up tomorrow. need to propagate d0/dz in image making. also re-run event reconstruction after fixing typo in jetConst output keys
+            # FIXME: 7-7-20, stopped edits here. pick up tomorrow. need to propagate d0/dz in image making
 
             _nHadrons_phi = [ nHadron_phi for nHadron_phi in self.nHadrons[iEvent][0] ]
             _nHadrons_rap = [ nHadron_rap for nHadron_rap in self.nHadrons[iEvent][1] ]
@@ -227,6 +227,12 @@ class imageMaker:
             
             _totalWeights = _tracks_sumWeights + _photons_sumWeights + _nHadrons_sumWeights
             
+            if self.addImpactParameters:
+                _tracks_d0_weights    = [ 1/sum(_tracks_d0)   * x for x in _tracks_d0 ]
+                _tracks_dz_weights    = [ 1/sum(_tracks_dz)   * x for x in _tracks_dz ]
+                _tracks_d0_sumWeights = sum( _tracks_d0_weights )
+                _tracks_dz_sumWeights = sum( _tracks_dz_weights )
+                
             # *** Make total 4-vector for CM (center-of-mass)
             v_all         = TLorentzVector.PtEtaPhiMassLorentzVector(0,0,0,0)
             for tlv in _tracks_tlv:
@@ -300,6 +306,11 @@ class imageMaker:
             _final_tracks[0] += _tracks_phi_rot
             _final_tracks[1] += _tracks_rap_boost
             _final_tracks[2] += _tracks_weights
+            if self.addImpactParameters:
+                self.final_tracks[3].append( _tracks_d0_weights)
+                self.final_tracks[4].append( _tracks_dz_weights)
+                _final_tracks[3] += _tracks_d0_weights
+                _final_tracks[4] += _tracks_dz_weights
 
             self.final_nHadrons[0].append( _nHadrons_phi_rot)
             self.final_nHadrons[1].append( _nHadrons_rap_boost)
@@ -337,6 +348,8 @@ class imageMaker:
                 self.makeSimplePlots( [_tracks_phi_rot, _tracks_rap_boost, _tracks_pt], 'Tracks', True, 'SingleEvent{}_phiRotationRapBoost'.format(iEvent) )
                 self.makeSimplePlots( [_nHadrons_phi_rot, _nHadrons_rap_boost, _nHadrons_pt], 'Neutral Hadrons', True, 'SingleEvent{}_phiRotationRapBoost'.format(iEvent) )
                 self.makeSimplePlots( [_photons_phi_rot, _photons_rap_boost, _photons_pt], 'Photons', True, 'SingleEvent{}_phiRotationRapBoost'.format(iEvent) )
+                if self.addImpactParameters:
+                    self.makeSimplePlots( [_tracks_phi_rot, _tracks_rap_boost, _tracks_pt], 'Tracks', True, 'SingleEvent{}_phiRotationRapBoost'.format(iEvent) )
 
 
         # *** Make some globally averaged plots after processing
