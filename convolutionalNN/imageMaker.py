@@ -25,7 +25,7 @@ from JetCons import JetCons
 
 class imageMaker:
 
-    def __init__ (self, _datasetName, _inputFileList, _isSignal=None, _pixelWidth=31, _isTestRun=False, _addImpactVariables=False):
+    def __init__ (self, _datasetName, _inputFileList, isSignal=None, pixelWidth=31, testRun=False, addImpactParameters=False):
         self.datasetName = _datasetName
         self.inputFileList = []
         
@@ -35,16 +35,16 @@ class imageMaker:
         else:
             print("!!! Input file {} DNE !!!".format(_inputFileList) )
 
-        self.isSignal = _isSignal 
+        self.isSignal = isSignal 
         if self.isSignal == None:
             self.isSignal = True if 'pp2hh4b' in self.datasetName else False
 
-        self.isTestRun = _isTestRun
-        self.addImpactVariables = _addImpactVariables
+        self.isTestRun = testRun
+        self.addImpactParameters = addImpactParameters
 
         if os.path.isdir( self.datasetName )==False:
             os.mkdir( self.datasetName )
-        self.pixelWidth = _pixelWidth
+        self.pixelWidth = pixelWidth
 
         
         ## Objects per file
@@ -66,8 +66,7 @@ class imageMaker:
 
         ## Objects per dataset
         # images for saving
-        self.final_images = [ [], [], [], [], [] ] # tracks, nHadrons, photons, composite (all three), composite >=4j
-        self.final_images_cat = [ [], [], [], [], [], [], [], [], [], [], [], [], [] ] # (all composite), <4j alltag, >=4j =0b, >=4j =1b, >=4j =2b, >=4j =3b, >=4j =4b, >=4j >=4b, HT > 150, HT > 350, HT > 450, odd nJets, even nJets
+        self.final_images = [ [], [], [], [], [] ] # tracks, nHadrons, photons, composite (all three), composite (tracks, ECAL, HCAL, track d0, track dz)
         self.final_eventQuantities = [ [], [], [] ] # nJets, nBTags, HT
 
 
@@ -178,13 +177,13 @@ class imageMaker:
         """ Make some event-by-event image plots and also do translation to unified frame """
 
         self.final_tracks   = [ [], [], [], [] ] # phi, rap, pt, image 
-        if self.addImpactVariables:
+        if self.addImpactParameters:
             self.final_tracks   = [ [], [], [], [], [], [] ] # phi, rap, pt, image, d0, dz
         self.final_nHadrons = [ [], [], [], [] ]
         self.final_photons  = [ [], [], [], [] ]
 
         _final_tracks   = [ [], [], [] ] # phi, rap, pt
-        if self.addImpactVariables:
+        if self.addImpactParameters:
             _final_tracks   = [ [], [], [], [], [] ] # phi, rap, pt, d0, dz
         _final_nHadrons = [ [], [], [] ]
         _final_photons  = [ [], [], [] ]
@@ -201,8 +200,8 @@ class imageMaker:
             _tracks_pt  = [ track_pt for track_pt in self.tracks[iEvent][2] ]
             _tracks_tlv = [ track_tlv for track_tlv in self.tracks[iEvent][3] ]
             if self.addImpactParameters:
-                _tracks_d0    = [ track_d0 for event in self.tracks for track_d0 in event[4] ]
-                _tracks_dz    = [ track_dz for event in self.tracks for track_dz in event[5] ]
+                _tracks_d0    = [ track_d0 for track_d0 in self.tracks[iEvent][4] ]
+                _tracks_dz    = [ track_dz for track_dz in self.tracks[iEvent][5] ]
 
             # FIXME: 7-7-20, stopped edits here. pick up tomorrow. need to propagate d0/dz in image making
 
@@ -307,10 +306,10 @@ class imageMaker:
             _final_tracks[1] += _tracks_rap_boost
             _final_tracks[2] += _tracks_weights
             if self.addImpactParameters:
-                self.final_tracks[3].append( _tracks_d0_weights)
-                self.final_tracks[4].append( _tracks_dz_weights)
-                _final_tracks[3] += _tracks_d0_weights
-                _final_tracks[4] += _tracks_dz_weights
+                self.final_tracks[4].append( _tracks_d0_weights)
+                self.final_tracks[5].append( _tracks_dz_weights)
+                _final_tracks[4] += _tracks_d0_weights
+                _final_tracks[5] += _tracks_dz_weights
 
             self.final_nHadrons[0].append( _nHadrons_phi_rot)
             self.final_nHadrons[1].append( _nHadrons_rap_boost)
@@ -378,12 +377,18 @@ class imageMaker:
             _nHadrons_img = self.function_hist2d( self.final_nHadrons[0][iEvent], self.final_nHadrons[1][iEvent], self.final_nHadrons[2][iEvent], **_imgOpts)
             _photons_img = self.function_hist2d( self.final_photons[0][iEvent], self.final_photons[1][iEvent], self.final_photons[2][iEvent], **_imgOpts)
             _composite_img = np.stack( (_tracks_img, _nHadrons_img, _photons_img), axis = -1)
-            
+
+            if self.addImpactParameters:
+                _tracks_d0_img = self.function_hist2d( self.final_tracks[0][iEvent], self.final_tracks[1][iEvent], self.final_tracks[4][iEvent], **_imgOpts)
+                _tracks_dz_img = self.function_hist2d( self.final_tracks[0][iEvent], self.final_tracks[1][iEvent], self.final_tracks[5][iEvent], **_imgOpts)
+                _composite_img = np.stack( (_tracks_img, _nHadrons_img, _photons_img, _tracks_d0_img, _tracks_dz_img), axis = -1)
+                
+
             self.final_tracks[3].append( _tracks_img )
             self.final_nHadrons[3].append( _nHadrons_img )
             self.final_photons[3].append( _photons_img )
 
-            # *** Make composite image (15, 15, 3)
+            # *** Make composite image (self.pixelWidth, self.pixelWidth, 3 or 5)
             _compositeImages.append( _composite_img )
         
         # *** Append to global list
@@ -391,6 +396,7 @@ class imageMaker:
         self.final_images[1] += self.final_nHadrons[3]
         self.final_images[2] += self.final_photons[3]
         self.final_images[3] += _compositeImages
+
         self.final_eventQuantities[0] += self.nJets
         self.final_eventQuantities[1] += self.nBTags
         self.final_eventQuantities[2] += self.HT
@@ -559,7 +565,10 @@ class imageMaker:
         dt_HT=np.dtype('float64')
         dt_nJets=np.dtype('uint8')
         dt_nBTags=np.dtype('uint8')
-        dt_compImage=np.dtype('(15,15,3)f')
+        dt_compImage=np.dtype('({0},{0},3)f'.format(self.pixelWidth))
+        if self.addImpactParameters:
+            dt_compImage=np.dtype('({0},{0},5)f'.format(self.pixelWidth))
+
         dt=np.dtype( [('compositeImages',dt_compImage), ('HT',dt_HT), ('nJets',dt_nJets), ('nBTags',dt_nBTags)] )
         dt_2=np.dtype( [('HT',dt_HT), ('nJets',dt_nJets), ('nBTags',dt_nBTags)] )
 

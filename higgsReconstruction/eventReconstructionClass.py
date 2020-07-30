@@ -49,7 +49,7 @@ class eventReconstruction:
         #self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P"]
         #self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type"]
         self.jetConsCand_Keys = ["fUniqueID", "PT", "Eta", "Phi","P", "D0", "DZ"]
-        self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type", "D0", "DZx"]
+        self.jetConsOutputKeys = ["UID", "PT", "Eta", "Phi", "E", "rapidity", "type", "D0", "DZ"]
         self.outputJetConsInfo = []
 
         self.cutflowDict = { 'All':0, 'Matchable':0, 'Fully Matched':0, '>= 1 Pair Matched':0}

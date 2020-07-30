@@ -53,19 +53,22 @@ for iFile in splitFiles:
 
     # ** C. hadd if at user-specified cutoff
     elif len(mergeFiles)== args.nFilesPerMerge:
-        haddString = "hadd {}_merge{}.root {}".format( args.inputDir, iMerged, ' '.join(mergeFiles) )
+        haddString = "hadd {}/summedOutputs/{}_merge{}.root {}".format( args.inputDir, args.inputDir, iMerged, ' '.join(mergeFiles) )
         #print( haddString)
-        os.system( haddString )
+        #os.system( haddString )
         mergeFiles = []
         iMerged += 1
-        print( "Merged {} file(s)...".format(iMerged) )
+
 
     # ** D. idk
     else:
         print("~~~~~~~ no idea what happened")
 
 
-
+# *** 4. Catch remainder
+haddString = "hadd {}/summedOutputs/{}_merge{}.root {}".format( args.inputDir, args.inputDir, iMerged, ' '.join(mergeFiles) )
+os.system( haddString )
+print( "Merged {} file(s)...".format(iMerged) )
 
 
 
