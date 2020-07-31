@@ -184,7 +184,7 @@ class imageMaker:
 
         _final_tracks   = [ [], [], [] ] # phi, rap, pt
         if self.addImpactParameters:
-            _final_tracks   = [ [], [], [], [], [] ] # phi, rap, pt, d0, dz
+            _final_tracks   = [ [], [], [], [], [], [] ] # phi, rap, pt, tlv, d0, dz
         _final_nHadrons = [ [], [], [] ]
         _final_photons  = [ [], [], [] ]
 
@@ -200,10 +200,8 @@ class imageMaker:
             _tracks_pt  = [ track_pt for track_pt in self.tracks[iEvent][2] ]
             _tracks_tlv = [ track_tlv for track_tlv in self.tracks[iEvent][3] ]
             if self.addImpactParameters:
-                _tracks_d0    = [ track_d0 for track_d0 in self.tracks[iEvent][4] ]
-                _tracks_dz    = [ track_dz for track_dz in self.tracks[iEvent][5] ]
-
-            # FIXME: 7-7-20, stopped edits here. pick up tomorrow. need to propagate d0/dz in image making
+                _tracks_d0    = [ abs(track_d0) for track_d0 in self.tracks[iEvent][4] ]
+                _tracks_dz    = [ abs(track_dz) for track_dz in self.tracks[iEvent][5] ]
 
             _nHadrons_phi = [ nHadron_phi for nHadron_phi in self.nHadrons[iEvent][0] ]
             _nHadrons_rap = [ nHadron_rap for nHadron_rap in self.nHadrons[iEvent][1] ]
@@ -231,6 +229,7 @@ class imageMaker:
                 _tracks_dz_weights    = [ 1/sum(_tracks_dz)   * x for x in _tracks_dz ]
                 _tracks_d0_sumWeights = sum( _tracks_d0_weights )
                 _tracks_dz_sumWeights = sum( _tracks_dz_weights )
+
                 
             # *** Make total 4-vector for CM (center-of-mass)
             v_all         = TLorentzVector.PtEtaPhiMassLorentzVector(0,0,0,0)
@@ -516,9 +515,12 @@ class imageMaker:
         _d0 = []
         _dz = []
         if _consLabel == 'Tracks' and self.addImpactParameters:
-            _d0  = [ constituent[7] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
-            _dz  = [ constituent[8] for constituent in _event['Constituents'] if constituent[6]==_consCode ]
+            # some tiny min values so tracks with 0 impact parameter don't completely disappear. this is random choice and should probably be studied
+            minD0 = 1e-5 
+            minDZ = 1e-1
 
+            _d0  = [ max(abs(constituent[7]), minD0) for constituent in _event['Constituents'] if constituent[6]==_consCode ]
+            _dz  = [ max(abs(constituent[8]), minDZ) for constituent in _event['Constituents'] if constituent[6]==_consCode ]
 
         # *** 2. Get TLorentzVectors
         _tlv = [JetCons(jc[0], jc[1], jc[2], jc[3], jc[4]).cons_LVec for jc in _event['Constituents']  if jc[6]==_consCode ]
