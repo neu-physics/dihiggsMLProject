@@ -25,7 +25,7 @@ from JetCons import JetCons
 
 class imageMaker:
 
-    def __init__ (self, _datasetName, _inputFileList, isSignal=None, pixelWidth=31, testRun=False, addImpactParameters=False):
+    def __init__ (self, _datasetName, _inputFileList, isSignal=None, pixelWidth=31, testRun=False, addImpactParameters=True):
         self.datasetName = _datasetName
         self.inputFileList = []
         
@@ -354,6 +354,8 @@ class imageMaker:
         self.makeSimplePlots( _final_tracks, 'Tracks', True, 'Final' )
         self.makeSimplePlots( _final_nHadrons, 'Neutral Hadrons', True, 'Final' )
         self.makeSimplePlots( _final_photons, 'Photons', True, 'Final')
+        self.makeSimplePlots( _final_tracks, 'Tracks', True, 'Final', impact='d0' )
+        self.makeSimplePlots( _final_tracks, 'Tracks', True, 'Final', impact='dz' )
                 
         return
     
@@ -434,10 +436,16 @@ class imageMaker:
         return
 
     
-    def returnPlotOpts(self, _consLabel ):
+    def returnPlotOpts(self, _consLabel, impact='' ):
         """ common function for returning plotting opts"""
 
-        track_plotOpts  = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Reds)
+        track_cm = plt.cm.Reds
+        if impact == 'd0':
+            track_cm = plt.cm.Purples
+        elif impact == 'dz':
+            track_cm = plt.cm.PuRd
+
+        track_plotOpts  = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=track_cm)
         photon_plotOpts = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Blues)
         nHad_plotOpts   = dict(bins=(self.pixelWidth, self.pixelWidth), range=[[-1*np.pi-0.5, np.pi+0.5],[-3.0, 3.0]], cmap=plt.cm.Greens)
 
@@ -451,7 +459,7 @@ class imageMaker:
 
         return _plotOpts
 
-    def makeSimplePlots(self, constituentList, consLabel='', _ptWeighted=False, stageLabel='Raw', nEventsToAverage=-1):
+    def makeSimplePlots(self, constituentList, consLabel='', _ptWeighted=False, stageLabel='Raw', nEventsToAverage=-1, impact=''):
         """ make plots"""
 
         _plotDir = self.datasetName+'/plots/'
@@ -462,14 +470,25 @@ class imageMaker:
         if "_CONDOR_SCRATCH_DIR" in os.environ:
             return
 
+        
         _plotOpts = self.returnPlotOpts( consLabel )
+        if impact !='':
+            _plotOpts = self.returnPlotOpts( consLabel, impact )
+
         _sampleLabel = 'Dihiggs' if self.isSignal else 'QCD'
         _weightLabel = 'Pt-Weighted' if _ptWeighted else 'Unweighted'
+        if impact!='':
+            _weightLabel = '{}-Weighted'.format(impact)
+
         _plotTitle   = '{} {} {} ({})'.format(stageLabel, _weightLabel, consLabel, _sampleLabel)
         
         _phi = constituentList[0]
         _rap = constituentList[1]
         _pt  = constituentList[2]
+        if impact=='d0':
+            _pt = constituentList[4]
+        elif impact=='dz':
+            _pt = constituentList[5]
         
         if nEventsToAverage>0:
             _pt = [ constituent/nEventsToAverage for constituent in _pt ]
