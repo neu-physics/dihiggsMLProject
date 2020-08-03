@@ -87,19 +87,22 @@
 
 
 % Extra stuff
-\input{acknowledgements.tex}
+%\input{acknowledgements.tex}
 
 %\backmatter
 % We use BIBTeX for the bibliography---you don't have to
 %\input{bibliography.tex}
 
-% \nocite{*} % To display all refs, even uncited refs (useful when editting)
+\nocite{*} % To display all refs, even uncited refs (useful when editting)
 %\bibliography
+
 \cleardoublepage
 \phantomsection
-\addcontentsline{toc}{chapter}{Bibliography}
-\bibliography{bibliography}
+
+%\addcontentsline{toc}{chapter}{Bibliography}
 \bibliographystyle{ieeetr}
+\bibliography{bibliography}
+
 %\bibliographystyle{unsrt} % use your favorite BIBTeX style
 
 % APPENDICES IF NEEDED

@@ -1,2 +1,11 @@
 \label{sec:BDT}
-talk about tress. Look into forests. Don't lose one for the other.
+Boosted Decision Trees (BDTs) have a long history in high energy physics and have been used since Ancient Age to identify a variety of signatures [CITATIONS NEEDED]. A decision tree functions by making a seriies of cuts (or decisions) that maximize the separation between signal and background events in a single dimension. Each cut produces a branch in the tree containing independent populations. The depth of three sets the number of decisions a tree will make, and a well-designed tree will have end-nodes that provide relatively pure classification of the inputs. Any series of cuts for identifying events will inevitably mis-classify some events, and there are many strategies for improving the results. A boosted decision tree attempts to improve the classification by creating a new set of data from the improperly classified events and training a new decision tree on these inputs. Each step of re-training with mis-classified events is called a \textit{boost}, and the total prediction for an eventis the weighted sum of predictions from the orignal tree and the \textit{boosted} trees where each sequential boost recieves a smaller weight in the sum.
+
+Something about the reconstruction method.
+
+There are many hyperparameters that define a BDT, and these were optimized. Table of hyperparamters considered or maybe just the hyperparameters selected. Actually probably just in-line.
+
+Say something about the clustering and how it was dumb and didn't do much. Also the PCA in the BDT and the PCA with clustering.
+
+Final results.
+
