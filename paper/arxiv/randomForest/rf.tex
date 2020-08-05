@@ -1,15 +1,7 @@
 \label{sec:RandomForest}
+Random Forest algorithms share a similar tree structure with BDTs, but they leverage ensembles of independent decision trees as opposed to iteratively improving the predictions of a single tree using mis-classified events. Each tree in a random forest is `grown` using a random sampling of input variables and training events. The randomness of the sampling ensures each tree yields a unique but correlated prediction compared to the other trees in the forest. The class prediction of the forest is the majority vote of the constituent trees. Tuning the hyperparameters of a random forest requires optimizing the number of trees in the forest, the sub-sampling used to produce each tree, as well as more familiar decision tree parameters like child depth. 
 
-\subsubsection{Reconstruction \& Selected Variables}
-From the ‘closestDijetMasses’ reconstruction algorithm 17 of some of the most important physical variables for dihiggs reconstruction were used for training. These variables were also highly distinguishable from QCD when comparing diHiggs to QCD.
-
-\subsubsection{Forest Structure}
-The RF is a machine learning architecture that distinguishes signals from backgrounds via a large forest of independent decision trees which make decisions individually based on variables and data. After the forest finishes testing, the majority of the trees’ prediction outputs is the forest’s output (Fig. 1). There are many parameters to tune for RFs such as number of trees, max tree depth, and variable sub samples, all of these parameter values will be showcased later.
-
-Data preprocessing had to be done on the Delphes data before using it to train the RF. The dihiggs and QCD data were labeled separately, appended together, scaled, and then split into training and testing data 70\%/30\% respectively. Once the data has been preprocessed, the data is trained on the RF using XGBoost’s ‘XGBRFClassifier’ function. After which predictions are made on the testing data to generate an array of signal predictions for a S/B best cut. Below is a list of all of the parameter values used for the RF.
-
-\subsubsection{Results}
-Using the aforementioned parameters, the RF predicted on the testing set generating the following array of predictions (Fig.~\ref{fig:rf_score}). Using a $S/\sqrt{B}$ best cut > 0.81, the significance of the RF was 2.17$\pm$0.22.
+The random forest trained for dihiggs classification uses the ‘closestDijetMassToHiggs’ reconstruction algorithm and samples from the top seventeen reconstructed kinematic and event-level variables. The input variables were selected as having the highest separability between dihiggs and QCD processes. The random forest was implemented using the 'XGBRFClassifier` functionality from xgboost~\cite{xgboost}. Detail the hyperparameters. Predictions were made on data fully independent from the training data, and the results are shown in Figure~\ref{fig:rf_score}
 
 \begin{figure}[!h] 
 \begin{center}
@@ -19,3 +11,4 @@ Using the aforementioned parameters, the RF predicted on the testing set generat
 \end{center}
 \end{figure}
 
+The best significance for the random forest approach is found to be $S/\sqrt{B}$ = 2.17$\pm$0.22 when requiring a prediction score > 0.81. 

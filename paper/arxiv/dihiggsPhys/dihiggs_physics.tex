@@ -27,15 +27,25 @@ We tried a lot of different methods to build dijet pairs for $hh$ reconstruction
 
 The first step in reconstructing the 4$b$ system is to reconstruct and select b-jet candidates. Jets are clustered using an anti-$k_T$ algorithm with a radius of R=0.4. To be selected for use in event reconstruction, a jet must have $\pt > 20$ GeV and an absolute value of $\mid\eta\mid < 2.5$. Delphes uses an internal $b$-tagging efficiency parameterization to predict whether jets are tagged, and an event is reconstructed only if at least 4 jets are $b$-tagged unless otherwise specified. The properties and kinematics of selected jets are shown in Fig~\ref{fig:jetInfo}. This strict requirement of having at least 4 $b$-tags in an event helps to reduce contributions from QCD and reduce the combinatoric ambiguity in event recontruction.
 
-\begin{figure}
-  \caption{Proeprties and kinematics of selected jets from QCD and dihiggs simulation.}
+\begin{figure}[ht!]
+  \begin{center}
+  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/nJets}} 
+  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/allJetPt}}\\
+  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/nBTags}}
+  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/missingET}} 
+  \caption{Event and jet properties and kinematics of events from QCD and dihiggs simulation. [THESE ARE PLACEHOLDER PLOTS.]}
   \label{fig:jetInfo}
+  \end{center}
 \end{figure}
 
 Once events with at least 4 $b$-tags are selected, there is a choice about how to reconstructed the dihiggs system. Several reconstruction methods were testedfor pairing b-jets to find an optimal algorithm for correctly pairing Higgs boson consituents, and two algorithms were selected for use in the following sections. The first iterates through all selected jets in an event and returns the two pairs with closest dijet masses ('equalDijetMass'), and the second returns the two jet pairs that minimize the difference between the candidate pairs and a higgs boson mass of 125 GeV ('closestDijetMassToHiggs'). Fig~\ref{fig:jetInfo} shows a selection of distributions describing the reconstructed dihiggs system for each algorithm. Unless otherwise specified, the 'equalDijetMass' algorithm is used for machine learning techniques that require reconstructed events.
 
-\begin{figure}
-  \caption{Proeprties and kinematics of selected jets from QCD and dihiggs simulation.}
+\begin{figure}[ht!]
+  \begin{center}
+  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/reconstructedQuantities/mh_pairJetsUsingSmallestDeltaR}} 
+  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/reconstructedQuantities/mh_pairJetsClosestToHiggs}}\\
+  \caption{Leading dijet mass using different reconstruction algorithms. Left plot shows mass when minimizing dijet angular separation, right plot shows mass when minimizing different between dijet mass and a Higgs mass of 125 GeV ('closestDijetMassToHiggs'). [PLACEHOLDER PLOTS]}
   \label{fig:eventQuantities}
+  \end{center}
 \end{figure}
 
