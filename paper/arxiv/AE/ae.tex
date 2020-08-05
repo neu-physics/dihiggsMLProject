@@ -1,54 +1,35 @@
 \label{sec:AE}
-\subsubsection{Selected Variables}
-Using the KS test, the 11 best variables for the ‘closestDijetMasses’ reconstruction algorithm were chosen to be the input variables for the autoencoder (AE). 
 
-\subsubsection{AE Structure}
-The AE is a machine learning architecture that detects signals through anomaly detection. It is able to do this by encoding background data to its most important features, and then decoding the latent data based on those features. Doing this encoding/decoding process allows the AE to learn the important features of background data so that, in theory, when signal data is thrown its way it will be able to detect it as an anomalous signal. The AE is capable of both semi-supervised learning and unsupervised learning, both of which may have exciting implications for signal detection in particle physics. Semi-supervised learning consists of learning purely on background data, then flagging signals as anomalies during testing. Unsupervised learning consists of mostly background data contaminated with a small portion of signal data in training--similar to a real-world scenario--then flagging signals as anomalies during testing. Both methods of learning were tested on dihiggs data and will have their results shown in the results section.
+An autoencoder (AE) is an unsupervised machine learning architecture used for detecting anomalies that differ significantly from the data used to train the network. The structure of the AE compresses the input information into a lower-dimensional representation called the latent space. In principle this compression encodes the most important features of the training data, and the second half of the network `decodes` this latent representation back into a representatino approaching the original inputs. This construction fundamentally changes the meaning of the loss function; rather than computing the loss between a prediction and a target, the AE loss is a measure of how well the network reproduces the original inputs after encoding and decoding. Inputs that differ significantly from the data used to train the AE will not be properly reconstructed, and anomalies can be identified by selected events with large losses. Monte Carlo simulations enable a semi-supervised cross-check on AE performance, meaning AEs may have exciting implications for signal detection in particle physics.
 
-Data preprocessing had to be done on the Delphes data before using it to train the AE. Note that because the AE uses semi-supervised/unsupervised learning, the background and signal data do not have to be labeled or appended together. The ‘closestDijetMasses’ dihiggs and QCD datasets were scaled before being split into training, validation, and testing data. The datasets were first randomly split 80\%/20\% into training and testing data respectively. Then the training sets were randomly split 80\%/20\% into training and validation data respectively. If necessary, various combinations of nJets and nBTags could be filtered out of the data sets during preprocessing for testing, something that was tested and will be showcased later. Additionally, when it became time to test the AE with unsupervised learning it was possible to contaminate the QCD training set by a certain percent with dihiggs signal data. Various percentages of contamination were tested and will be discussed in the results section.
-
-The AE was built on Keras’s ‘Sequential’ function using ‘Dense’ layers. The AE consisted of an input layer, one hidden layer--or latent layer--, and an output layer. The input layer node size was the length of the input dimension space--11. The hidden layer node size was a hyper parameter that could be tested via principal component analysis (PCA), which when done showed 3 to be the optimal hidden layer node size (see Fig.~\ref{fig:ae_pca}).
+Because the AE uses semi-supervised/unsupervised learning, it is trained solely on QCD background and then tested with a mixture of background and dihiggs signal. Tests were performed substituting a pure-QCD training sample with a training sample with various proportions of dihiggs signal. No significant deterioration was observed for reasonable levels of contamination. The AE used for dihiggs detection was built using the keras package~\cite{chollet2015keras} and consists of an input layer, a single hidden layer, and an output layer. Eleven reconstructed variables obtained using the 'closestDijetMass' algorithm were selected for use in the AE. The number of hidden layers and the number of hidden nodes per layer are hyperparameters that were optimized. A PCA analysis shown in Figure~\ref{fig:ae_pca} was used to determine that a latent space of three nodes was optimal.
 
 \begin{figure}[!h] 
 \begin{center}
 \includegraphics*[width=0.75\textwidth] {AE/figures/ae_PCA_11vars}
-\caption{PCA done for 11 input variables. The x-axis indicates the number of PCA features--or node size in this case-- and the y-axis indicates the variance \%. The important feature to look for when choosing node size is the difference in variance between PCA features, here the difference drops off between 2 and 3, and therefore 3 is the optimal node size for the AE.}
+\caption{PCA performed on the selected eleven kinematic inputs. The x-axis indicates the number of PCA features, and the y-axis indicates the variance. Choosing the optimal size for the latent space requires identifying the point of diminishing variance return.}
   \label{fig:ae_pca}
 \end{center}
 \end{figure}
 
-The output layer node size is a mirror of the input layer, and therefore has 11 nodes. The hidden layer and output layer used the ‘relu’ and ‘sigmoid’ activation respectively. Additionally the hidden layer was regulated with an L2 regularizer = 10-4. Afterwards the model was compiled using the ‘adam’ optimizer with the mean-squared error loss. Finally, the model was fit on the training data along with the validation data for 10000 epochs. The ‘EarlyStopping’ function was used to shorten training time by stopping training after the validation accuracy didn’t increase by 0.001 for 50 epochs. The batch size during training was set to 1024 in order to both decrease training time and prevent overfitting.
-
-After training, the testing phase of the AE works in a unique way compared to supervised learning architectures. Because the AE data is unlabeled, the AE can’t make predictions on whether an event is signal or not. Instead the only thing that the AE can do is generate a loss value based on an event. In this way the AE will theoretically generate a higher loss for anomalous signal data compared to the background data that it had trained on. After testing the AE on QCD and dihiggs data separately and gathering the loss results, a S/B best cut can be used to show the significance of the AE on dihiggs data.
-
-\subsubsection{Results}
-When learning via the semi-supervised method, the model trained on the data for >700 epochs before prematurely stopping, reaching a loss near 0.8 (see Fig.\ref{fig:ae_trainLoss}). Testing the AE model on the 20\% testing data sets generated an array of loss values for QCD and dihiggs (see Fig.~\ref{fig:ae_predLoss}). Using a $S/\sqrt{B}$ best cut on the loss values resulted in a significance = 0.67$\pm$0.01 (see Fig.~\ref{fig:ae_signalPred}). This significance value may be misleading however. As seen by Fig.~\ref{fig:ae_signalPred}, the signal predictions are completely overlapped by the background predictions, therefore it is safe to say that the AE was not able to learn the QCD data well enough to distinguish it from the dihiggs events during training. 
+The output layer is a mirror of the input layer and therefore has 11 nodes. The hidden layer and output layer use ReLU sigmoid activation respectively. An L2 regularization term was added to the hidden layer to avoid overfitting. %Afterwards the model was compiled using the ‘adam’ optimizer with the mean-squared error loss. Finally, the model was fit on the training data along with the validation data for 10000 epochs. The ‘EarlyStopping’ function was used to shorten training time by stopping training after the validation accuracy didn’t increase by 0.001 for 50 epochs. The batch size during training was set to 1024 in order to both decrease training time and prevent overfitting.
+Because training an auto-encoder is an unsupervised and unlabelled process, there is no prediction of whether a given event is signal or background. Instead of using a prediction to evaluate the efficacy of the AE approach, the loss output from a testing dataset is used as a proxy. Since dihiggs events should be relatively anomalous compared to the QCD training set, signal events should have a relatively larger average loss value. Cutting on the loss function allows for a significance to be calculated for comparison with other supervised methods.
 
 \begin{figure}[!h] 
-\begin{center}
-\includegraphics*[width=0.75\textwidth] {AE/figures/ae_modelLoss_qcdTrain}
-\caption{The loss of the AE during QCD training/reconstruction elbowed over hundreds of epochs until eventually plateauing after 700 epochs, reaching a loss approximately = 0.8.}
-  \label{fig:ae_trainLoss}
+  \begin{center}
+    \subfloat[]{\includegraphics[width = 3in]{AE/figures/ae_modelLoss_qcdTrain}} 
+    \subfloat[]{\includegraphics[width = 3in]{AE/figures/ae_finalLossDistribution_qcdTrain}}\\
+    \caption{(Left) The loss of the AE during QCD training/reconstruction converged after 700 epochs. (Right) The loss distribution generated by the AE when being tested on QCD and dihiggs event data separately.}    
+  \label{fig:ae_trainPredLoss}
 \end{center}
 \end{figure}
 
-\begin{figure}[!h] 
-\begin{center}
-\includegraphics*[width=0.75\textwidth] {AE/figures/ae_finalLossDistribution_qcdTrain}
-\caption{The loss distribution generated by the AE when being tested on QCD and dihiggs event data separately.}
-  \label{fig:ae_predLoss}
-\end{center}
-\end{figure}
+Training for several hundred epochs leads the model to converge, reaching a loss near 0.8 (see Fig.\ref{fig:ae_trainPredLoss}). Requiring the loss to be larger that 0.1 yields a best $S/\sqrt{B}$ of 0.67$\pm$0.01. This is however somewhat misleading significance value may be misleading since the signal and background loss distributions have little separation and the highest significance result effectively is a cut that keeps nearly all events. 
 
-
-The evidence for the AE failing to distinguish dihiggs data from QCD data was further supported by the unsupervised learning results. When the QCD training data was contaminated by a certain percentage of dihiggs data the significance results showed no change. 1\%, 10\%, 50\%, and 60\% contamination percentages were all tested, and all showed no change. The signal prediction plots were all similar to the plot in Fig.~\ref{fig:ae_signalPred}, where the best cut was similarly around 0.1 as well. With such strange results, testing was done to ensure that the AE was working properly. It was confirmed to be working by running the same AE on simple background and signal data, where the background data was many 0s and the signal data was many 1s. %The results, as shown by Fig. 5, are clearly much more defined than the previous results.
-
-\begin{figure}[!h] 
-\begin{center}
-\includegraphics*[width=0.75\textwidth] {AE/figures/ae_finalSignalPredictions_qcdTrain}
-\caption{Signal predictions made by the AE based on the loss distributions from Fig. 3. The $S/\sqrt{B}$ best cut was placed near 0.1, indicating that the AE was not able to sufficiently distinguish dihiggs data from QCD data.}
-  \label{fig:ae_signalPred}
-\end{center}
-\end{figure}
-
-In conclusion, the AE is unfit for dihiggs for QCD signal detection.
+%\begin{figure}[!h] 
+%\begin{center}
+%\includegraphics*[width=0.75\textwidth] {AE/figures/ae_finalSignalPredictions_qcdTrain}
+%\caption{Signal predictions made by the AE based on the loss distributions from Fig. 3. The $S/\sqrt{B}$ best cut was placed near 0.1, indicating that the AE was not able to sufficiently distinguish dihiggs da%ta from QCD data.}
+%  \label{fig:ae_signalPred}
+%\end{center}
+%\end{figure}

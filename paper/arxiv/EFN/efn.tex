@@ -1,26 +1,5 @@
-%\documentclass{article}
-%\usepackage[utf8]{inputenc}
-%\usepackage{booktabs}
-%\usepackage{multirow}
-%
-%\title{EnergyFlowNetwork}
-%\author{}
-%\date{April 2020}
-%
-%\usepackage{natbib}
-%\usepackage{graphicx}
-%
-%\begin{document}
-%
-%\maketitle
-%
-%\section{Introduction}
-
 \label{sec:EFN}
-Energy Flow Network(EFN) and Particle Flow Network(PFN) are algorithms that take jet constituents information as input. EFN takes the rapidity ${y}$ and azimuthal angle ${\phi}$ of jet constituents as input, while PFN takes the rapidity $y$, azimuthal angle $\phi$ and transverse momentum $p_{T}$ as input. 
-By just feeding those basic information to the algorithm without doing any high level reconstruction, we can try to find out whether the learning algorithm can extract some useful information from the data.
-The EFN and PFN are composed of two networks as shown in Figure \ref{fig:EFNArch}. 
-We used 200 nodes for each hidden layer in network (a), 256 for latent space dimension and 300 nodes for each hidden layer in network (b). 
+Energy Flow Networks (EFN) and Particle Flow Networks (PFN) are algorithms that take basic jet constituents information as input rather than reconstructed jets and multi-jet composites, e.g. Higgs candidates. The EFN structure takes only the rapidity ${y}$ and azimuthal angle ${\phi}$ of jet constituents as input, while the PFN takes the rapidity $y$, azimuthal angle $\phi$ and transverse momentum $p_{T}$ of jet constituents as input. Using the constituents as input, no high level reconstruction is necessary when identifying events similar to the CNN approach. Both the EFN and PFN are two-component networks, and their internal structures are shown in Figure \ref{fig:EFNArch}. The implementations of the EFN and PFN used for dihiggs classification use 200 nodes for each hidden layer in network (a), 256 for latent space dimension and 300 nodes for each hidden layer in network (b). 
 
 \begin{figure}[ht!]
 \centering
@@ -29,21 +8,8 @@ We used 200 nodes for each hidden layer in network (a), 256 for latent space dim
 \label{fig:EFNArch}
 \end{figure}
 
-%section{Approach}
-To test how the EFN and PFN works on diHiggs signal extraction. We generated 1M diHiggs events as signal and 4M QCD events as background. Also, we devided those events into four categories:
-\begin{itemize}
-    \item all events
-    \item events with $ \geq $ 4 jets
-    \item events with $ \geq $ 4 jets and 2 BTags
-    \item events with $ \geq $ 4 jets and 4 BTags
-\end{itemize}
-We ran EFN and PFN using the events that belongs to those categories separately to see the performance of the learning algorithm. The number of backgrounds events that feed into the algorithm is adjusted to make the training balanced after the Jet and BTag cuts.
-We used 60/20/20 data split as train/validation/test set.
-To avoid overfitting, we tuned L2 regularization factor or dropout and applied early stopping.
-To evaluate the performance, we calculated the signal significance for test set by $\frac{S}{\sqrt{B}}$ normalized to $3000fb^{-1}$ luminosity.
+The EFN/PFN networks were trained using four seperate categories split by number of jets and number of $b$-tags in order to test the network performance dependence on higher-level jet information. Independent networks were trained using: all events, only events with $\geq$4 jets, only events with $\geq$4 jets and =2 $b$-tags, and only events with $\geq$4 jets and $\geq$4 $b$-tags. In each configuration, the number of signal and background events was adjusted to maintain an equal proportion of each population in the training sample. L2 regularization and dropout layers were added to minimize overfitting. The results obtained with the EFN are shown in Table~\ref{EFNtab}. The results of the PFN are shown in Table~\ref{PFNtab}.
 
-%\section{Approach}
-The results of EFN is shown in Table \ref{EFNtab} and the results of PFN is shown in Table \ref{PFNtab}
 \begin{table}[ht!]
 \centering
   %\begin{center}
@@ -66,7 +32,6 @@ The results of EFN is shown in Table \ref{EFNtab} and the results of PFN is show
 
 \begin{table}[ht!]
 \centering
-
   %\begin{center}
     \begin{tabular}{|l|c|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
       \hline\hline
@@ -85,8 +50,4 @@ The results of EFN is shown in Table \ref{EFNtab} and the results of PFN is show
 \label{PFNtab}
 \end{table}
 
-
-
-%\bibliographystyle{plain}
-%\bibliography{references}
-%\end{document}
+The PFN provided a best significance of 1.618 when trained over all events without any cuts on the number of jets or $b$-tags.
