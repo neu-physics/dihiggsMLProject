@@ -2,7 +2,7 @@
 \section{Dihiggs Physics}
 \subsection{Double Higgs Production}
 \label{sec:physics}
-The Higgs boson is an essential part of the SM and is a product of the mechanism responsible for electroweak symmetry breaking. Along with the interaction of the Higgs with the other particles of the Standard Model, the SM predicts the interaction of the Higgs boson with itself at tree-level (self-interaction). This mechanism contributes to non-resonant Higgs boson pair production together with quark-loop contributions via Yukawa-type interactions. Figure~\ref{fig:nr_hh_production} shows a schematic diagram of non-resonant Higgs boson pair production. Since the production cross section for Higgs boson pair production is extremely small within the Standard Model, 
+The Higgs boson is an essential part of the Standard Model (SM) of particle physics and is a product of the mechanism responsible for electroweak symmetry breaking. Along with the interaction of the Higgs with the other particles of the Standard Model, the SM predicts the interaction of the Higgs boson with itself at tree-level (self-interaction). This mechanism contributes to non-resonant Higgs boson pair production together with quark-loop contributions via Yukawa-type interactions. Figure~\ref{fig:nr_hh_production} shows a schematic diagram of non-resonant Higgs boson pair production. Since the production cross section for Higgs boson pair production is extremely small within the SM, 
 \begin{equation*}
 \sigma_{hh}\text{ (13 TeV)} = 33 \text{ fb},
 \end{equation*}
@@ -18,7 +18,7 @@ any significant enhancement would indicate the presence of new physics.
 \end{center}
 \end{figure}
 
-Many extensions of the SM predict the existence of additional scalar bosons which may have mass larger than twice the Higgs mass and can decay into a Higgs boson pair. Searching for resonances in the $hh$ mass spectrum can help us discover or limit exotic models which predict the presence of such particles. More importantly, measuring the SM dihiggs cross-section (or placing limits on its magnitude) allow us to probe the self-coulpling of the Higgs field and better understand the mechanism behind electroweak symmetry breaking.
+Many extensions of the SM predict the existence of additional scalar bosons which may have mass larger than twice the Higgs mass and can decay into a Higgs boson pair. Searching for resonances in the $hh$ mass spectrum can help us discover or limit exotic models which predict the presence of such particles. More importantly, measuring the SM dihiggs cross-section (or placing limits on its magnitude) allow us to probe the self-coupling of the Higgs field and better understand the mechanism behind electroweak symmetry breaking.
 
 The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. The choice of using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the full design luminosity of the HL-LHC (an integrated luminosity of 3000 fb$^{-1}$). Simulated samples are produced with Madgraph~\cite{Alwall:2014hca} and recontructed in Delphes~\cite{de_Favereau_2014} using an approximation of the upgraded Phase-II CMS detector.
 
@@ -38,14 +38,15 @@ The first step in reconstructing the 4$b$ system is to reconstruct and select b-
   \end{center}
 \end{figure}
 
-Once events with at least 4 $b$-tags are selected, there is a choice about how to reconstructed the dihiggs system. Several reconstruction methods were testedfor pairing b-jets to find an optimal algorithm for correctly pairing Higgs boson consituents, and two algorithms were selected for use in the following sections. The first iterates through all selected jets in an event and returns the two pairs with closest dijet masses ('equalDijetMass'), and the second returns the two jet pairs that minimize the difference between the candidate pairs and a higgs boson mass of 125 GeV ('closestDijetMassToHiggs'). Fig~\ref{fig:jetInfo} shows a selection of distributions describing the reconstructed dihiggs system for each algorithm. Unless otherwise specified, the 'equalDijetMass' algorithm is used for machine learning techniques that require reconstructed events.
+Once events with at least 4 $b$-tags are selected, there is a choice about how to reconstruct the dihiggs system. Several reconstruction methods were tested for pairing b-jets to find an optimal algorithm for correctly pairing Higgs boson constituents. Two algorithms were selected for use in the following sections: the first iterates through all selected jets in an event and returns the two pairs with closest dijet masses to one another and the second returns the two jet pairs that minimize the difference between the individual candidate pairs and a higgs boson mass of 125 GeV. Unless otherwise specified, the method that selects dijets with masses closest to each other is used when training techniques that require reconstructed events. Fig~\ref{fig:jetInfo} shows a selection of distributions describing the dihiggs system using this reconstruction algorithm.% Figure~\ref{fig:comapreReco} compares the dijet pair masses obtained from both algorithm. 
 
-\begin{figure}[ht!]
-  \begin{center}
-  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/reconstructedQuantities/mh_pairJetsUsingSmallestDeltaR}} 
-  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/reconstructedQuantities/mh_pairJetsClosestToHiggs}}\\
-  \caption{Leading dijet mass using different reconstruction algorithms. Left plot shows mass when minimizing dijet angular separation, right plot shows mass when minimizing different between dijet mass and a Higgs mass of 125 GeV ('closestDijetMassToHiggs'). [PLACEHOLDER PLOTS]}
-  \label{fig:eventQuantities}
-  \end{center}
-\end{figure}
+%\begin{figure}[ht!]
+%  \begin{center}
+%  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/reconstructedQuantities/mh_pairJetsUsingSmallestDeltaR}} 
+%  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/reconstructedQuantities/mh_pairJetsClosestToHiggs}}\\
+%  \caption{Leading dijet mass using different reconstruction algorithms. Left plot shows mass when minimizing dijet angular separation, right plot shows mass when minimizing different between dijet mass and a Higgs mass of 125 GeV ('closestDijetMassToHiggs'). [PLACEHOLDER PLOTS]}
+%  \label{fig:compareReco}
+%  \end{center}
+%\end{figure}
 
+All variables were ordered using a list of KS separability. Each algorithm is trained on a subset that balances minimizing the number of variables without sacrificing performance. 
