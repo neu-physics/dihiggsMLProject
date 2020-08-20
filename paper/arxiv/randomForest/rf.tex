@@ -1,7 +1,7 @@
 \label{sec:RandomForest}
 Random Forest algorithms share a similar tree structure with BDTs, but they leverage ensembles of independent decision trees as opposed to iteratively improving the predictions of a single tree using misclassified events. Each tree in a random forest is `grown` using a random sampling of input variables and training events. The randomness of the sampling ensures each tree yields a unique but correlated prediction compared to the other trees in the forest. The class prediction of the forest is the majority vote of the constituent trees. Tuning the hyperparameters of a random forest requires optimizing the number of trees in the forest, the variable sub-sampling used to produce each tree, and the depth of the constituent trees.
 
-The random forest trained for dihiggs classification uses the ‘closestDijetMassToHiggs’ reconstruction algorithm and samples from the top seventeen reconstructed kinematic and event-level variables. The input variables were selected as having the highest separability between dihiggs and QCD processes. The random forest was implemented using the 'XGBRFClassifier` functionality from xgboost~\cite{xgboost}. Detail the hyperparameters. Predictions were made on data fully independent from the training data, and the results are shown in Figure~\ref{fig:rf_score}.
+The random forest trained for dihiggs classification uses the ‘closestDijetMassToHiggs’ reconstruction algorithm and samples from the top seventeen reconstructed kinematic and event-level variables. The input variables were selected as having the highest separability between dihiggs and QCD processes. The random forest was implemented using the 'XGBRFClassifier` functionality from xgboost~\cite{xgboost}. Detail the hyperparameters. Predictions were made on data fully independent from the training data, and the results are shown in Figure~\ref{fig:rf_score}. The best significance for the random forest approach is found to be $S/\sqrt{B}$ = 2.17$\pm$0.22 when requiring a prediction score > 0.81. 
 
 \begin{figure}[!h] 
 \begin{center}
@@ -11,4 +11,4 @@ The random forest trained for dihiggs classification uses the ‘closestDijetMas
 \end{center}
 \end{figure}
 
-The best significance for the random forest approach is found to be $S/\sqrt{B}$ = 2.17$\pm$0.22 when requiring a prediction score > 0.81. 
+
