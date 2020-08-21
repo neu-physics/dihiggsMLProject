@@ -35,8 +35,8 @@ Both the signal and background samples were generated with minimal pileup additi
       \hline\hline
       Name & Process & $\sigma_{\textrm{eff}}$ [fb] & $N_{\textrm{events}}$ \\
       \hline
-      Dihiggs & $p p > h h$, $h > b \bar{b}$ & 12.4 & 1e6 \\
-      QCD     & $p p > b \bar{b} b \bar{b}$ & 441866.0 & 4e6 \\
+      Dihiggs & $p p > h h$, $h > b \bar{b}$ & 12.4 & 1$\cdot 10^6$ \\
+      QCD     & $p p > b \bar{b} b \bar{b}$ & 441866.0 & 4$\cdot 10^6$ \\
       \hline\hline
     \end{tabular}
 \caption{Madgraph processes, effective cross-sections, and number of generated events for the signal and background samples used in this paper. The effective cross-sections differ slightly from the total theoretical cross-sections due to branching fractions and generation-level cuts on hadronic activity.}
@@ -48,11 +48,13 @@ The first step in reconstructing the 4$b$ system is to reconstruct and select b-
 
 \begin{figure}[ht!]
   \begin{center}
-  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/nJets}} 
-  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/allJetPt}}\\
-  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/nBTags}}
-  \subfloat[]{\includegraphics[width = 2.5in]{dihiggsPhys/figures/eventQuantities/missingET}} 
-  \caption{Event and jet properties and kinematics of events from QCD and dihiggs simulation. [THESE ARE PLACEHOLDER PLOTS.]}
+  \subfloat[]{\includegraphics[width = 2in]{dihiggsPhys/figures/recoPlots_08-21-20/dihiggs_DihiggsMass_norm}} 
+  \subfloat[]{\includegraphics[width = 2in]{dihiggsPhys/figures/recoPlots_08-21-20/leading_Leading-PtDijetMass_norm}}
+  \subfloat[]{\includegraphics[width = 2in]{dihiggsPhys/figures/recoPlots_08-21-20/subleading_Subleading-PtDijetMass_norm}}\\
+  \subfloat[]{\includegraphics[width = 2in]{dihiggsPhys/figures/recoPlots_08-21-20/number_NumberofJets_norm}}
+  \subfloat[]{\includegraphics[width = 2in]{dihiggsPhys/figures/recoPlots_08-21-20/scalar_ScalarHT_norm}}
+  \subfloat[]{\includegraphics[width = 2in]{dihiggsPhys/figures/recoPlots_08-21-20/deltar(dijets)_deltaRBetweenDijets_norm}} 
+  \caption{Sample of event kinematics and reconstructed dihiggs system from QCD and dihiggs simulation. Distributions are normalized to the same area to compare shapes.}
   \label{fig:jetInfo}
   \end{center}
 \end{figure}
