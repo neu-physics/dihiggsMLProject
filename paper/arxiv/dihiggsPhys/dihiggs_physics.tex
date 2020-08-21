@@ -23,11 +23,27 @@ any significant enhancement would indicate the presence of new physics.
 
 Many extensions of the SM predict the existence of additional scalar bosons which may have mass larger than twice the Higgs mass and can decay into a Higgs boson pair. Searching for resonances in the $hh$ mass spectrum can help us discover or limit exotic models which predict the presence of such particles. More importantly, measuring the SM dihiggs cross-section (or placing limits on its magnitude) allow us to probe the self-coupling of the Higgs field and better understand the mechanism behind electroweak symmetry breaking.
 
-The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. The choice of using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the full design luminosity of the HL-LHC (an integrated luminosity of 3000 fb$^{-1}$). Simulated samples are produced with Madgraph~\cite{Alwall:2014hca} and recontructed in Delphes~\cite{de_Favereau_2014} using an approximation of the upgraded Phase-II CMS detector.
+The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. The choice of using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the full design luminosity of the HL-LHC (an integrated luminosity of 3000 fb$^{-1}$). Simulated samples were produced using ROOT v6.12/04~\cite{Brun:1997pa} and Madgraph v2.7.0~\cite{Alwall:2014hca}. Events were then showered using Pythia v8.2.44~\cite{Sj_strand_2015} and recontructed with Delphes v3.0~\cite{de_Favereau_2014} using the v02 approximation of the upgraded Phase-II CMS detector.
+
+Both the signal and background samples were generated with minimal pileup addition sampled from a Poisson distribution with an expectation value of zero additional vertices. An additional generator-level cut requring total hadronic energy greater than 300 GeV was applied when generation background events. All code used to set up the generation environment and produce events is publically available~\cite{github}. A summary of the sample generation details is shown in Table~\ref{tab:samples}.
+
+\begin{table}[ht!]
+ \label{tab:samples}
+\centering
+  %\begin{center}
+    \begin{tabular}{|l|c|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+      \hline\hline
+      Name & Process & $\sigma_{\textrm{eff}}$ [fb] & $N_{\textrm{events}}$ \\
+      \hline
+      Dihiggs & $p p > h h$, $h > b \bar{b}$ & 12.4 & 1e6 \\
+      QCD     & $p p > b \bar{b} b \bar{b}$ & 441866.0 & 4e6 \\
+      \hline\hline
+    \end{tabular}
+\caption{Madgraph processes, effective cross-sections, and number of generated events for the signal and background samples used in this paper. The effective cross-sections differ slightly from the total theoretical cross-sections due to branching fractions and generation-level cuts on hadronic activity.}
+\end{table}
 
 \subsection{Event Reconstruction}
-We tried a lot of different methods to build dijet pairs for $hh$ reconstruction. This inherently involves making some choices, and no method is 100\% efficient. Sometimes one or another is better for a given method. What's cool is that some methods don't require reconstrucion at all.
-
+\label{sec:eventReco}
 The first step in reconstructing the 4$b$ system is to reconstruct and select b-jet candidates. Jets are clustered using an anti-$k_T$ algorithm with a radius of R=0.4. To be selected for use in event reconstruction, a jet must have $\pt > 20$ GeV and an absolute value of $\mid\eta\mid < 2.5$. Delphes uses an internal $b$-tagging efficiency parameterization to predict whether jets are tagged, and an event is reconstructed only if at least 4 jets are $b$-tagged unless otherwise specified. The properties and kinematics of selected jets are shown in Fig~\ref{fig:jetInfo}. This strict requirement of having at least 4 $b$-tags in an event helps to reduce contributions from QCD and reduce the combinatoric ambiguity in event recontruction.
 
 \begin{figure}[ht!]
@@ -52,4 +68,4 @@ Once events with at least 4 $b$-tags are selected, there is a choice about how t
 %  \end{center}
 %\end{figure}
 
-Reconstructed variables include the masses and momentum of the four- and two-body higgs candidates as well as the angular separations between the two Higgs candidates and their consituent jets. Additional event-level variables like the number of selected jets, the number of b-tagged jets, and the missing transverse energy in the event were also considered. All possible variables were evaluted for individual separation power between signal and background. All variables were ordered using a list of KS separability. Each algorithm is trained on a subset that balances minimizing the number of variables without sacrificing performance. 
+Reconstructed variables include the masses and momentum of the four- and two-body higgs candidates as well as the angular separations between the two Higgs candidates and their consituent jets. Additional event-level variables like the number of selected jets, the number of b-tagged jets, and the missing transverse energy in the event were also considered as inputs to various algorithms. All possible variables were evaluted using the Kolmogorov-Smirnov (KS) test for individual separation power between signal and background. Variables were sorted in descending order of KS separability. Each algorithm is trained on a subset that balances minimizing the number of variables without sacrificing performance. 
