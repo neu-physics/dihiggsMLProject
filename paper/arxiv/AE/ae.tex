@@ -2,7 +2,7 @@
 
 An autoencoder (AE) is an unsupervised machine learning architecture used for detecting anomalies that differ significantly from the data used to train the network. The structure of the AE compresses the input information into a lower-dimensional representation called the latent space. In principle this compression encodes the most important features of the training data, and the second half of the network `decodes` this latent representation back into a representation approaching the original inputs. This construction fundamentally changes the meaning of the loss function; rather than computing the loss between a prediction and a target, the AE loss is a measure of how well the network reproduces the original inputs after encoding and decoding. Inputs that differ significantly from the data used to train the AE will not be properly reconstructed, and anomalies can be identified by selected events with large losses. Monte Carlo simulations enable a semi-supervised cross-check on AE performance, meaning AEs may have exciting implications for signal detection in particle physics.
 
-Because AE anomaly detection relies on a well-modeled understanding of all background processes, the network was first trained using only QCD events. Additional models were trained by substituting the pure-QCD training sample with training samples consisting of QCD+dihiggs mixtures in order to test the stability of the method. No significant deterioration was observed for reasonable levels of contamination. The AE used for dihiggs detection was built using the Keras package~\cite{chollet2015keras} and consists of an input layer, a single hidden layer, and an output layer. Eleven reconstructed variables were selected for use in the AE. The number of hidden layers and the number of hidden nodes per layer are hyperparameters that were optimized. A PCA analysis shown in Figure~\ref{fig:ae_pca} was used to determine that a latent space of three nodes was optimal.
+Because AE anomaly detection relies on a well-modeled understanding of all background processes, the network was first trained using only QCD events. Additional models were trained by substituting the pure-QCD training sample with training samples consisting of mixtures of QCD and di-Higgs events in order to test the stability of the method. No significant deterioration was observed for reasonable levels of contamination. The AE used for di-Higgs detection was built using the Keras package~\cite{chollet2015keras} and consists of an input layer, a single hidden layer, and an output layer. Eleven reconstructed variables were selected for use in the AE. The number of hidden layers and the number of hidden nodes per layer are hyperparameters that were optimized. A PCA analysis shown in Figure~\ref{fig:ae_pca} was used to determine that a latent space of three nodes was optimal.
 
 \begin{figure}[!h] 
 \begin{center}
@@ -13,13 +13,13 @@ Because AE anomaly detection relies on a well-modeled understanding of all backg
 \end{figure}
 
 The output layer is a mirror of the input layer and therefore has 11 nodes. The hidden layer and output layer use ReLU and sigmoid activation functions respectively. An L2 regularization term was added to the hidden layer to avoid overfitting. %Afterwards the model was compiled using the ‘adam’ optimizer with the mean-squared error loss. Finally, the model was fit on the training data along with the validation data for 10000 epochs. The ‘EarlyStopping’ function was used to shorten training time by stopping training after the validation accuracy didn’t increase by 0.001 for 50 epochs. The batch size during training was set to 1024 in order to both decrease training time and prevent overfitting.
-Because training an autoencoder is an unsupervised and unlabelled process, there is no prediction of whether a given event is signal or background. Instead of using a prediction to evaluate the efficacy of the AE approach, the loss output from a testing dataset is used as a proxy. Since dihiggs events should be relatively anomalous compared to the QCD training set, signal events should have a relatively larger average loss value. Cutting on the loss function allows for a significance to be calculated for comparison with other supervised methods.
+Because training an autoencoder is an unsupervised and unlabelled process, there is no prediction of whether a given event is signal or background. Instead of using a prediction to evaluate the efficacy of the AE approach, the loss output from a testing dataset is used as a proxy. Since di-Higgs events should be relatively anomalous compared to the QCD training set, signal events should have a relatively larger average loss value. Cutting on the loss function allows for a significance to be calculated for comparison with other supervised methods.
 
 \begin{figure}[!h] 
   \begin{center}
     \subfloat[]{\includegraphics[width = 3in]{AE/figures/ae_modelLoss_qcdTrain}} 
     \subfloat[]{\includegraphics[width = 3in]{AE/figures/ae_finalLossDistribution_qcdTrain}}\\
-    \caption{(Left) The loss of the AE during QCD training/reconstruction converged after 700 epochs. (Right) The loss distribution generated by the AE when being tested on QCD and dihiggs event data separately.}    
+    \caption{(Left) The loss of the AE during QCD training/reconstruction converged after 700 epochs. (Right) The loss distribution generated by the AE when being tested on QCD and di-Higgs event data separately.}    
   \label{fig:ae_trainPredLoss}
 \end{center}
 \end{figure}
@@ -29,7 +29,7 @@ Training for several hundred epochs leads the model to converge, reaching a loss
 %\begin{figure}[!h] 
 %\begin{center}
 %\includegraphics*[width=0.75\textwidth] {AE/figures/ae_finalSignalPredictions_qcdTrain}
-%\caption{Signal predictions made by the AE based on the loss distributions from Fig. 3. The $S/\sqrt{B}$ best cut was placed near 0.1, indicating that the AE was not able to sufficiently distinguish dihiggs da%ta from QCD data.}
+%\caption{Signal predictions made by the AE based on the loss distributions from Fig. 3. The $S/\sqrt{B}$ best cut was placed near 0.1, indicating that the AE was not able to sufficiently distinguish di-Higgs da%ta from QCD data.}
 %  \label{fig:ae_signalPred}
 %\end{center}
 %\end{figure}
