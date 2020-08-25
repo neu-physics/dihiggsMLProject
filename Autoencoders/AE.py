@@ -3,7 +3,7 @@ from pandas import read_csv
 import AE_utils
 from keras.models import Model
 from keras.layers import Dense, Input
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 #Some hyperparameters
 vars = ['deltaPhi(h1 jets)', 'deltaR(h1 jets)', 'deltaR(h1, h2)',
@@ -12,22 +12,23 @@ varlen = len(vars)
 testing_fraction = 0.2
 l1_reg = l1(0.0001)
 l2_reg = l2(0.0001) #More harsh against anomalies
-dihiggs_filepath = r"C:\Users\Colby\Desktop\Neu-work\delphes stuff\500kHiggs&2MQCDspreadsheets\ConsiderFirstNjetsInPT=4\higgs\closestDijetMassesToHiggs_higgs.zip"
-qcd_filepath = r"C:\Users\Colby\Desktop\Neu-work\delphes stuff\500kHiggs&2MQCDspreadsheets\ConsiderFirstNjetsInPT=4\qcd\closestDijetMassesToHiggs_qcd.zip"
+dihiggs_filepath = r"C:\Users\Colby\Box Sync\Neu-work\delphes stuff\1MHiggs&4MQCDspreadsheets\higgs sheets\equalDijetMass_higgs.zip"
+qcd_filepath = r"C:\Users\Colby\Box Sync\Neu-work\delphes stuff\1MHiggs&4MQCDspreadsheets\qcd sheets\equalDijetMass_qcd.csv"
+modelcheckpoint_filepath = r"C:\Users\Colby\Box Sync\Neu-work\delphes stuff\1MHiggs&4MQCDspreadsheets\model files\AE\bestmodel.hdf5"
 
 #Import files, convert them to dataframes, delte the files
-dihiggs_file, qcd_file = AE_utils.extractfiles(dihiggs_filepath, qcd_filepath)
+dihiggs_file = AE_utils.extractfiles(dihiggs_filepath)
 dfhiggs = read_csv(dihiggs_file)
-dfqcd = AE_utils.appendQCDfilestogether(qcd_file)
-AE_utils.deletefiles(dihiggs_file, qcd_file)
+dfqcd = read_csv(qcd_filepath)
+AE_utils.deletefiles(dihiggs_file)
 
 
 #Preprocess data
 qcd_train_set, qcd_val_set, qcd_test_set, higgs_train_set, higgs_val_set, higgs_test_set = \
                                                                 AE_utils.process(dfhiggs, dfqcd, vars, testing_fraction,
-                                                                 nJetsFunction='>=', nJetstoConsider=4,
-                                                                 nBTagsFunction='>=', nBTagstoConsider=4,
-                                                                 contamination_fraction=False)
+                                                                 nJetsFunction=False, nJetstoConsider=False,
+                                                                 nBTagsFunction=False, nBTagstoConsider=False,
+                                                                 contamination_fraction=False, equal_qcd_dihiggs_samples=True)
 
 
 #Run model on training set
@@ -42,8 +43,8 @@ autoencoder = Model(input_img, decoded)
 autoencoder.compile(optimizer='adam', loss='mse')
 
 # Set up callbacks
-fit_callbacks = [EarlyStopping(monitor='loss', mode='min', min_delta=0.001, patience=50, restore_best_weights=True)]
-# ModelCheckpoint(filepath=filepath, monitor='loss', verbose=2, save_best_only=True)]
+fit_callbacks = [EarlyStopping(monitor='loss', mode='min', min_delta=0.001, patience=50, restore_best_weights=True),
+                 ModelCheckpoint(filepath=modelcheckpoint_filepath, monitor='loss', mode='min', verbose=0, save_best_only=True)]
 history = autoencoder.fit(qcd_train_set, qcd_train_set, validation_data=(qcd_val_set, qcd_val_set), epochs=10000, shuffle=True, verbose=2, callbacks=fit_callbacks,
                           batch_size=1024)
 
@@ -51,7 +52,8 @@ history = autoencoder.fit(qcd_train_set, qcd_train_set, validation_data=(qcd_val
 autoencoder.summary()
 AE_utils.epoch_history(history)
 qcdlosshistory, higgslosshistory = AE_utils.AE_statistics(autoencoder, qcd_train_set, qcd_test_set, higgs_test_set, logarithmic=False)
-qcdlosshistory = AE_utils.get_outliers(qcdlosshistory, m=5, keep_outliers=1)
-higgslosshistory = AE_utils.get_outliers(higgslosshistory, m=5, keep_outliers=1)
+#qcdlosshistory = AE_utils.get_outliers(qcdlosshistory, m=5, keep_outliers=1)
+#higgslosshistory = AE_utils.get_outliers(higgslosshistory, m=5, keep_outliers=1)
 AE_utils.significacne(qcdlosshistory, higgslosshistory, testing_fraction)
 AE_utils.loss_plot(qcdlosshistory, higgslosshistory, remove_Outliers=True)
+AE_utils.roc_plot(qcdlosshistory, higgslosshistory)

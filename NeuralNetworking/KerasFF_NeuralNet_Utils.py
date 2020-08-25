@@ -1,56 +1,28 @@
-from pandas import options, DataFrame, read_csv
+from pandas import options, DataFrame
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_curve, auc
 from matplotlib import pyplot as plt
 from statistics import mean
 from commonFunctions import returnTestSamplesSplitIntoSignalAndBackground, compareManyHistograms, returnBestCutValue
 from zipfile import ZipFile
-import os
-import sys
+import os, sys
 
-def extractfiles(dihiggs_filepath, qcd_filepath, is_qcd_multiple_files=True):
-#Extracts csv data from a zip folder assuming qcd and dihiggs are same reco algorithm, also assuming qcd is split into 5 csvs
+def extractfiles(dihiggs_filepath):
+#Extract dihiggs csv file from zip
     with ZipFile(dihiggs_filepath, 'r') as zip:
         zip.extractall()
         dihiggs_file = zip.namelist()[0]
-    if is_qcd_multiple_files ==True:
-        with ZipFile(qcd_filepath, 'r') as zip:
-            zip.extractall()
-            qcd_file = zip.namelist()
-    else:
-        with ZipFile(qcd_filepath, 'r') as zip:
-            zip.extractall()
-            qcd_file = zip.namelist()[0]
 
-    return dihiggs_file, qcd_file
+    return dihiggs_file
 
 
-def deletefiles(dihiggs_file, qcd_file, is_qcd_multiple_files=True):
+def deletefiles(dihiggs_file):
 #Deletes files from current directory
     if os.path.exists(dihiggs_file):
         os.remove(dihiggs_file)
     else:
         print("Cannot delete file, it does not exist")
-    if is_qcd_multiple_files == True:
-        for file in qcd_file:
-            if os.path.exists(file):
-                os.remove(file)
-            else:
-                print("Cannot delete file, it does not exist")
-    else:
-        if os.path.exists(qcd_file):
-            os.remove(qcd_file)
-        else:
-            print("Cannot delete file, it does not exist")
-
-def appendQCDfilestogether(qcd_files): #Assuming 5 qcd files
-    a = read_csv(qcd_files[0])
-    b = a.append(read_csv(qcd_files[1]))
-    c = b.append(read_csv(qcd_files[2]))
-    d = c.append(read_csv(qcd_files[3]))
-    dfqcd = d.append(read_csv(qcd_files[4]))
-
-    return dfqcd
 
 
 def fixNJets(dfhiggs, dfqcd, jetstoconsider, function): #Removes rows in the dataset whose nJets > jetstoremove
@@ -115,7 +87,8 @@ def fixBTags(dfhiggs, dfqcd, tagstoconsider, function): #Removes rows in the dat
     return dfhiggstagged, dfqcdtagged
 
 
-def process(dfhiggs, dfqcd, vars, testing_fraction, nJetsFunction=False, nJetstoConsider=False, nBTagsFunction=False, nBTagstoConsider=False):
+def process(dfhiggs, dfqcd, vars, testing_fraction, nJetsFunction=False, nJetstoConsider=False, nBTagsFunction=False,
+            nBTagstoConsider=False, equal_qcd_dihiggs_samples=False):
     print("Dataframe shapes before preprocessing:\nDihiggs = " + str(dfhiggs.shape) + "\nQCD = " + str(dfqcd.shape) +
           "\n==============================\n")
     # If removeNJets is False, does not change the csv, otherwise it removes all jets > 'removeNJets'
@@ -135,6 +108,25 @@ def process(dfhiggs, dfqcd, vars, testing_fraction, nJetsFunction=False, nJetsto
 # Sort top 10 variables
     higgstopvars = higgs_set[vars]
     qcdtopvars = qcd_set[vars]
+
+    # If equal_qcd_dihiggs_samples is False, does not change the csv, otherwise qcd and dihiggs samples will be equal
+    if equal_qcd_dihiggs_samples == False:
+        pass
+    elif equal_qcd_dihiggs_samples == True:
+        qcdlen = len(qcdtopvars)
+        higgslen = len(higgstopvars)
+        if qcdlen > higgslen:
+            qcdtopvars = qcdtopvars.sample(n=higgslen)
+            print("QCD samples reduced to equal dihiggs samples. QCD length = " + str(
+                len(qcdtopvars)) + ", dihiggs length = " + str(len(higgstopvars)))
+        else:
+            higgstopvars = higgstopvars.sample(n=qcdlen)
+            print("Dihiggs samples reduced to equal QCD samples. QCD length = " + str(
+                len(qcdtopvars)) + ", dihiggs length = " + str(len(higgstopvars)))
+    else:
+        print("Error, 'equal_qcd_dihiggs_samples' is a boolean statement, parameter must be either true or false.")
+        sys.exit()
+
 # Insert binary column into each df
     options.mode.chained_assignment = None  # Removes SettingWithCopyWarning which is a false positive
     higgstopvars['Result'] = 1
@@ -162,7 +154,7 @@ def significance(model, data_test, label_test, testing_fraction):
     _nBins = 40
     predictionResults = {'hh_pred': pred_hh, 'qcd_pred': pred_qcd}
     compareManyHistograms(predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'ff-NN Score', 0, 1,
-                          _nBins, _yMax=5, _normed=True, _savePlot=False)
+                          _nBins, _yMax=5, _normed=True)
     # Show significance
     returnBestCutValue('ff-NN', pred_hh.copy(), pred_qcd.copy(), _minBackground=400e3,
                        _testingFraction=testing_fraction)
@@ -196,4 +188,19 @@ def epoch_history(history):
     plt.ylabel('Loss [A.U.]')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper right')
+    plt.show()
+
+def roc_plot(model, data_test, label_test): #Plot roc curve with auc score
+    predictions = model.predict(data_test)
+    fpr, tpr, threshold = roc_curve(label_test, predictions)
+    roc_auc = auc(fpr, tpr)
+
+    plt.title('ROC')
+    plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
     plt.show()
