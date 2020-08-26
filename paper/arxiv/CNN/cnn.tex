@@ -19,7 +19,9 @@ Many previous papers have explored the use of convolutional networks trained on 
 \end{center}
 \end{figure}
 
-In order to produce coherent images, the center of mass and the center of momentum for each event are calculated. All constituents are then boosted longitudinally into the center of mass of the event and rotated in phi to the center of momentum. At the end, each image layer corresponds to a 31x31 pixel grid centered on the total activity in the event. Figure~\ref{fig:cnn_avgQCD} shows an average QCD image and Figure~\ref{fig:cnn_avgDihiggs} shows an average dhiggs image. While the layers in each figure closely resemble one another, they do contain different information, and variations are visible. More importantly, the average QCD image differs significantly from the average di-Higgs image. The scalar structure of the Higgs boson leads to the more circular forward/backward symmetry seen in Figure~\ref{fig:cnn_avgDihiggs} compared to Figure~\ref{fig:cnn_avgQCD}. The variance in pixel intensity is also smaller for the average di-Higgs events reflecting the more balanced kinematics of double Higgs production.
+In order to produce coherent images, the center of mass and the center of momentum for each event are calculated. All constituents are then boosted longitudinally into the center of mass of the event and rotated in phi to the center of momentum. At the end, each image layer corresponds to a 31x31 pixel grid centered on the total activity in the event. Figure~\ref{fig:cnn_avgQCD} shows an average QCD image and Figure~\ref{fig:cnn_avgDihiggs} shows an average dhiggs image. While the layers in each figure closely resemble one another, they do contain different information, and variations are visible.
+
+The image pre-procesing balances the momentum and energy in each event across $\phi$ = 0, and clear differences are observed between the average QCD images (Figure~\ref{fig:cnn_avgQCD}) and the average di-Higgs image (Figure~\ref{fig:cnn_avgDihiggs}). Each half of the dihiggs image is arranged in a roughly circular, isotropic shape due to the spin-0 nature of the Higgs. The QCD images appear balanced because of the nature of the pre-processing, but no similar circular structure is produced. Additionally, the variance of pixel intensities in di-Higgs images is much smaller than the variance in QCD images due to the more balanced kinematics of Higgs pair production compared to QCD processes.
 
 \begin{figure}[!h] 
 \begin{center}
@@ -68,9 +70,9 @@ As shown in Figures~\ref{fig:cnn_nominal} and \ref{fig:cnn_hybrid}, the CNN netw
 
 \begin{figure}[!h] 
 \begin{center}
-  \subfloat[]{\includegraphics[width = 3in]{CNN/figures/5color_0PU_pix31_addHT-nJets-nBTags_2Conv16-16_one2DPool_EqualSamples/signal_CNNScore_norm}} 
-  \subfloat[]{\includegraphics[width = 3in]{CNN/figures/5color_0PU_pix31_addHT-nJets-nBTags_2Conv16-16_one2DPool_EqualSamples/compositeImgs_noWeights_80percent_ROC}}\\
-\caption{(Right) signal prediction for the 5-color convolutional network with additional high-level inputs, (Left) ROC for the 5-color convolutional network with additional high-level inputs.}
+  \includegraphics[width = 3in]{CNN/figures/5color_0PU_pix31_addHT-nJets-nBTags_2Conv16-16_one2DPool_EqualSamples/signal_CNNScore_norm}
+  %\subfloat[]{\includegraphics[width = 3in]{CNN/figures/5color_0PU_pix31_addHT-nJets-nBTags_2Conv16-16_one2DPool_EqualSamples/compositeImgs_noWeights_80percent_ROC}}\\
+\caption{Signal prediction for the 5-color convolutional network with additional high-level inputs. The total area of the signal and background predictions are normalized to unity for easier shape comparison.}
 \end{center}
 \label{fig:cnn_preds}
 \end{figure}
