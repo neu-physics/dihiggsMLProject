@@ -1,5 +1,5 @@
 \label{sec:kmeans}
-K-means clustering is an unsupervised learning algorithm that finds unlabelled groupings in the phase-space defined by the input variables. The number of clusters to fit is a user-defined hyperparameter, and three different clusterings (15, 20, 40) were tested. Two unsupervised transformations of the input variables were tested to try to improve the performance of the nominal BDT. Combining the unsupervised clustering with the supervised structure of the BDT converts the unsupervised features into a semi-supervised algorthim whose  performance can be compared to other supervised methods.
+K-means clustering is an unsupervised learning algorithm that finds unlabeled groupings in the phase-space defined by the input variables. The number of clusters to fit is a user-defined hyperparameter, and three different clusterings (15, 20, 40) were tested. Two unsupervised transformations of the input variables were tested to try to improve the performance of the nominal BDT. Combining the unsupervised clustering with the supervised structure of the BDT converts the unsupervised features into a semi-supervised algorithm whose  performance can be compared to other supervised methods.
 
 The first transformation was to pass the nominal kinematic inputs through a k-means clustering stage before training the BDT. The second transformation involved performing a principal component analysis (PCA) decomposition on the nominal kinematic inputs before passing through the clustering step and finally the BDT. PCA is a technique for finding an orthogonal basis of input data that minimizes the variance along each new axis. No transformation was found to improve the performance of the nominal configuration, and the results are shown in Table~\ref{tab:bdtPCACluster}.
 
@@ -9,7 +9,7 @@ The first transformation was to pass the nominal kinematic inputs through a k-me
   %\hskip-4.0cm
     \begin{tabular}{|l|c|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
       \hline\hline
-      \textbf{Method} & $S/\sqrt{B}$ & N$_{sig}$ & N$_{bkg}$ \\
+      \textbf{Method} & $S/\sqrt{B}$ & N$_{\textrm{sig}}$ & N$_{\textrm{bkg}}$ \\
       \hline
       Nominal BDT & 1.84 $\pm$ 0.09 & 986.3  & 2.9$\cdot 10^5$ \\
       15 Clusters & 1.29 $\pm$ 0.02 & 2100.2 & 2.7$\cdot 10^6$ \\
