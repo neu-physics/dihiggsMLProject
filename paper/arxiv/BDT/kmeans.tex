@@ -1,7 +1,7 @@
 \label{sec:kmeans}
-K-means clustering is an unsupervised learning algorithm that finds unlabeled groupings in the phase-space defined by the input variables. The number of clusters to fit is a user-defined hyperparameter, and three different clusterings (15, 20, 40) were tested. Two unsupervised transformations of the input variables were tested to try to improve the performance of the nominal BDT. Combining the unsupervised clustering with the supervised structure of the BDT converts the unsupervised features into a semi-supervised algorithm whose  performance can be compared to other supervised methods.
+K-means clustering is an unsupervised learning algorithm that finds natural unlabeled groupings in the phase-space of the inputs. The k-means approach creates clusters by defining cluster centroids and associating events to the closest nearby centroid. The centroid positions are iteratively improved by minimizing the ensemble distance of all events to their associated clusters. Combining unsupervised clustering with the supervised structure of a BDT converts the unsupervised approach into a semi-supervised algorithm whose performance can be compared to other supervised methods.
 
-The first transformation was to pass the nominal kinematic inputs through a k-means clustering stage before training the BDT. The second transformation involved performing a principal component analysis (PCA) decomposition on the nominal kinematic inputs before passing through the clustering step and finally the BDT. PCA is a technique for finding an orthogonal basis of input data that minimizes the variance along each new axis. No transformation was found to improve the performance of the nominal configuration, and the results are shown in Table~\ref{tab:bdtPCACluster}.
+The number of clusters to fit is a user-defined hyperparameter, and three different clusterings (15, 20, 40) were tested. Two unsupervised transformations of the input variables were tested to try to improve the performance of the nominal BDT. The first approach was to pass all reconstructed kinematic inputs through a k-means clustering stage before training the BDT. The second transformation involved performing a principal component analysis (PCA) decomposition on the nominal kinematic inputs before passing through the clustering step and the BDT. PCA is a technique for finding an orthogonal basis of the input data that minimizes the variance along each new axis. No transformation was found to improve the performance of the nominal configuration, and the results are shown in Table~\ref{tab:bdtPCACluster}.
 
 \begin{table}[h!]
 \label{tab:bdtPCACluster}
@@ -20,6 +20,6 @@ The first transformation was to pass the nominal kinematic inputs through a k-me
       40 Clusters + PCA & 1.34 $\pm$ 0.02 & 2144.5 & 2.0$\cdot 10^6$ \\         
       \hline\hline
     \end{tabular}
-    \caption{Significance and yields showing BDT performance for the nominal kinematic inputs, clustered kinematic inputs, and clustered inputs from a PCA decomposition. All yields are normalized to full HL-LHC dataset of 3000 fb$^{-1}$.}
+    \caption{Significance and yields showing BDT performance when using the nominal kinematic inputs, clustered kinematic inputs, and clustered inputs from a PCA decomposition. All yields are normalized to full HL-LHC dataset of 3000 fb$^{-1}$.}
     \end{center}
 \end{table}
