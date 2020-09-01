@@ -1022,7 +1022,10 @@ class cnnModelClass:
         predictionResults = {'hh_pred':pred_hh, 'qcd_pred':pred_qcd}
         #sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction )
 #sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, nDihiggs=self.nDihiggs, nQCD=self.nQCD )       
+        # 08-26-20 [BBT] - this version uses length of hh/qcd vectors as total input numbers
         sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction, nDihiggs=self.nDihiggs, nQCD=self.nQCD )
+        # 08-26-20 [BBT] - this version uses 1e6/4e6 (generated) numbers for cut cal
+        #sig, cut, sigErr = compareManyHistograms( predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'CNN Score', 0, 1, _nBins, _yMax = 5, _normed=True, savePlot=True, saveDir=self.topDir, writeSignificance=True, _testingFraction=self.testingFraction )
       
         # *** 6. Get best cut value for CNN assuming some minimal amount of signal
         #pred_hh_sig = [x[0] for x in pred_hh.copy()]

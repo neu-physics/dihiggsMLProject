@@ -476,7 +476,8 @@ class imageMaker:
             _plotOpts = self.returnPlotOpts( consLabel, impact )
 
         _sampleLabel = 'Dihiggs' if self.isSignal else 'QCD'
-        _weightLabel = 'Pt-Weighted' if _ptWeighted else 'Unweighted'
+        _eT_or_pT = 'Pt' if consLabel == 'tracks' else 'Et' 
+        _weightLabel = '{}-Weighted'.format(_eT_or_pT) if _ptWeighted else 'Unweighted'
         if impact!='':
             _weightLabel = '{}-Weighted'.format(impact)
 

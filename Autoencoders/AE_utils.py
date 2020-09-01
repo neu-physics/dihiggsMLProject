@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 from keras.callbacks import Callback
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
-from pandas import DataFrame, read_csv, concat
+from sklearn.metrics import roc_curve, auc
+from pandas import DataFrame, concat
 from commonFunctions import returnBestCutValue, compareManyHistograms
 from statistics import mean
 import numpy as np
@@ -19,39 +20,21 @@ class LossHistory(Callback):
         self.losses.append(logs['loss'])
 
 
-def extractfiles(dihiggs_filepath, qcd_filepath):
-#Extracts csv data from a zip folder assuming qcd and dihiggs are same reco algorithm, also assuming qcd is split into 5 csvs
+def extractfiles(dihiggs_filepath):
+#Extract dihiggs csv file from zip
     with ZipFile(dihiggs_filepath, 'r') as zip:
         zip.extractall()
         dihiggs_file = zip.namelist()[0]
-    with ZipFile(qcd_filepath, 'r') as zip:
-        zip.extractall()
-        qcd_file = zip.namelist()
 
-    return dihiggs_file, qcd_file
+    return dihiggs_file
 
 
-def deletefiles(dihiggs_file, qcd_file):
+def deletefiles(dihiggs_file):
 #Deletes files from current directory
     if os.path.exists(dihiggs_file):
         os.remove(dihiggs_file)
     else:
         print("Cannot delete file, it does not exist")
-    for file in qcd_file:
-        if os.path.exists(file):
-            os.remove(file)
-        else:
-            print("Cannot delete file, it does not exist")
-
-
-def appendQCDfilestogether(qcd_files): #Assuming 5 qcd files
-    a = read_csv(qcd_files[0])
-    b = a.append(read_csv(qcd_files[1]))
-    c = b.append(read_csv(qcd_files[2]))
-    d = c.append(read_csv(qcd_files[3]))
-    dfqcd = d.append(read_csv(qcd_files[4]))
-
-    return dfqcd
 
 
 def fixNJets(dfhiggs, dfqcd, jetstoconsider, function): #Removes rows in the dataset whose nJets > jetstoremove
@@ -146,7 +129,7 @@ def contaminate(dihiggs_train, dihiggs_val, qcd_train, qcd_val, fraction): #Cont
 
 
 def process(dfhiggs, dfqcd, vars, testing_fraction, nJetsFunction=False, nJetstoConsider=False, nBTagsFunction=False,
-            nBTagstoConsider=False, contamination_fraction=False):
+            nBTagstoConsider=False, contamination_fraction=False, equal_qcd_dihiggs_samples=False):
     print("Dataframe shapes before preprocessing:\nDihiggs = " + str(dfhiggs.shape) + "\nQCD = " + str(dfqcd.shape) +
     "\n==============================\n")
 #If removeNJets is False, does not change the csv, otherwise it removes all jets > 'removeNJets'
@@ -162,6 +145,24 @@ def process(dfhiggs, dfqcd, vars, testing_fraction, nJetsFunction=False, nJetsto
         qcd_set = qcd_set_jetted
     else:
         higgs_set, qcd_set = fixBTags(higgs_set_jetted, qcd_set_jetted, nBTagstoConsider, nBTagsFunction)
+
+    # If equal_qcd_dihiggs_samples is False, does not change the csv, otherwise qcd and dihiggs samples will be equal
+    if equal_qcd_dihiggs_samples == False:
+        pass
+    elif equal_qcd_dihiggs_samples == True:
+        qcdlen = len(qcd_set)
+        higgslen = len(higgs_set)
+        if qcdlen > higgslen:
+            qcd_set = qcd_set.sample(n=higgslen)
+            print("QCD samples reduced to equal dihiggs samples. QCD length = " + str(
+                len(qcd_set)) + ", dihiggs length = " + str(len(higgs_set)))
+        else:
+            higgs_set = higgs_set.sample(n=qcdlen)
+            print("Dihiggs samples reduced to equal QCD samples. QCD length = " + str(
+                len(qcd_set)) + ", dihiggs length = " + str(len(higgs_set)))
+    else:
+        print("Error, 'equal_qcd_dihiggs_samples' is a boolean statement, parameter must be either true or false.")
+        sys.exit()
 
 # Sort top variables and scale both dataframes to same scale
     scaler = preprocessing.StandardScaler()
@@ -266,7 +267,7 @@ def significacne(qcdlosshistory, higgslosshistory, testing_fraction): #Plot pred
     _nBins = 100
     predictionResults = {'hh_pred': higgslosshistory, 'qcd_pred': qcdlosshistory}
     compareManyHistograms(predictionResults, ['hh_pred', 'qcd_pred'], 2, 'Signal Prediction', 'AE score', 0, 3,
-                          _nBins, _yMax=5, _normed=True, _savePlot=False)
+                          _nBins, _yMax=5, _normed=True)
     # Show significance
     returnBestCutValue('AE', higgslosshistory.copy(), qcdlosshistory.copy(), _minBackground=400e3,
                        _testingFraction=testing_fraction)
@@ -330,3 +331,32 @@ def average_loss_vs_Latentdimensions(input_set, varlen, regularizer, qcd_test, h
         plt.close()
     else:
         plt.show()
+
+def roc_plot(qcdlosshistory, higgslosshistory): #Plot roc curve with auc score
+    #Create prediction list scaled between 0 and 1
+    predictions_list = qcdlosshistory + higgslosshistory
+    predictions_list_scaled = []
+    for prediction in predictions_list:
+        scaled_prediction = prediction/max(predictions_list)
+        predictions_list_scaled.append(scaled_prediction)
+
+    #Create label list
+    label_list = []
+    for sample in qcdlosshistory:
+        label_list.append(0)
+    for sample in higgslosshistory:
+        label_list.append(1)
+
+    #Plot roc curve
+    fpr, tpr, threshold = roc_curve(label_list, predictions_list_scaled)
+    roc_auc = auc(fpr, tpr)
+
+    plt.title('ROC')
+    plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.show()
