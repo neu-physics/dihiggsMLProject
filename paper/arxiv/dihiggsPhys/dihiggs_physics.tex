@@ -3,12 +3,11 @@
 \subsection{Higgs Pair Production}
 \label{sec:physics}
 
-The Higgs boson is an essential part of the Standard Model (SM) of particle physics and is a product of the mechanism responsible for electroweak symmetry breaking. Along with the interaction of the Higgs with the other particles of the Standard Model, the SM predicts the interaction of the Higgs boson with itself at tree-level (self-interaction). This mechanism contributes to non-resonant Higgs boson pair production together with quark-loop contributions via Yukawa-type interactions. Figure~\ref{fig:nr_hh_production} shows a schematic diagram of non-resonant Higgs boson pair production. Since the production cross section for Higgs boson pair production is extremely small within the SM~\cite{deFlorian:2016spz}, 
+The Higgs boson is an essential part of the Standard Model (SM) of particle physics and is a product of the mechanism responsible for electroweak symmetry breaking. Along with the interactions of the Higgs boson to the other SM particles, an additional Higgs self-coupling interaction is predicted at tree-level by the SM. This mechanism contributes to non-resonant Higgs boson pair production together with quark-loop contributions via Yukawa-type interactions. Figure~\ref{fig:nr_hh_production} shows the two leading order diagrams of non-resonant Higgs boson pair production. Since the production cross section for Higgs boson pair production is extremely small within the SM~\cite{deFlorian:2016spz}, 
 
 \begin{equation*}
 \sigma_{hh}\text{ (14 TeV)} = 45.1 \text{ fb},
 \end{equation*}
-
 any significant deviation would indicate the presence of new physics.
 
 \begin{figure}[!h] 
@@ -21,9 +20,9 @@ any significant deviation would indicate the presence of new physics.
 \end{center}
 \end{figure}
 
-Many extensions of the SM predict the existence of additional scalar bosons which may have mass larger than twice the Higgs mass and can decay into a Higgs boson pair. Searching for resonances in the $hh$ mass spectrum can help us discover or limit exotic models which predict the presence of such particles. More importantly, measuring the SM di-Higgs cross-section (or placing limits on its magnitude) allow us to probe the self-coupling of the Higgs field and better understand the mechanism behind electroweak symmetry breaking.
+Many extensions of the SM predict the existence of additional scalar bosons which may have mass larger than twice the Higgs mass and can decay into a Higgs boson pair. Searching for resonances in the $hh$ mass spectrum can help us discover or limit exotic models which predict the presence of such particles. More importantly, measuring the SM di-Higgs cross-section (or placing limits on its magnitude) allows us to probe the self-coupling of the Higgs field and better understand the mechanism behind electroweak symmetry breaking.
 
-The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. The choice of using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the full design luminosity of the HL-LHC (a total integrated luminosity of 3000 fb$^{-1}$). Simulated samples were produced using ROOT v6.12/04~\cite{Brun:1997pa} and Madgraph v2.7.0~\cite{Alwall:2014hca}. Events were then showered using Pythia v8.2.44~\cite{Sj_strand_2015} and reconstructed with Delphes v3.0~\cite{de_Favereau_2014} using the v2 approximation of the upgraded Phase-II CMS detector.
+The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. Using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the full design luminosity of the HL-LHC (a total integrated luminosity of 3000 fb$^{-1}$). Simulated samples were produced using ROOT v6.12/04~\cite{Brun:1997pa} and Madgraph v2.7.0~\cite{Alwall:2014hca}. Events were then showered using Pythia v8.2.44~\cite{Sj_strand_2015} and reconstructed with Delphes v3.0~\cite{de_Favereau_2014} using the v2 approximation of the upgraded Phase-II CMS detector.
 
 Both the signal and background samples were generated with minimal pileup addition sampled from a Poisson distribution with an expectation value of zero additional vertices. An additional generator-level cut requiring total hadronic energy greater than 300 GeV was applied when generating background QCD events. All code used to set up the generation environment and produce events is publicly available~\cite{github}. A summary of the sample generation details is shown in Table~\ref{tab:samples}.
 
@@ -44,7 +43,7 @@ Both the signal and background samples were generated with minimal pileup additi
 
 \subsection{Event Reconstruction}
 \label{sec:eventReco}
-The first step in reconstructing the 4$b$ system is to reconstruct and select b-jet candidates. Jets are clustered using an anti-$k_T$ algorithm with a radius of R=0.4. To be selected for use in event reconstruction, a jet must have $\pt > 20$ GeV and an absolute value of $\mid\eta\mid < 2.5$. Delphes uses an internal $b$-tagging efficiency parameterization to predict whether jets are tagged, and an event is only fully reconstructed if at least 4 jets are $b$-tagged (unless otherwise specified). The properties and kinematics of selected jets are shown in Fig~\ref{fig:jetInfo}. This strict requirement of having at least 4 $b$-tags in an event helps to reduce contributions from QCD and reduce the combinatoric ambiguity in event reconstruction.
+The first step in reconstructing the 4$b$ system is to reconstruct and select b-jet candidates. Jets are clustered using an anti-$k_T$ algorithm with a radius of R=0.4. To be selected for use in event reconstruction, a jet must have $\pt > 20$ GeV and an absolute value of $\mid\eta\mid < 2.5$. Delphes uses an internal $b$-tagging efficiency parameterization to predict whether jets are tagged. An event is only fully reconstructed if at least 4 jets are $b$-tagged (unless otherwise specified). The properties and kinematics of selected jets are shown in Figure~\ref{fig:jetInfo}. This strict requirement of having at least 4 $b$-tags in an event helps to reduce contributions from QCD and resolve some of the combinatoric ambiguity in event reconstruction.
 
 \begin{figure}[ht!]
   \begin{center}
