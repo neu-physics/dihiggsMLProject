@@ -22,9 +22,9 @@ any significant deviation would indicate the presence of new physics.
 
 Many extensions of the SM predict the existence of additional scalar bosons which may have mass larger than twice the Higgs mass and can decay into a Higgs boson pair. Searching for resonances in the $hh$ mass spectrum can help us discover or limit exotic models which predict the presence of such particles. More importantly, measuring the SM di-Higgs cross-section (or placing limits on its magnitude) allows us to probe the self-coupling of the Higgs field and better understand the mechanism behind electroweak symmetry breaking.
 
-The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. Using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the full design luminosity of the HL-LHC (a total integrated luminosity of 3000 fb$^{-1}$). Simulated samples were produced using ROOT v6.12/04~\cite{Brun:1997pa} and Madgraph v2.7.0~\cite{Alwall:2014hca}. Events were then showered using Pythia v8.2.44~\cite{Sj_strand_2015} and reconstructed with Delphes v3.0~\cite{de_Favereau_2014} using the v2 approximation of the upgraded Phase-II CMS detector.
+The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. Using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the HL-LHC design integrated luminosity of 3000 fb$^{-1}$. Simulated samples were produced using Madgraph v2.7.0~\cite{Alwall:2014hca} in a ROOT v6.12/04~\cite{Brun:1997pa} environment. Events were then showered using Pythia v8.2.44~\cite{Sj_strand_2015} and reconstructed with Delphes v3.0~\cite{de_Favereau_2014} using the v2 approximation of the upgraded Phase-II CMS detector.
 
-Both the signal and background samples were generated with minimal pileup addition sampled from a Poisson distribution with an expectation value of zero additional vertices. An additional generator-level cut requiring total hadronic energy greater than 300 GeV was applied when generating background QCD events. All code used to set up the generation environment and produce events is publicly available~\cite{github}. A summary of the sample generation details is shown in Table~\ref{tab:samples}.
+Both the signal and background samples were generated with minimal pileup addition sampled from a Poisson distribution with an expectation value of zero additional vertices. An additional generator-level cut requiring total hadronic energy greater than 300 GeV was applied when generating background QCD events. All code used to set up the generation environment and produce events is publicly available~\cite{github}. A summary of the sample generation details is shown in Table~\ref{tab:samples}. The assumption of zero additional background interactions per event is an unrealistic approximation of the HL-LHC environment where an average of two hundred additional pileup interactions is expected for each collision. This paper is an initial study aimed at gauging the power of various techniques in a simplified environment. Future studies will extend the approaches explored here to a realistic HL-LHC regime.
 
 \begin{table}[ht!]
  \label{tab:samples}
@@ -43,7 +43,7 @@ Both the signal and background samples were generated with minimal pileup additi
 
 \subsection{Event Reconstruction}
 \label{sec:eventReco}
-The first step in reconstructing the 4$b$ system is to reconstruct and select b-jet candidates. Jets are clustered using an anti-$k_T$ algorithm with a radius of R=0.4. To be selected for use in event reconstruction, a jet must have $\pt > 20$ GeV and an absolute value of $\mid\eta\mid < 2.5$. Delphes uses an internal $b$-tagging efficiency parameterization to predict whether jets are tagged. An event is only fully reconstructed if at least 4 jets are $b$-tagged (unless otherwise specified). The properties and kinematics of selected jets are shown in Figure~\ref{fig:jetInfo}. This strict requirement of having at least 4 $b$-tags in an event helps to reduce contributions from QCD and resolve some of the combinatoric ambiguity in event reconstruction.
+The first step in reconstructing the 4$b$ system is to reconstruct and select b-jet candidates. Jets are clustered using an anti-$k_T$ algorithm with a radius of R=0.4. To be selected for use in event reconstruction, a jet must have $\pt > 20$ GeV and $\mid\eta\mid < 2.5$. Delphes uses an internal $b$-tagging efficiency parameterization to predict whether jets are tagged. An event is only fully reconstructed if at least 4 jets are $b$-tagged (unless otherwise specified). The properties and kinematics of selected jets are shown in Figure~\ref{fig:jetInfo}. This strict requirement of having at least 4 $b$-tags in an event helps to reduce contributions from QCD and resolve some of the combinatoric ambiguity in event reconstruction.
 
 \begin{figure}[ht!]
   \begin{center}
@@ -56,7 +56,12 @@ The first step in reconstructing the 4$b$ system is to reconstruct and select b-
   \end{center}
 \end{figure}
 
-Once events with at least 4 $b$-tags are selected, there is a choice about how to reconstruct the di-Higgs system. Several reconstruction methods were tested for pairing b-jets to find an optimal algorithm for correctly pairing Higgs boson constituents. Two algorithms were selected for use in the following sections: the first iterates through all selected jets in an event and returns the two pairs with closest di-jet masses to one another. The second returns the two jet pairs that minimize the difference between the individual candidate pairs and a Higgs boson mass of 125 GeV. Unless otherwise specified, the method that selects di-jets with masses closest to each other is used when training algorithms that require reconstructed events. Fig~\ref{fig:recoInfo} shows a selection of distributions describing the di-Higgs system using this reconstruction algorithm.
+Once events with at least 4 $b$-tags are selected, there is a choice about how to reconstruct the di-Higgs system. Several reconstruction methods were tested for pairing b-jets to find an optimal algorithm for correctly pairing Higgs boson constituents. Two algorithms were selected for use in the following sections: the first iterates through all selected jets in an event and returns the two pairs with closest di-jet masses to one another. The second returns the two jet pairs that yield two Higgs candidates with masses closest to the known Higgs boson mass by minimizing the quantity 
+
+\begin{equation*}
+\chi^2 = \left ( \frac{m_1 - m_h}{\sigma_h} \right ) ^2 + \left ( \frac{m_2 - m_h}{\sigma_h} \right ) ^2
+\end{equation*}
+where $m_{1,2}$ are the candidate di-jet masses, $m_h=125$ GeV is Higgs boson mass, and $\sigma_h =10$ GeV is the expected experimental resolution of the Higgs boson in the $b\bar{b}$ decay channel. Unless otherwise specified, the method that selects di-jets with masses closest to each other is used when training algorithms that require reconstructed events. Fig~\ref{fig:recoInfo} shows a selection of distributions describing the di-Higgs system using this reconstruction algorithm.
 
 \begin{figure}[ht!]
   \begin{center}
@@ -80,4 +85,23 @@ Once events with at least 4 $b$-tags are selected, there is a choice about how t
 %  \end{center}
 %\end{figure}
 
-Reconstructed variables include the masses and momentum of the two- and four-body Higgs candidates as well as the angular separations between the two Higgs candidates and their constituent jets. Additional event-level variables like the number of selected jets, the number of b-tagged jets, and the missing transverse energy in the event were also considered as inputs to various algorithms. All possible variables were evaluated using the Kolmogorov-Smirnov (KS) test for individual separation power between signal and background. Variables were sorted in descending order of KS separability. Each algorithm is trained on a subset that balances minimizing the number of variables without sacrificing performance. 
+Reconstructed variables include the masses and momentum of the two- and four-body Higgs candidates as well as the angular separations between the two Higgs candidates and their constituent jets. Additional event-level variables like the number of selected jets, the number of b-tagged jets, and the missing transverse energy in the event were also considered as inputs to various algorithms. A full list of all variables considered for each approach is given in Table~\ref{tab:allVariables}. All variables were evaluated using the Kolmogorov-Smirnov (KS) test for individual separation power between signal and background. Variables were then sorted in descending order of KS separability. Each algorithm is trained on a subset that minimizes the number of variables while not sacrificing performance.
+
+\begin{table}[ht!]
+ \label{tab:allVariables}
+\centering
+  %\begin{center}
+    \begin{tabular}{|c|c|c|c|} % <-- Alignments: 1st column left, 2nd centered, with vertical lines in between
+      \hline\hline
+      \multirow{2}{*}{Event-Level} & \multicolumn{3}{c|}{Reconstructed}\\
+      \cline{2-4}
+      & di-Higgs System & Higgs Candidates & Jet Variables \\
+      \hline
+      $N_{\textrm{jets}}, N_{\textrm{b-tags}}$ & $m_{\textrm{hh}}, p_{\textrm{T}}^{\textrm{hh}}, \eta^{\textrm{hh}}, \phi^{\textrm{hh}},$ & $m_{\textrm{h1}}, p_{\textrm{T}}^{\textrm{h1}}, \eta^{\textrm{h1}}, \phi^{\textrm{h1}},$ & $p_{\textrm{Tj}}^{(i=1-4)}, \eta_{\textrm{Tj}}^{(i=1-4)}, \phi_{\textrm{Tj}}^{(i=1-4)},$ \\
+      Missing $E_{\textrm{T}},$ & $\Delta R(\textrm{h1, h2}),$& $m_{\textrm{h2}}, p_{\textrm{T}}^{\textrm{h2}}, \eta^{\textrm{h2}}, \phi^{\textrm{h2}},$ & b-tag$^{(i=1-4)}$\\
+      Scalar $H_{\textrm{T}}$ & $\Delta \phi(\textrm{h1, h2})$& $\Delta R(\textrm{h1 jets}), \Delta R(\textrm{h2 jets}),$& \\
+      & & $\Delta \phi(\textrm{h1 jets}), \Delta \phi(\textrm{h2 jets})$ & \\
+      \hline\hline
+    \end{tabular}
+\caption{Complete list of all variables considered for analysis in each method. Event-level variables require no di-Higgs recontruction. Reconstructed variables are defined only after selecting the jet pairs to reconstruct the di-Higgs system in each event. The sub/superscript 'hh' corresponds to the four-body di-Higgs system, the sub/superscript 'h1' corresponds to the leading $p_{\textrm{T}}$ Higgs candidate, and the sub/superscript 'h2' corresponds to the sub-leading $p_{\textrm{T}}$ Higgs candidate. Kinematic for all individual jets chosen by the reconstruction are also available for use in training classification algorithms.}
+\end{table}
