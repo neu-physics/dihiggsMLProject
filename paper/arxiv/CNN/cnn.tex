@@ -23,7 +23,7 @@ In order to produce coherent images, the center of mass and the center of moment
 
 Importantly, clear differences are observed between the average QCD images and the average di-Higgs images. Each half of the di-Higgs image (split across $\phi$ = 0) is arranged in a roughly circular, isotropic shape due to the spin-0 nature of the Higgs. The QCD images appear balanced because of the effect of the pre-processing, but no similar circular structure is produced. Additionally, the variance of pixel intensities in di-Higgs images is much smaller than the variance in QCD images due to the more balanced kinematics of Higgs pair production compared to QCD processes.
 
-\begin{figure}[!h] 
+\begin{figure}[!ht] 
 \begin{center}
   \subfloat[]{\includegraphics[width = 2in]{CNN/figures/images/hh/Tracks_Dihiggs_Final_Pt-Weighted}} 
   \subfloat[]{\includegraphics[width = 2in]{CNN/figures/images/hh/Photons_Dihiggs_Final_Et-Weighted}}
@@ -35,7 +35,7 @@ Importantly, clear differences are observed between the average QCD images and t
   \subfloat[]{\includegraphics[width = 2in]{CNN/figures/images/qcd/NeutralHadrons_QCD_Final_Et-Weighted}} \\
   \subfloat[]{\includegraphics[width = 2in]{CNN/figures/images/qcd/Tracks_QCD_Final_d0-Weighted}} 
   \subfloat[]{\includegraphics[width = 2in]{CNN/figures/images/qcd/Tracks_QCD_Final_dz-Weighted}} 
-\caption{Average image layers for di-Higgs (a--e) and QCD (f--j) decays. Sub-figures (a) and (f) show $p_{\textrm{T}}$-weighted tracks, (b) and (g) show $E_{\textrm{T}}$-weighted ECAL deposits, (c) and (h) show $E_{\textrm{T}}$-weighted HCAL deposits, (d) and (i) show transverse impact parameter-weighted tracks, (e) and (j) show longitudinal impact parameter-weighted tracks. The differences between di-Higgs and QCD layers are apparent.}
+\caption{Average image layers for di-Higgs (a--e) and QCD (f--j) decays. Sub-figures (a) and (f) show $p_{\textrm{T}}$-weighted tracks, (b) and (g) show $E_{\textrm{T}}$-weighted ECAL deposits, (c) and (h) show $E_{\textrm{T}}$-weighted HCAL deposits, (d) and (i) show transverse impact parameter-weighted tracks, (e) and (j) show longitudinal impact parameter-weighted tracks.} %The differences between di-Higgs and QCD layers are apparent.}
 \end{center}
 \label{fig:cnn_avgImages}
 \end{figure}
@@ -59,7 +59,7 @@ As shown in Figures~\ref{fig:cnn_nominal} and \ref{fig:cnn_hybrid}, the CNN netw
   \begin{center}
     \begin{tabular}{|l|c|c|} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
       \hline\hline
-      \textbf{Method} & Best $S/\sqrt{B}$ & AUC \\
+      \textbf{Method} & Best $\sigma$ & AUC \\
       \hline
       Tracks+HCAL+ECAL & 1.77 $\pm$ 0.01 & 0.818 \\
       Tracks+HCAL+ECAL + high-level & 2.12 $\pm$ 0.01 & 0.846 \\

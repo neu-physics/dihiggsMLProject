@@ -24,7 +24,7 @@ Many extensions of the SM predict the existence of additional scalar bosons whic
 
 The following work is focused on techniques for distinguishing non-resonant (SM-like) Higgs boson pair production where both Higgs bosons decay via $h \to b \bar{b}$. Using the $4b$ decay mode provides the largest possible amount of signal events but requires powerful background reduction techniques due to the large production cross-section of fully hadronic QCD processes. All results are quoted for simulated events produced by $pp$ collisions with a center-of-mass energy of 14 TeV and scaled to the HL-LHC design integrated luminosity of 3000 fb$^{-1}$. Simulated samples were produced using Madgraph v2.7.0~\cite{Alwall:2014hca} in a ROOT v6.12/04~\cite{Brun:1997pa} environment. Events were then showered using Pythia v8.2.44~\cite{Sj_strand_2015} and reconstructed with Delphes v3.0~\cite{de_Favereau_2014} using the v2 approximation of the upgraded Phase-II CMS detector.
 
-Both the signal and background samples were generated with minimal pileup addition sampled from a Poisson distribution with an expectation value of zero additional vertices. An additional generator-level cut requiring total hadronic energy greater than 300 GeV was applied when generating background QCD events. All code used to set up the generation environment and produce events is publicly available~\cite{github}. A summary of the sample generation details is shown in Table~\ref{tab:samples}. The assumption of zero additional background interactions per event is an unrealistic approximation of the HL-LHC environment where an average of two hundred additional pileup interactions is expected for each collision. This paper is an initial study aimed at gauging the power of various techniques in a simplified environment. Future studies will extend the approaches explored here to a realistic HL-LHC regime.
+Both the signal and background samples were generated with minimal pileup addition sampled from a Poisson distribution with an expectation value of zero additional vertices. An additional generator-level cut requiring total hadronic energy greater than 300 GeV was applied when generating background QCD events. All code used to set up the generation environment and produce events is publicly available~\cite{github}. A summary of the sample generation details is shown in Table~\ref{tab:samples}. The effective cross-sections in Table~\ref{tab:samples} are used for all event yield calculations in subsequent sections.
 
 \begin{table}[ht!]
  \label{tab:samples}
@@ -40,6 +40,8 @@ Both the signal and background samples were generated with minimal pileup additi
     \end{tabular}
 \caption{Madgraph processes, effective cross-sections, and number of generated events for the signal and background samples used in this paper. The effective cross-sections differ slightly from the total theoretical cross-sections due to branching fractions and generation-level cuts on hadronic activity.}
 \end{table}
+
+The assumption of zero additional background interactions per event is an unrealistic approximation of the HL-LHC environment where an average of two hundred additional pileup interactions is expected for each collision. This paper is an initial study aimed at gauging the power of various techniques in a simplified environment. Future studies will extend the approaches explored here to a realistic HL-LHC regime.
 
 \subsection{Event Reconstruction}
 \label{sec:eventReco}

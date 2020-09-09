@@ -1,10 +1,12 @@
 \label{sec:EFN}
-Energy Flow Networks (EFN) and Particle Flow Networks (PFN) are neural networks that also operate with basic jet constituent information as input rather than reconstructed jets and multi-jet composites~\cite{Komiske:2018cqr}. The EFN structure takes only the rapidity, ${y}$, and azimuthal angle, ${\phi}$, of jet constituents as input, while the PFN takes the rapidity, azimuthal angle, and transverse momentum, $p_{T}$, of jet constituents as input. Both the EFN and PFN are two-component networks, and their internal structures are shown in Figure \ref{fig:EFNArch}. The implementations of the EFN and PFN used for di-Higgs classification use 200 nodes for each hidden layer in network (a), 256 nodes for the latent space dimension, and 300 nodes for each hidden layer in network (b). 
+Energy Flow Networks (EFN) and Particle Flow Networks (PFN) are neural networks that also operate with basic jet constituent information as input rather than reconstructed jets and multi-jet composites~\cite{Komiske:2018cqr}. The EFN structure takes only the rapidity, ${y}$, and azimuthal angle, ${\phi}$, of jet constituents as input, while the PFN takes the rapidity, azimuthal angle, and transverse momentum, $p_{T}$, of jet constituents as input. Both the EFN and PFN are two-component networks, and their internal structures are shown in Figure \ref{fig:EFNArch}.
+
+Network (a) takes jet constituent information as input and uses a set of fully connected neural network layers to produce a set of latent features, \textbf{$\Phi$}. Linear combinations of the latent variables, \textbf{$\mathcal{O}$} are then used as the input for network (b) which uses another set of fully connected layers to produce final predictions. The EFN and PFN used for di-Higgs classification use 200 nodes for each hidden layer in network (a), 256 nodes for the latent space dimension, and 300 nodes for each hidden layer in network (b). 
 
 \begin{figure}[ht!]
 \centering
 \includegraphics[scale=0.5]{./EFN/EFNArch.png}
-\caption{Network (a) takes jet constituents information as input and outputs latent space $\Phi$ for each jet constituents. Network (b) takes $\mathcal{O}$, which is the linear combination of $\Phi$, as input and outputs final result.}
+\caption{Example of a complete EFN/PFN network. Network (a) uses jet constituent information as input and outputs a set of latent variables, $\Phi$. Network (b) produces linear combinations, $\mathcal{O}$, of the latent variables which are then fed through several fully connected layers to make a final prediction.}
 \label{fig:EFNArch}
 \end{figure}
 
@@ -17,7 +19,7 @@ The EFN/PFN networks were trained using four separate categories split by number
       \hline\hline
       \multirow{2}{*}{\textbf{Category}} & \multicolumn{3}{c|}{0PU}\\
       \cline{2-4}
-      & Best $S/\sqrt{B}$ & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$} \\
+      & Best $\sigma$ & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$} \\
       \hline
       All Events & $1.407 \pm 0.006$ & $1.89\cdot 10^4$ & $1.80\cdot 10^8$ \\
       4Jets & $1.363 \pm 0.006$ & $1.63\cdot 10^4$ & $1.43\cdot 10^8$ \\
@@ -37,7 +39,7 @@ The EFN/PFN networks were trained using four separate categories split by number
       \hline\hline
       \multirow{2}{*}{\textbf{Category}} & \multicolumn{3}{c|}{0PU}\\
       \cline{2-4}
-      & Best $S/\sqrt{B}$ & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$} \\
+      & Best $\sigma$ & \textbf{N$_{\mathrm{Signal}}$} & \textbf{N$_{\mathrm{Background}}$} \\
       \hline
       All Events & $1.618 \pm 0.008$ & $1.79\cdot 10^4$ & $1.21\cdot 10^8$ \\
       4Jets & $1.580 \pm 0.008$ & $1.32\cdot 10^4$ & $7.00\cdot 10^7$ \\
