@@ -1,7 +1,7 @@
 \label{sec:kmeans}
 K-means clustering is an unsupervised learning algorithm that finds natural unlabeled groupings in a scaled phase-space describing the input dataset. Scaled data is created by compressing or stretching each variable of the dataset to the same maximum and minimum values. This ensures each variable is treated equally when calculated the distances between neighboring points. Minimum values of 0 and maximum values of 1 were chosen for all variables in this analysis.
 
-The k-means approach creates clusters by randomly seeding a user-specified number of cluster centroids in the scaled phase-space. Each point is associated to the closest nearby centroid, and the group of points belonging to a single centrioid is defined as a cluster. The centroid positions are updated over several iterations by minimizing the ensemble sum of the squared distance between a centroid and all points associated to that cluster. As the centroids move, points can be associated to different clusters eventually obtaining a set of clusters defined by locally dense groupings of similar points. Combining unsupervised clustering with the supervised structure of a BDT converts the unsupervised approach into a semi-supervised algorithm whose performance can be compared to other supervised methods.
+The k-means approach creates clusters by randomly seeding a user-specified number of cluster centroids in the scaled phase-space. Each point is associated to the closest nearby centroid, and the group of points belonging to a single centroid is defined as a cluster. The centroid positions are updated over several iterations by minimizing the ensemble sum of the squared distance between a centroid and all points associated to that cluster. As the centroids move, points can be associated to different clusters eventually obtaining a set of clusters defined by locally dense groupings of similar points. Combining unsupervised clustering with the supervised structure of a BDT converts the unsupervised approach into a semi-supervised algorithm whose performance can be compared to other supervised methods.
 
 The number of clusters, $k$, to fit is a user-defined hyperparameter, and the number of clusters used to describe a dataset must be carefully chosen. Using too few clusters risks not being able to identify meaningfully different populations in the input dataset. Using too many clusters risks losing predictive power by splitting coherent sets of points into arbitrary groupings. An optimal $k$ is found by scanning several values, calculating the total distance between all points and their associated centroid, and selecting a $k$ that minimizes this distance without asymptotically approaching zero.
 
@@ -15,13 +15,13 @@ The optimal $k$ for the di-Higgs data was found lie around 20, and three differe
       \hline\hline
       \textbf{Method} & $\sigma$ & N$_{\textrm{sig}}$ & N$_{\textrm{bkg}}$ \\
       \hline
-      Nominal BDT & 1.84 $\pm$ 0.09 & 986.3  & 2.9$\cdot 10^5$ \\
-      15 Clusters & 1.29 $\pm$ 0.02 & 2100.2 & 2.7$\cdot 10^6$ \\
-      15 Clusters + PCA & 1.25 $\pm$ 0.02 & 2189.5 & 3.1$\cdot 10^6$ \\         
-      20 Clusters & 1.30 $\pm$ 0.02 & 2260.6 & 3.0$\cdot 10^6$ \\
-      20 Clusters + PCA & 1.27 $\pm$ 0.03 & 21756.4 & 1.9$\cdot 10^6$ \\         
-      40 Clusters & 1.44 $\pm$ 0.03 & 1704.6 & 1.4$\cdot 10^6$ \\
-      40 Clusters + PCA & 1.34 $\pm$ 0.02 & 2144.5 & 2.0$\cdot 10^6$ \\         
+      Nominal BDT & 1.84 $\pm$ 0.09       & $986.3\pm 8.9$   & $2.9\pm 0.1 \cdot 10^5$ \\
+      15 Clusters & 1.29 $\pm$ 0.02       & $2100.2\pm 14.6$ & $2.7\pm 0.1 \cdot 10^6$ \\
+      15 Clusters + PCA & 1.25 $\pm$ 0.02 & $2189.5\pm 15.1$ & $3.1\pm 0.1 \cdot 10^6$ \\         
+      20 Clusters & 1.30 $\pm$ 0.02       & $2260.6\pm 15.4$ & $3.0\pm 0.1 \cdot 10^6$ \\
+      20 Clusters + PCA & 1.27 $\pm$ 0.03 & $1756.4\pm 12.9$ & $1.9\pm 0.1 \cdot 10^6$ \\         
+      40 Clusters & 1.44 $\pm$ 0.03       & $1704.6\pm 12.7$ & $1.4\pm 0.1 \cdot 10^6$ \\
+      40 Clusters + PCA & 1.34 $\pm$ 0.02 & $2144.5\pm 14.8$ & $2.0\pm 0.1 \cdot 10^6$ \\         
       \hline\hline
     \end{tabular}
     \caption{Significance and yields showing BDT performance when using the nominal kinematic inputs, clustered kinematic inputs, and clustered inputs from a PCA decomposition. All yields are normalized to full HL-LHC dataset of 3000 fb$^{-1}$.}

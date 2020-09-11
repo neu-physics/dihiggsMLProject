@@ -1,7 +1,7 @@
 \section{Results}
 \label{sec:results}
 
-The methods covered in this paper are by no means an exhaustive review of the ML landscape available to high energy physics. Still, a wide range of techniques and philosophies are covered. Table~\ref{tab:summary} provides a summary of the methods described in the previous sections. The results of a traditional 1-D sequential cut technique is shown for comparison though the details have not been discussed in the previous sections. Clear gains in sensitivity compared to this baseline are apparent for many of the ML models tested in this review.
+The methods covered in this paper are by no means an exhaustive review of the ML landscape available to high energy physics. Still, a wide range of techniques and philosophies are covered. Table~\ref{tab:summary} provides a summary of the methods described in the previous sections. The raw yields after selection and reconstruction cuts (depending on the method) have been weighted by the effective cross-sections listed in Table~\ref{tab:samples} and scaled to 3000 fb$^{-1}$. The result from a traditional 1-D sequential cut technique is shown for comparison though the details were not discussed in the previous sections. Clear gains in sensitivity compared to this baseline are apparent for many of the ML models tested in this review.
 
 \begin{table}[h!]
 \label{tab:summary}
@@ -15,7 +15,7 @@ The methods covered in this paper are by no means an exhaustive review of the ML
       Autoencoder           & $0.81 \pm 0.01$ & $5840.8 \pm 31.8$ & $5.2\pm 0.3$ $\cdot$ $10^7$ \\
       1D-Rectangular Cuts   & $0.82 \pm 0.02$ & $3621.0 \pm 21.8$  & $2.0 \pm 0.2$ $\cdot$ $10^7$ \\
       k-Means Clustering    & $1.44 \pm 0.02$ & $1703.6 \pm 12.7$ & $1.39\pm 0.03$  $\cdot$ $10^6$ \\
-      Particle Flow Network & $1.62 \pm 0.01$ & $1.78 \pm 0.08$ $\cdot$ $10^4$ & $1.22\pm 0.01$ $\cdot$ $10^8$ \\
+      Particle Flow Network & $1.62 \pm 0.01$ & $1.78 \pm 0.08$ $\cdot$ $10^4$ & $1.21\pm 0.01$ $\cdot$ $10^8$ \\
       Boosted Decision Tree & $1.84 \pm 0.09$ & $986.3 \pm 8.9$  & $2.8 \pm 0.1$ $\cdot$ $10^5$ \\
       %Lorentz Boost Network & 1.87 $\pm$ 0.08 & 1123.3 & 3.6 $\cdot$ $10^5$ \\
       Feed-Forward NN       & $2.40 \pm 0.08$ & $1659.9 \pm 12.9$  & $4.8 \pm 0.2$ $\cdot$ $10^5$ \\
@@ -23,7 +23,7 @@ The methods covered in this paper are by no means an exhaustive review of the ML
       Convolutional NN      & $2.85 \pm 0.02$ & $1.00\pm 0.05$ $\cdot$ $10^4$ & $1.32\pm 0.01$ $\cdot$ $10^7$ \\
       \hline\hline
     \end{tabular}
-    \caption{Comparison of method significance and signal/background yields normalized to full HL-LHC dataset of 3000 fb$^{-1}$. The provided errors take into account the Monte Carlo statistical uncertainty and the uncertainy on the Madgraph generated cross-section.}
+    \caption{Comparison of method significance and signal/background yields normalized to full HL-LHC dataset of 3000 fb$^{-1}$. The provided errors take into account the Monte Carlo statistical uncertainty and the uncertainty on the Madgraph generated cross-section.}
   \end{center}
 \end{table}
 
