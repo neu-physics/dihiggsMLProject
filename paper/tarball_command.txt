@@ -1,0 +1,1 @@
+tar -cvzf dihiggs_arxiv_v4.tar.gz --exclude="*.*~" --exclude="*/*.*~" --exclude="__*" --exclude="*.aux" *
